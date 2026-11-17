@@ -62,10 +62,10 @@ function serve(dir) {
   // Schulart-Umschalter: Oberschule hat noch keinen Lehrplan
   ok((await p.$$('#ctx .grades button')).length === 8 && (await p.$$('#ctx .grades button[disabled]')).length === 6, 'GYM: Klassen 5–12, nur 6 und 8 wählbar');
   await p.click('#ctx [data-act="type"][data-v="os"]'); await p.waitForTimeout(100);
-  ok((await p.$$('#ctx .grades button')).length === 6 && (await p.$$('#ctx .grades button[disabled]')).length === 6, 'OS: Klassen 5–10, keine wählbar');
-  ok((await p.innerText('main')).includes('Oberschule ist noch kein Lehrplan'), 'OS: Hinweis statt Plan');
+  ok((await p.$$('#ctx .grades button')).length === 6 && (await p.$$('#ctx .grades button[disabled]')).length === 6, 'OS: Klassen 5–10, ohne eigene Klasse keine wählbar');
+  ok((await p.innerText('main')).includes('keine Klasse der Schulart Oberschule'), 'OS: Hinweis statt Plan (keine eigene OS-Klasse)');
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(100);
-  ok((await p.innerText('main')).includes('Oberschule ist noch kein Lehrplan'), 'OS: Heute zeigt Hinweis');
+  ok((await p.innerText('main')).includes('keine Klasse der Schulart Oberschule'), 'OS: Heute zeigt Hinweis');
   await p.click('#ctx [data-act="type"][data-v="gym"]'); await p.waitForTimeout(100);
   ok((await p.innerText('.tcard h2')) === 'Klasse 8', 'Zurück zu GYM: Klasse 8 wieder gewählt');
   await p.click('[data-act="todaycls"][data-v="all"]').catch(() => {});
@@ -185,7 +185,7 @@ function serve(dir) {
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   await p.uncheck('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => JSON.stringify(window.__mp.cal().classes) === '["kl8"]'), 'Meine Klassen 2026/27: nur Klasse 8');
-  ok(await p.$eval('#ctx [title*="nicht zu Ihren Klassen"]', e => e.disabled && e.textContent === '6'), 'Leiste: Klasse 6 ausgegraut');
+  ok(await p.$$eval('#ctx .grades button', bs => bs.some(e => e.textContent === '6' && e.disabled && /nicht zu Ihren Klassen/.test(e.title))), 'Leiste: Klasse 6 ausgegraut');
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(150);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
   ok(JSON.stringify(await p.$$eval('.tcard h2', hs => hs.map(h => h.textContent))) === JSON.stringify(['GYM · 8a', 'GYM · 8b']), 'Alle meine Klassen: nur 8a und 8b');
@@ -230,6 +230,30 @@ function serve(dir) {
     t(keep); return r;
   });
   ok(JSON.stringify(lv.map(x => x && x.l)) === JSON.stringify([1, 2, 3, 1]), 'Stufe nach Stabilität: neu 1, 10 Tage 2, 40 Tage 3, nach „Nochmal“ 1 ' + JSON.stringify(lv.map(x => x && x.q)));
+
+  // Lehrpläne Sachsen: alle Klassen GYM 5–12 und OS 5–10, OS ab 7 mit HS/RS, GYM 11/12 mit GK/LK
+  const lp = await p.evaluate(() => { const C = window.PLAN_DATA.classes, k = Object.keys(C);
+    const sum = id => C[id].seq.reduce((a, r) => a + (r[0] === 'P' ? 0 : r[2]), 0);
+    return { n: k.length, os7: k.filter(x => C[x].type === 'os' && C[x].grade === 7).map(x => C[x].variant).join(','), os10: k.filter(x => C[x].type === 'os' && C[x].grade === 10).map(x => C[x].variant).join(','),
+      g11: k.filter(x => C[x].type === 'gym' && C[x].grade === 11).map(x => C[x].variant).join(','), sum9: sum('gym9'), sum8hs: sum('os8hs'), zrw8hs: Object.values(C.os8hs.zrw).reduce((a, x) => a + x, 0) }; });
+  ok(lp.n === 19 && lp.os7 === 'HS,RS' && lp.os10 === 'RS' && lp.g11 === 'GK,LK', 'Lehrpläne: 19 Klassen, OS 7 HS/RS, OS 10 nur RS, GYM 11 GK/LK ' + JSON.stringify(lp));
+  ok(lp.sum9 === 104 && lp.sum8hs === lp.zrw8hs, 'Sequenzen entsprechen den Zeitrichtwerten (GYM 9: 104 Std.)');
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.check('[data-act="mine"][data-k="os7hs"]'); await p.waitForTimeout(100);
+  await p.check('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.UI.cls === 'os7rs' && window.__mp.UI.type === 'os'), 'Meine Klassen: OS 7 RS angehakt und gewählt');
+  ok((await p.innerText('#ctx')).includes('HS') && (await p.innerText('#ctx')).includes('RS'), 'Leiste zeigt Umschalter HS | RS');
+  await p.click('#ctx [data-k="os7hs"][title="Hauptschulbildungsgang"]'); await p.waitForTimeout(150);
+  await p.evaluate(() => location.hash = 'einheiten'); await p.waitForTimeout(200);
+  const ein = await p.innerText('main');
+  ok(ein.includes('Klasse 7 HS') && ein.includes('Anteile und Prozente') && ein.includes('Ziele der Klassenstufe'), 'Einheiten OS 7 HS aus dem Lehrplan mit Zielen');
+  await p.screenshot({ path: path.join(OUT, 's_lehrplan_os7hs.png'), fullPage: false });
+  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(200);
+  ok((await p.innerText('main')).includes('Zeitrichtwert'), 'Sequenz OS 7 HS mit Zeitrichtwerten');
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.uncheck('[data-act="mine"][data-k="os7hs"]'); await p.uncheck('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.UI.type === 'gym' && ['kl6', 'kl8'].includes(window.__mp.UI.cls)), 'Nach dem Abwählen zurück zu einer eigenen GYM-Klasse');
+  await p.waitForTimeout(900);
 
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
