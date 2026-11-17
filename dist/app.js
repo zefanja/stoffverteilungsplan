@@ -212,11 +212,21 @@ function pathOf(name, y) {
   const k = name === "e6" ? "kl6" : "kl8";
   return y.legacyDocs ? "engine/" + k : `jahr-${y.id}/engine-${k}`;
 }
-let db = null, dbState = "loading", yearGen = 0, yearUnsubs = [];
+let db = null, dbState = "loading", yearGen = 0, yearUnsubs = [], local = false;
+/* Ohne Claude-Datenbank (z. B. auf GitHub Pages) wird im Browser gespeichert. */
+const LS = "mp-doc:";
+function lsGet(path) { try { const v = localStorage.getItem(LS + path); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsOk() { try { localStorage.setItem(LS + "probe", "1"); localStorage.removeItem(LS + "probe"); return true; } catch (e) { return false; } }
 const dirty = {}, saving = {}, timers = {}, loaded = {};
 function docBody(name) { return name === "settings" ? S.settings : name === "kl6" || name === "kl8" ? S.cls[name] : S.eng[name === "e6" ? "kl6" : "kl8"]; }
 function save(name) { dirty[name] = true; clearTimeout(timers[name]); const g = yearGen; timers[name] = setTimeout(() => { if (g === yearGen || name === "settings") flush(name); }, 700); }
 async function flush(name) {
+  if (!db && local) {
+    const body = clone(docBody(name)); if (body.log && body.log.length > 600) body.log = body.log.slice(-600);
+    try { localStorage.setItem(LS + pathOf(name), JSON.stringify(body)); dirty[name] = false; }
+    catch (e) { setDbState("quota"); }
+    return;
+  }
   if (!db) return;
   const g = yearGen, again = ms => { timers[name] = setTimeout(() => { if (g === yearGen || name === "settings") flush(name); }, ms); };
   if (saving[name]) { again(500); return; }
@@ -262,6 +272,7 @@ function checkLoaded() {
 function subscribeYear() {
   yearUnsubs.forEach(u => { try { u(); } catch (e) {} }); yearUnsubs = [];
   YEAR_DOCS.forEach(n => { loaded[n] = false; });
+  if (!db && local) { for (const name of YEAR_DOCS) { const d = lsGet(pathOf(name)); if (d) applyDoc(name, d); } touch(); return; }
   if (!db) return;
   const g = yearGen;
   for (const name of YEAR_DOCS) {
@@ -286,7 +297,17 @@ function switchYear(id, remember) {
 }
 async function initDb() {
   try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
-  if (!db) { setDbState("off"); if (!cal().engineStart) { cal().engineStart = todayIso(); touch(); render(); } return; }
+  if (!db) {
+    local = lsOk();
+    if (local) {
+      const st = lsGet(pathOf("settings")); if (st) applyDoc("settings", st);
+      const p = pickYear(); if (p !== UI.year) { yearGen++; UI.year = p; CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); }); }
+      subscribeYear();
+    }
+    setDbState(local ? "local" : "off");
+    if (!cal().engineStart) { cal().engineStart = todayIso(); if (local) save("settings"); }
+    touch(); render(); return;
+  }
   initDb.timer = setTimeout(() => { if (dbState === "loading") setDbState("slow"); }, 10000);
   let first = true;
   db.doc(pathOf("settings")).onSnapshot(snap => {
@@ -438,6 +459,7 @@ function renderBanner() {
   const m = {
     loading: "Gespeicherte Daten werden geladen …",
     slow: "Der Speicher antwortet noch nicht. Sie sehen gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
+    local: "Gespeichert wird in diesem Browser. Für ein anderes Gerät oder eine zusätzliche Sicherung: Einstellungen → Sicherung.",
     off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffnen Sie die App angemeldet auf claude.ai.",
     err: "Speichern ist gerade fehlgeschlagen. Die App versucht es bei der nächsten Änderung erneut.",
     ro: "Sie können diesen Plan ansehen, aber nicht ändern.",

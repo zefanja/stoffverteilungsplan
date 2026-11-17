@@ -5,7 +5,7 @@ const ROOT = path.resolve(__dirname, '..');
 const OUT = process.argv[2] || path.join(ROOT, 'docs', 'screenshots');
 const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 1; } else console.log('ok  ', msg); };
 (async () => {
-  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
   await p.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#heute'); await p.waitForTimeout(500);
@@ -100,6 +100,14 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   const sw = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(sw <= 400, 'Keine horizontale Scrollbar bei 400 px (' + sw + ')');
   await p.screenshot({ path: path.join(OUT, 's_mobile.png') });
+  // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
+  await p.waitForTimeout(900);
+  const p2 = await p.context().newPage(); p2.on('pageerror', e => errs.push(e.message));
+  await p2.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#einstellungen'); await p2.waitForTimeout(400);
+  const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.tt.length, m.S.cls.kl8.off.length, document.getElementById('banner').dataset.kind]; });
+  ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local', 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
+  await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
+  ok(await p2.evaluate(() => window.__mp.S.cls.kl8.tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
   ok(errs.length === 0, 'Keine Fehler in der Konsole ' + JSON.stringify(errs));
   await b.close();
 })();

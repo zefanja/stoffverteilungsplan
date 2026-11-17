@@ -5,6 +5,7 @@ Stoffverteilung über das Schuljahr, eine „Heute“-Ansicht mit dem aktuellen 
 Learning Engine, die mit FSRS plant, welche Atome heute wiederholt werden.
 
 Veröffentlicht als Claude-Artefakt: https://claude.ai/artifact/QTM6gwAywgmNziMxYMs9zB
+und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 
 ## Aufbau
 
@@ -18,6 +19,7 @@ Veröffentlicht als Claude-Artefakt: https://claude.ai/artifact/QTM6gwAywgmNziMx
 | `src/build_data.py` | Baut `dist/data.js` und gleicht die Puffer an die Stundenpläne an |
 | `src/fetch_ferien.py` | Lädt Schulferien und Feiertage Sachsen von openholidaysapi.org nach `src/ferien_sn.json` |
 | `src/test.js` | Headless-Test mit Playwright (Ansichten, Aktionen, FSRS) |
+| `.github/workflows/pages.yml` | Veröffentlicht `dist/` bei jedem Push auf `main` über GitHub Pages |
 | `in/` | Excel-Stoffverteilungspläne Klasse 6 und 8 als Datenquelle |
 
 ## Daten neu erzeugen
@@ -50,3 +52,12 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre, Engine-Einstellungen) und je Schuljahr
 `jahr-<id>/kl6`, `jahr-<id>/kl8`, `jahr-<id>/engine-kl6`, `jahr-<id>/engine-kl8`. Das aus der Zeit vor den Schuljahren übernommene
 Jahr 2026/27 nutzt weiter `planner/kl6`, `planner/kl8`, `engine/kl6`, `engine/kl8`; alte Stundenpläne werden beim Laden in Zeiträume umgewandelt.
+
+Auf GitHub Pages gibt es die Datenbank des Artefakts nicht. Dort speichert die App im Browser (`localStorage`, gleiche Pfade
+mit Präfix `mp-doc:`). Diese Daten gelten nur für diesen Browser; zum Übertragen dient Einstellungen → Sicherung.
+
+## GitHub Pages einrichten
+
+Einmalig im Repository unter Settings → Pages bei „Build and deployment“ als Quelle **GitHub Actions** wählen.
+Danach veröffentlicht der Workflow `GitHub Pages` den Ordner `dist/` bei jedem Push auf `main`, der `dist/` ändert,
+oder von Hand unter Actions → GitHub Pages → Run workflow.
