@@ -1,6 +1,7 @@
 import json, datetime as dt, sys
 sys.path.insert(0,'src')
 from atoms import ATOMS
+from atoms_levels import LEVELS
 P=json.load(open('src/plan.json'))
 CAL=dict(start="2026-08-17",end="2027-07-09",
  holidays=[dict(name="Herbstferien",frm="2026-10-12",to="2026-10-24"),dict(name="Weihnachtsferien",frm="2026-12-23",to="2027-01-02"),
@@ -36,6 +37,9 @@ for k in META:
     for code,u in c['units'].items():
         u=dict(u); u.setdefault('stunden',[])
         u['atoms']=[dict(id=f"{code}.{i+1}",l=a[0],t=a[1],q=a[2],a=a[3]) for i,a in enumerate(ATOMS[k].get(code,[]))]
+        lv=LEVELS.get(k,{}).get(code,[])
+        assert len(lv) in (0,len(u['atoms'])),(k,code,len(lv),len(u['atoms']))
+        for a,x in zip(u['atoms'],lv): a.update(q2=x[0],a2=x[1],q3=x[2],a3=x[3])
         for a in u['atoms']: assert 1<=a['l']<=max(1,len(u['stunden'])),(code,a)
         units[code]=u
     seq=[list(r) for r in c['seq']]

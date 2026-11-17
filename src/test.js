@@ -1,14 +1,30 @@
 // Headless-Test: node src/test.js [ausgabeordner-für-screenshots]
 const { chromium } = require('playwright');
 const path = require('path');
+const http = require('http');
+const fs = require('fs');
 const ROOT = path.resolve(__dirname, '..');
 const OUT = process.argv[2] || path.join(ROOT, 'docs', 'screenshots');
 const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 1; } else console.log('ok  ', msg); };
+/* Die App wird über einen lokalen Webserver geladen statt über file://: Chromium hält localStorage bei
+   file:// nicht zuverlässig (gelegentlich leer nach Neuladen), echte Nutzer verwenden https. */
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
+function serve(dir) {
+  return new Promise(res => {
+    const srv = http.createServer((req, rsp) => {
+      const f = path.join(dir, decodeURIComponent(req.url.split('?')[0].split('#')[0]).replace(/^\/+/, '') || 'index.html');
+      if (!f.startsWith(dir) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { rsp.writeHead(404); rsp.end(); return; }
+      rsp.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(rsp);
+    });
+    srv.listen(0, '127.0.0.1', () => res(srv));
+  });
+}
 (async () => {
+  const srv = await serve(path.join(ROOT, 'dist')), BASE = `http://127.0.0.1:${srv.address().port}/`;
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
-  await p.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#heute'); await p.waitForTimeout(500);
+  // neuer Browser-Kontext = leerer Speicher; ein Neuladen später prüft, ob alles erhalten bleibt
+  await p.goto(BASE + 'index.html#heute'); await p.waitForTimeout(500);
   await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
   await p.waitForTimeout(200);
 
@@ -20,11 +36,15 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   ok(r.kl6.cap.A === r.kl6.planned.A, 'Kl. 6 geht auf');
   ok(r.kl8.cap.A === r.kl8.planned.A && r.kl8.cap.SOL > 0, 'Kl. 8 geht auf, SOL ab 26.10.');
 
+  // Design: Seitenleiste mit Logo, Kacheln, Lernübersicht
+  ok((await p.innerText('#nav')).includes('Lernübersicht') && !(await p.innerText('#nav')).includes('Engine'), 'Navigation heißt „Lernübersicht“');
+  ok(await p.evaluate(() => [...document.querySelectorAll('.side img')].every(i => i.complete && i.naturalWidth > 0)), 'Logo und Felszeichen werden geladen');
+  ok((await p.$$('.tiles .tile')).length === 4, 'Heute zeigt vier Kennzahl-Kacheln');
   // Klassen-Umschalter oben
   ok((await p.$$('.tcard')).length === 1, 'Heute zeigt nur die gewählte Klasse');
   await p.click('#ctx [data-k="kl8"]'); await p.waitForTimeout(100);
   ok((await p.innerText('.tcard h2')) === 'Klasse 8', 'Umschalter: Heute zeigt Klasse 8');
-  for (const h of ['plan', 'sequenz', 'einheiten', 'engine', 'einstellungen']) {
+  for (const h of ['plan', 'sequenz', 'einheiten', 'lernuebersicht', 'einstellungen']) {
     await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(150);
     ok((await p.innerText('main')).includes('Klasse 8'), `${h} folgt der gewählten Klasse`);
   }
@@ -41,6 +61,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(100);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
   ok((await p.$$('.tcard')).length === 2, 'Heute: „Alle Klassen“ zeigt beide');
+  ok((await p.$$('.tiles')).length === 0, 'Bei „Alle meine Klassen“ keine Kacheln');
   await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
 
   // Stundenplan-Zeiträume
@@ -51,7 +72,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.fill('#ttnewfrm', '2027-02-22'); await p.click('[data-act="ttnew"]'); await p.waitForTimeout(100);
   ok((await p.$$('.ttv')).length === 3, 'Neuer Zeitraum ab 22.02.2027 angelegt');
   // im neuen Zeitraum eine Stunde löschen -> weniger Kapazität
-  const vid = await p.evaluate(() => window.__mp.S.cls.kl8.tt.find(v => v.frm === '2027-02-22').id);
+  const vid = await p.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.find(v => v.frm === '2027-02-22').id);
   await p.click(`[data-act="tldel"][data-v="${vid}"][data-i="0"]`); await p.waitForTimeout(100);
   const capAfter = await p.evaluate(() => window.__mp.schedule('kl8').cap.A);
   ok(capAfter < capBefore, `Kapazität sinkt nach Stundenplanwechsel (${capBefore} -> ${capAfter})`);
@@ -84,7 +105,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   // Neues Schuljahr anlegen
   await p.selectOption('#newyear', '2027-28'); await p.click('[data-act="yearadd"]'); await p.waitForTimeout(300);
   const ny = await p.evaluate(() => { const m = window.__mp; const Y = m.cal(); const sc = m.schedule('kl8');
-    return { id: Y.id, start: Y.start, end: Y.end, hol: Y.holidays.length, tt: m.S.cls.kl8.tt.map(v => v.frm + ':' + v.lessons.length), off: m.S.cls.kl8.off.length, cap: sc.cap, planned: sc.planned, years: m.S.settings.years.map(y => y.id) }; });
+    return { id: Y.id, start: Y.start, end: Y.end, hol: Y.holidays.length, tt: m.S.cls.kl8.groups[0].tt.map(v => v.frm + ':' + v.lessons.length), off: m.S.cls.kl8.groups[0].off.length, cap: sc.cap, planned: sc.planned, years: m.S.settings.years.map(y => y.id) }; });
   console.log('     ', JSON.stringify(ny));
   ok(ny.id === '2027-28' && ny.start === '2027-08-23' && ny.end === '2028-07-21', 'Schuljahr 2027/28 mit Ferien Sachsen angelegt');
   ok(ny.tt.length === 1 && ny.tt[0] === '2027-08-23:3' && ny.off === 0, 'Letzter Stundenplan übernommen, ab Schuljahresbeginn');
@@ -99,24 +120,116 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.click('[data-act="ferien"]'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 3), 'Ferien Sachsen importieren füllt Ferien und freie Tage');
 
-  for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'engine', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h}.png`) }); }
+  for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'lernuebersicht', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h === 'lernuebersicht' ? 'engine' : h}.png`) }); }
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(200);
-  const before = await p.evaluate(() => window.__mp.S.cls.kl8.seq.map(r => r.hours).join(','));
+  const before = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj));
   const btn = await p.$('[data-act="addhour"]'); if (btn) { await btn.click(); await p.waitForTimeout(100); }
-  const after = await p.evaluate(() => window.__mp.S.cls.kl8.seq.map(r => r.hours).join(','));
+  const after = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj));
   ok(!btn || before !== after, 'Einheit braucht 1 Std. mehr');
   await p.setViewportSize({ width: 400, height: 800 }); await p.waitForTimeout(200);
   const sw = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(sw <= 400, 'Keine horizontale Scrollbar bei 400 px (' + sw + ')');
   await p.screenshot({ path: path.join(OUT, 's_mobile.png') });
+  // Parallelklassen: gemeinsame Sequenz, eigener Stundenplan, eigene Abweichungen und eigener Lernstand
+  await p.setViewportSize({ width: 1280, height: 900 });
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.selectOption('[data-act="gcount"][data-k="kl8"]', '2'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.S.cls.kl8.groups.length === 2), 'Parallelklasse 8b angelegt');
+  await p.fill('[data-act="gname"][data-g="kl8.a"]', '8a'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.a"]', 'change');
+  await p.fill('[data-act="gname"][data-g="kl8.b"]', '8b'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.b"]', 'change'); await p.waitForTimeout(100);
+  ok((await p.innerText('#ctx')).includes('8a') && (await p.innerText('#ctx')).includes('8b'), 'Leiste zeigt 8a | 8b');
+  ok(await p.evaluate(() => window.__mp.UI.gid.kl8 === 'b'), 'Neue Parallelklasse ist gewählt');
+  await p.screenshot({ path: path.join(OUT, 's_parallel.png'), fullPage: true });
+  // Stundenplan nur für 8b ändern: erste Stunde des letzten Zeitraums löschen
+  const vb = await p.evaluate(() => { const g = window.__mp.S.cls.kl8.groups[1]; return g.tt[g.tt.length - 1].id; });
+  await p.click(`[data-act="tldel"][data-v="${vb}"][data-i="0"]`); await p.waitForTimeout(100);
+  const caps = await p.evaluate(() => [window.__mp.schedule('kl8.a').cap.A, window.__mp.schedule('kl8.b').cap.A, window.__mp.S.cls.kl8.groups[0].tt.map(v => v.lessons.length).join()]);
+  ok(caps[1] < caps[0], `Eigener Stundenplan: 8b hat weniger Stunden (${caps[0]} / ${caps[1]}), 8a unverändert (${caps[2]})`);
+  // Sequenz einmal ändern -> beide folgen
+  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(150);
+  const pl0 = await p.evaluate(() => [window.__mp.schedule('kl8.a').planned.A, window.__mp.schedule('kl8.b').planned.A]);
+  await p.click('[data-act="hrs"][data-i="1"][data-n="1"]'); await p.waitForTimeout(100);
+  const pl1 = await p.evaluate(() => [window.__mp.schedule('kl8.a').planned.A, window.__mp.schedule('kl8.b').planned.A]);
+  ok(pl1[0] === pl0[0] + 1 && pl1[1] === pl0[1] + 1, 'Gemeinsame Sequenz: +1 Std. wirkt in 8a und 8b');
+  // Mehrbedarf nur in 8b
+  await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const hb = await p.$('[data-act="addhour"]');
+  if (hb) { await hb.click(); await p.waitForTimeout(100); }
+  const adj = await p.evaluate(() => [JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj), Object.keys(window.__mp.S.cls.kl8.groups[1].adj).length]);
+  ok(!hb || adj[1] > 0, 'Mehrbedarf in 8b wird als Abweichung von 8b gespeichert');
+  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(150);
+  ok(!hb || (await p.innerText('main')).includes('8b: +1'), 'Sequenz zeigt die Abweichung „8b: +1“');
+  // Lernstand je Parallelklasse
+  await p.evaluate(() => { const m = window.__mp; m.UI.date = '2027-01-20'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const rv = await p.$('[data-act="reveal"]');
+  if (rv) { await rv.click(); await p.waitForTimeout(80); await p.click('[data-act="rate"][data-g="3"]'); await p.waitForTimeout(80); }
+  const eng = await p.evaluate(() => [Object.keys(window.__mp.S.eng['kl8.a'].cards).length, Object.keys(window.__mp.S.eng['kl8.b'].cards).length]);
+  ok(!rv || eng[1] > eng[0], `Bewertung landet nur im Lernstand von 8b (${eng[0]} / ${eng[1]})`);
+  await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
+  ok((await p.$$('.tcard')).length === 3, 'Alle meine Klassen: Klasse 6, 8a, 8b');
+  await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
+  await p.click('#ctx [data-act="grp"][data-g="kl8.a"]'); await p.waitForTimeout(100);
+  ok((await p.innerText('.tcard h2')) === '8a', 'Umschalten auf 8a');
+  // Meine Klassen: Klasse 6 abwählen
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.uncheck('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => JSON.stringify(window.__mp.cal().classes) === '["kl8"]'), 'Meine Klassen 2026/27: nur Klasse 8');
+  ok(await p.$eval('#ctx [title*="nicht zu Ihren Klassen"]', e => e.disabled && e.textContent === '6'), 'Leiste: Klasse 6 ausgegraut');
+  await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(150);
+  await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
+  ok(JSON.stringify(await p.$$eval('.tcard h2', hs => hs.map(h => h.textContent))) === JSON.stringify(['GYM · 8a', 'GYM · 8b']), 'Alle meine Klassen: nur 8a und 8b');
+  await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.selectOption('[data-act="gcount"][data-k="kl8"]', '1'); await p.waitForTimeout(100);
+  ok(await p.$('[data-act="gdel"][data-k="kl8"]') !== null, 'Zurück auf 1 Klasse fragt nach');
+  await p.click('[data-act="confirm"][data-v=""]'); await p.waitForTimeout(100);
+  await p.check('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.S.cls.kl8.groups.length === 2 && window.__mp.cal().classes.length === 2), 'Klasse 6 wieder dabei, 8b bleibt erhalten');
+  await p.screenshot({ path: path.join(OUT, 's_meineklassen.png'), fullPage: true });
+
+  await p.waitForTimeout(900);
+
+  // Quiz im Vollbild, am Ende zurück
+  await p.evaluate(() => { window.__mp.UI.date = '2027-01-20'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const qb = await p.$('[data-act="quiz"]');
+  if (qb) {
+    await qb.click(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.fullscreenElement && document.fullscreenElement.id === 'overlay'), 'Quiz öffnet im Vollbild');
+    for (let i = 0; i < 20; i++) {
+      if (await p.$('.ov-card.quiz h2')) break;
+      await p.keyboard.press('Space'); await p.waitForTimeout(60); await p.keyboard.press('3'); await p.waitForTimeout(120);
+    }
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => !document.fullscreenElement) && (await p.innerText('#overlay')).includes('Fertig'), 'Am Ende des Quiz zurück im normalen Modus');
+    await p.click('#overlay [data-act="ovclose"]'); await p.waitForTimeout(100);
+    // Abbrechen mitten im Quiz verlässt das Vollbild ebenfalls
+    const qb2 = await p.$('[data-act="quiz"]');
+    if (qb2) { await qb2.click(); await p.waitForTimeout(300); await p.click('#overlay [data-act="ovclose"]'); await p.waitForTimeout(300);
+      ok(await p.evaluate(() => !document.fullscreenElement && document.getElementById('overlay').hidden), 'Quiz schließen verlässt das Vollbild'); }
+  } else ok(false, 'Quiz-Knopf fehlt');
+
+  // Schwierigkeitsstufen nach Stabilität
+  const lv = await p.evaluate(() => {
+    const m = window.__mp, g = 'kl8.a', d = '2027-01-20', es0 = m.engineState(g, d), x0 = es0.list.find(x => x.a.q2);
+    if (!x0) return ['kein Atom'];
+    const id = x0.a.id, E = m.S.eng[g], keep = E.cards[id];
+    const t = c => { if (c) E.cards[id] = c; else delete E.cards[id]; m.S.cls.kl8.atoms = Object.assign({}, m.S.cls.kl8.atoms); window.__mp.touch && 0; return null; };
+    const at = (c) => { t(c); const L = m.__lv(g, d, id); return L; };
+    const r = [at(null), at({ s: 10, d: 5, reps: 3, lapses: 0, last: '2027-01-15', due: '2027-01-25' }), at({ s: 40, d: 5, reps: 5, lapses: 0, last: '2027-01-18', due: '2027-02-28' }), at({ s: 40, d: 5, reps: 5, lapses: 1, last: '2027-01-18', due: '2027-02-28', lastG: 1 })];
+    t(keep); return r;
+  });
+  ok(JSON.stringify(lv.map(x => x && x.l)) === JSON.stringify([1, 2, 3, 1]), 'Stufe nach Stabilität: neu 1, 10 Tage 2, 40 Tage 3, nach „Nochmal“ 1 ' + JSON.stringify(lv.map(x => x && x.q)));
+
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
-  const p2 = await p.context().newPage(); p2.on('pageerror', e => errs.push(e.message));
-  await p2.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#einstellungen'); await p2.waitForTimeout(400);
-  const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.tt.length, m.S.cls.kl8.off.length, document.getElementById('banner').dataset.kind]; });
-  ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local', 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
+  // Neuladen im selben Tab
+  const p2 = p;
+  await p.reload(); await p.waitForTimeout(400);
+  await p.evaluate(() => { location.hash = 'einstellungen'; }); await p.waitForTimeout(200);
+  const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.groups[0].tt.length, m.S.cls.kl8.groups[0].off.length, document.getElementById('banner').dataset.kind, m.S.cls.kl8.groups.length]; });
+  ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local' && kept[4] === 2, 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
   await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
-  ok(await p2.evaluate(() => window.__mp.S.cls.kl8.tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
+  ok(await p2.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
   ok(errs.length === 0, 'Keine Fehler in der Konsole ' + JSON.stringify(errs));
-  await b.close();
+  await b.close(); srv.close();
 })();
