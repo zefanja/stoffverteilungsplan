@@ -376,6 +376,25 @@ function serve(dir) {
   const ln2 = await p.evaluate(() => { const C = window.__mp.S.cls.kl8; return { n: C.seq.length, ln: Object.keys(C.ln || {}).length, hash: location.hash }; });
   await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
   ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#sequenz', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
+  // Leistungsnachweis per Datum festlegen: Hauptstunde am Termin, der übrige Plan läuft darum herum; lösen gibt ihn frei
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  const pin0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA1'); return { date: x.date, row: x.row, t5: M.schedule('kl8.a').rows.find(r => r.code === 'T5').start }; });
+  const pinSel = `input[data-act="lndate"][data-row="${pin0.row}"]`;
+  await p.fill(pinSel, '2026-09-22'); await p.dispatchEvent(pinSel, 'change'); await p.waitForTimeout(250);
+  const pin1 = await p.evaluate(row => { const M = window.__mp, sc = M.schedule('kl8.a'), x = M.lnDates('kl8.a').find(y => y.row === row), r = sc.rows.find(y => y.id === row);
+    const gaps = sc.slots.filter(s => s.track === 'A' && !s.cancelled && s.date <= '2026-12-01' && !s.lesson).length;
+    return { date: x.date, pinned: x.pinned, slots: r.slots.map(s => s.date), t5: sc.rows.find(y => y.code === 'T5').start, gaps, seqPos: M.S.cls.kl8.seq.findIndex(y => y.id === row) }; }, pin0.row);
+  // Tag ohne Mathestunde: nächste Stunde
+  await p.fill(pinSel, '2026-09-23'); await p.dispatchEvent(pinSel, 'change'); await p.waitForTimeout(250);
+  const pin2 = await p.evaluate(row => window.__mp.lnDates('kl8.a').find(y => y.row === row).date, pin0.row);
+  await p.click(`[data-act="lnunpin"][data-row="${pin0.row}"]`); await p.waitForTimeout(250);
+  const pin3 = await p.evaluate(row => { const x = window.__mp.lnDates('kl8.a').find(y => y.row === row); return [x.date, x.pinned]; }, pin0.row);
+  ok(pin1.date === '2026-09-22' && pin1.pinned === '2026-09-22' && pin1.slots.length === 2 && pin1.t5 > pin0.t5 && pin1.gaps === 0 && pin2 > '2026-09-23' && !!pin3[0] && pin3[0] < pin0.date && !pin3[1],
+    'Leistungsnachweis per Datum: KA1 am 22.09., Plan läuft darum herum ohne Lücken, Tag ohne Stunde → nächste Stunde, lösen gibt den Termin frei ' + JSON.stringify([pin0, pin1, pin2, pin3]));
+  // Kontrolle per Datum verlegen
+  const chkMove = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; C.checks = [{ id: 'cx', kind: 'kk', title: 'Probe', code: 'T2', n: 1 }]; M.touch();
+    M.setCheckDate('kl8.a', 'cx', '2026-10-01'); const x = M.lnDates('kl8.a').find(y => y.id === 'cx'); const pd = M.schedule('kl8.a').slots.filter(s => s.date >= '2026-10-01' && s.lesson && s.track !== 'SOL')[0].date; const r = [x.date, x.code, x.n, pd]; C.checks = []; M.touch(); return r; });
+  ok(chkMove[0] === chkMove[3] && !!chkMove[1], 'Kontrolle per Datum in die Stunde dieses Tages verlegt ' + JSON.stringify(chkMove));
 
   // Lehrpläne Sachsen: alle Klassen GYM 5–12 und OS 5–10, OS ab 7 mit HS/RS, GYM 11/12 mit GK/LK
   const lp = await p.evaluate(() => { const C = window.PLAN_DATA.classes, k = Object.keys(C);
