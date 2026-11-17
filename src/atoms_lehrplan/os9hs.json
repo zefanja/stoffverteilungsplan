@@ -1,0 +1,44 @@
+{
+"1.1": [
+ [1, "Satz des Pythagoras: a² + b² = c² (c ist die Hypotenuse)", "Katheten 6 cm und 8 cm. Hypotenuse?", "10 cm", "Hypotenuse 10 cm, eine Kathete 6 cm. Andere Kathete?", "8 cm", "Wie lang ist die Diagonale eines Rechtecks 12 cm × 5 cm?", "13 cm"],
+ [5, "Hypotenuse und Katheten erkennen", "Welche Seite liegt dem rechten Winkel gegenüber?", "die Hypotenuse", "Ist die Hypotenuse immer die längste Seite?", "ja", "In einem Dreieck mit γ = 90°: welche Seiten sind die Katheten?", "a und b"],
+ [9, "Sinus: sin α = Gegenkathete : Hypotenuse", "sin 30° = ?", "0,5", "Gegenkathete 3 cm, Hypotenuse 6 cm. Winkel α?", "30°", "Hypotenuse 10 cm, α = 30°. Gegenkathete?", "5 cm"],
+ [13, "Winkel mit dem Taschenrechner bestimmen", "Welche Taste liefert den Winkel aus dem Sinuswert?", "sin⁻¹", "sin α = 0,8. α ungefähr?", "53°", "Auf welchen Modus muss der Taschenrechner eingestellt sein?", "Gradmaß (DEG)"]],
+"1.2": [
+ [1, "Umkehrung: Gilt a² + b² = c², ist das Dreieck rechtwinklig", "Ist ein Dreieck mit 3 cm, 4 cm, 5 cm rechtwinklig?", "ja, 9 + 16 = 25", "Ist ein Dreieck mit 5 cm, 6 cm, 7 cm rechtwinklig?", "nein, 25 + 36 ≠ 49", "Ist ein Dreieck mit 9 cm, 12 cm, 15 cm rechtwinklig?", "ja, 81 + 144 = 225"],
+ [4, "Rechte Winkel in der Praxis prüfen", "Wie prüfen Handwerker einen rechten Winkel mit einem Seil?", "Knoten im Verhältnis 3 : 4 : 5", "Ein Maurer misst 60 cm, 80 cm und 1 m. Ist die Ecke rechtwinklig?", "ja", "Warum genügt es, die Seiten zu messen?", "nach der Umkehrung des Pythagoras folgt der rechte Winkel"],
+ [6, "Satz und Umkehrung unterscheiden", "Formuliere den Satz des Pythagoras als Wenn-dann-Satz.", "Wenn ein Dreieck rechtwinklig ist, dann gilt a² + b² = c².", "Formuliere die Umkehrung.", "Wenn a² + b² = c² gilt, dann ist das Dreieck rechtwinklig.", "Wofür benutzt man die Umkehrung?", "um zu prüfen, ob ein Winkel ein rechter ist"]],
+"1.3": [
+ [1, "Längen in Sachaufgaben mit Pythagoras", "Eine 5 m lange Leiter steht 3 m von der Wand. Wie hoch reicht sie?", "4 m", "Ein Fernseher hat 80 cm Breite und 60 cm Höhe. Bildschirmdiagonale?", "100 cm", "Wie lang ist die Strecke quer über ein Fußballfeld 100 m × 60 m?", "etwa 117 m"],
+ [3, "Winkel in Sachaufgaben mit dem Sinus", "Eine Rampe ist 5 m lang und 1 m hoch. Steigungswinkel?", "etwa 11,5°", "Ein Drachen hängt an 50 m Schnur unter 40°. Wie hoch fliegt er?", "etwa 32 m", "Warum zeichnet man vorher eine Skizze?", "um das rechtwinklige Dreieck zu erkennen"],
+ [5, "Rechtwinklige Dreiecke in Figuren finden", "Wo steckt im gleichschenkligen Dreieck ein rechtwinkliges Dreieck?", "zwischen Höhe und halber Grundseite", "Höhe eines gleichseitigen Dreiecks mit 6 cm Seitenlänge?", "etwa 5,2 cm", "Wie berechnest du die Raumdiagonale eines Quaders?", "zweimal Pythagoras"]],
+"2.1": [
+ [1, "Pyramide und Kegel skizzieren", "Welche Form hat die Grundfläche eines Kegels?", "Kreis", "Wie viele Flächen hat eine quadratische Pyramide?", "5", "Wie sieht ein Kegel von der Seite aus?", "wie ein Dreieck"],
+ [4, "Netz einer Pyramide mit rechteckiger Grundfläche", "Woraus besteht das Netz einer quadratischen Pyramide?", "ein Quadrat und vier Dreiecke", "Welche Dreiecke sind im Netz einer rechteckigen Pyramide gleich?", "je zwei gegenüberliegende", "Wie viele Dreiecke hat das Netz einer sechsseitigen Pyramide?", "6"],
+ [7, "Schrägbild und Ansichten der Pyramide", "Wie zeichnet man die Spitze im Schrägbild?", "über dem Mittelpunkt der Grundfläche", "Wie sieht eine quadratische Pyramide von oben aus?", "Quadrat mit Diagonalen", "Wie sieht sie von vorn aus?", "ein Dreieck"],
+ [9, "Körper aus Ansichten erkennen", "Von oben ein Kreis, von vorn ein Dreieck: welcher Körper?", "ein Kegel", "Von oben ein Quadrat mit Diagonalen, von vorn ein Dreieck?", "eine quadratische Pyramide", "Von oben ein Kreis, von vorn ein Rechteck?", "ein Zylinder"]],
+"2.2": [
+ [1, "Seitenhöhe der Pyramide mit Pythagoras", "Quadratische Pyramide a = 6 cm, h = 4 cm. Seitenhöhe?", "5 cm", "Was ist die Seitenhöhe?", "die Höhe einer dreieckigen Seitenfläche", "Warum braucht man die Seitenhöhe?", "für die Mantelfläche"],
+ [4, "Oberfläche der Pyramide: O = G + M", "Grundfläche einer quadratischen Pyramide mit a = 6 cm?", "36 cm²", "Mantelfläche bei a = 6 cm und Seitenhöhe 5 cm?", "60 cm²", "Oberfläche dieser Pyramide?", "96 cm²"],
+ [8, "Volumen von Pyramide und Kegel: V = 1/3 · G · h", "Pyramide mit G = 36 cm², h = 5 cm. Volumen?", "60 cm³", "Kegel mit r = 3 cm, h = 4 cm. Volumen?", "etwa 37,7 cm³", "Wie viele Pyramiden füllen ein Prisma mit gleicher Grundfläche und Höhe?", "drei"],
+ [11, "Masse mit Dichte berechnen", "Ein Körper hat 100 cm³ und die Dichte 2,5 g/cm³. Masse?", "250 g", "Ein Sandhaufen (Kegel) hat 2 m³, Sand wiegt 1,5 t pro m³. Masse?", "3 t", "Welche Einheit hat die Dichte?", "z. B. g/cm³"]],
+"2.3": [
+ [1, "Zusammengesetzte Körper zerlegen", "Ein Turm aus Zylinder und Kegel: Wie berechnest du das Volumen?", "Volumen von Zylinder und Kegel addieren", "Ein Haus aus Quader und Pyramide: was entfällt bei der Oberfläche?", "die gemeinsame Fläche", "Würfel (a = 4 cm) mit aufgesetzter Pyramide (h = 3 cm). Volumen?", "64 + 16 = 80 cm³"],
+ [3, "Zusammengesetzte Körper darstellen", "Wie sieht ein Bleistift von der Seite aus?", "Rechteck mit Dreieck", "Womit beginnst du das Schrägbild eines zusammengesetzten Körpers?", "mit dem unteren Körper", "Welche Kanten sind beim zusammengesetzten Körper verdeckt?", "die hinteren und die innen liegenden"],
+ [4, "Materialbedarf bei zusammengesetzten Körpern", "Wie viel Blech braucht ein Trichter (Kegelmantel) mit r = 5 cm und Mantellinie 13 cm?", "etwa 204 cm²", "Warum rechnet man mit Zuschlag für Verschnitt?", "Material geht beim Zuschneiden verloren", "Ein Silo besteht aus Zylinder und Kegel. Was berechnest du für das Fassungsvermögen?", "die Volumina"]],
+"3.1": [
+ [1, "Funktion: jedem x genau ein y", "Ist Person → Körpergröße eine Funktion?", "ja", "Ist Zahl → ihr Quadrat eine Funktion?", "ja", "Ist Quadratzahl → Zahl mit diesem Quadrat (4 → 2 und −2) eine Funktion?", "nein"],
+ [4, "Lineare Funktion: y = m · x + n", "Was bedeutet n in y = 2 · x + 3?", "der y-Achsenabschnitt (3)", "Was bedeutet m in y = 2 · x + 3?", "der Anstieg (2)", "Taxi: 3 € Grundgebühr, 2 € pro km. Gleichung?", "y = 2 · x + 3"],
+ [8, "Darstellungen: Wertetabelle, Graph, Gleichung", "Wertetabelle von y = 2 · x − 1 für x = 0, 1, 2?", "−1, 1, 3", "Wie zeichnest du y = x + 2?", "Punkt (0 | 2), dann 1 nach rechts, 1 nach oben", "Gleichung der Geraden durch (0 | 1) mit Anstieg 3?", "y = 3 · x + 1"],
+ [12, "Schnittpunkt zweier Geraden zeichnerisch", "Was bedeutet der Schnittpunkt zweier Tarifgeraden?", "beide Tarife kosten gleich viel", "Schnittpunkt von y = x und y = −x + 4 (zeichnerisch)?", "(2 | 2)", "Haben parallele Geraden einen Schnittpunkt?", "nein"]],
+"3.2": [
+ [1, "Schnittpunkt rechnerisch: Gleichsetzen", "y = 2 · x und y = x + 3. Schnittpunkt?", "(3 | 6)", "y = x + 1 und y = −x + 5. Schnittpunkt?", "(2 | 3)", "Tarif A: y = 0,1 · x + 10, Tarif B: y = 0,3 · x. Ab wie vielen Minuten ist A günstiger?", "ab mehr als 50 Minuten"],
+ [4, "Graph von y = x² und y = a · x²", "Wie heißt der Graph von y = x²?", "Normalparabel", "Wie verändert a = 2 die Parabel y = a · x²?", "sie wird schmaler", "Was bewirkt ein negatives a?", "die Parabel ist nach unten geöffnet"],
+ [7, "Graph von y = 1/x", "Wie heißt der Graph von y = 1/x?", "Hyperbel", "Ist y = 1/x für x = 0 definiert?", "nein", "Welche Zuordnung beschreibt y = 1/x?", "eine indirekt proportionale"],
+ [9, "Funktionstypen unterscheiden", "Welcher Graph ist eine Gerade: y = 2 · x oder y = x²?", "y = 2 · x", "Welcher Graph hat zwei Äste?", "y = 1/x", "Welche Funktion passt zu „doppelte Seite, vierfache Fläche“?", "y = x²"]],
+"4": [
+ [1, "Kalkulationen im Alltag", "Ein Angebot: 3 Pizzen für 18 €, einzeln 7 €. Ersparnis bei 3 Pizzen?", "3 €", "Wie viel kostet eine Fahrt von 250 km bei 6 l pro 100 km und 1,80 € pro Liter?", "27 €", "Lohnt sich eine Monatskarte für 50 €, wenn eine Einzelfahrt 2,80 € kostet und du 20-mal fährst?", "ja, 56 € statt 50 €"],
+ [6, "Materialbedarf in ebener und räumlicher Geometrie", "Wie viel Farbe braucht man für eine Wand 5 m × 2,5 m, wenn 1 l für 10 m² reicht?", "1,25 l", "Wie viele Platten 50 cm × 50 cm braucht eine Terrasse 4 m × 3 m?", "48", "Wie viel Erde braucht ein Hochbeet 2 m × 1 m × 0,5 m?", "1 m³"],
+ [12, "Funktionale Zusammenhänge erkennen und nutzen", "Welche Zuordnung beschreibt Benzinmenge → Preis?", "proportional", "Ein Handytarif kostet 5 € Grundgebühr plus 0,09 € pro Minute. Kosten bei 100 Minuten?", "14 €", "Woran erkennst du einen linearen Zusammenhang in einer Tabelle?", "gleiche Zunahme bei gleichen Schritten"],
+ [17, "Daten darstellen und auswerten", "Mittelwert von 12, 15, 18, 15?", "15", "Welches Diagramm zeigt Anteile am Ganzen?", "Kreisdiagramm", "Warum ist eine Umfrage unter 5 Personen wenig aussagekräftig?", "zu kleine Stichprobe"]]
+}

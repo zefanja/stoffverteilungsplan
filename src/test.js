@@ -259,6 +259,12 @@ function serve(dir) {
       g11: k.filter(x => C[x].type === 'gym' && C[x].grade === 11).map(x => C[x].variant).join(','), sum9: sum('gym9'), sum8hs: sum('os8hs'), zrw8hs: Object.values(C.os8hs.zrw).reduce((a, x) => a + x, 0) }; });
   ok(lp.n === 19 && lp.os7 === 'HS,RS' && lp.os10 === 'RS' && lp.g11 === 'GK,LK', 'Lehrpläne: 19 Klassen, OS 7 HS/RS, OS 10 nur RS, GYM 11 GK/LK ' + JSON.stringify(lp));
   ok(lp.sum9 === 104 && lp.sum8hs === lp.zrw8hs, 'Sequenzen entsprechen den Zeitrichtwerten (GYM 9: 104 Std.)');
+  const noAtoms = await p.evaluate(() => { const C = window.PLAN_DATA.classes, bad = [];
+    for (const id in C) for (const code in C[id].units) { const u = C[id].units[code];
+      if (u.lb && !/^(W|P|KA|JA|A-KA|B-KA)/.test(code) && !u.atoms.length) bad.push(id + ':' + code);
+      for (const a of u.atoms) if (!a.q || !a.a || !a.q2 || !a.a2 || !a.q3 || !a.a3) bad.push(id + ':' + a.id); }
+    return bad; });
+  ok(noAtoms.length === 0, 'Jede Lehrplan-Einheit hat Atome mit Aufgaben auf drei Stufen ' + JSON.stringify(noAtoms.slice(0, 5)));
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   await p.check('[data-act="mine"][data-k="os7hs"]'); await p.waitForTimeout(100);
   await p.check('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);

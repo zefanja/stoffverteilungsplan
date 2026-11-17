@@ -17,6 +17,7 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 | `dist/data.js` | Erzeugt: Einheiten, Atome, Standard-Sequenzen, Kalender, Stundenpläne |
 | `src/extract.py` | Liest Einheiten und Sequenzen aus den Excel-Stoffverteilungsplänen in `in/` |
 | `src/atoms.py` | Atome je Einheit: Stunde, Atom, Prüffrage, Lösung |
+| `src/atoms_lehrplan/<id>.json` | Atome der Lehrplan-Klassen je Einheit: `[Stunde, Atom, Frage, Lösung, Frage 2, Lösung 2, Frage 3, Lösung 3]` |
 | `src/build_data.py` | Baut `dist/data.js` und gleicht die Puffer an die Stundenpläne an |
 | `src/fetch_lehrplan.js` | Lädt die Mathematik-Lehrpläne GYM/OS aus der Lehrplandatenbank Sachsen (Playwright, Browsersitzung nötig) |
 | `src/parse_lehrplan.py` | Liest die Lehrplan-HTML-Seiten (Lernbereiche, Lernziele, Inhalte, Bemerkungen, MathML-Formeln) nach `src/lehrplan.json` |
@@ -65,6 +66,8 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
 - **Lernübersicht** (früher „Learning Engine“): FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
   Quiz-Ansicht zum Projizieren (öffnet im Vollbild, am Ende oder beim Schließen zurück in den vorherigen Modus; Leertaste zeigt die Lösung, 1–4 bewertet), Altbestand für Atome vor dem Startdatum.
+- **Einrichtungsassistent**: öffnet sich, solange im Schuljahr keine Klassen festgelegt sind (oder über Einstellungen → Schuljahre).
+  Fragt in wenigen Schritten Schulart, Klassen (mit HS/RS bzw. GK/LK und Parallelklassen) und die Unterrichtsstunden je Wochentag ab.
 - **Einstellungen**:
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
   - „Ferien Sachsen importieren“ ersetzt Beginn, Ende, Ferien und freie Tage des angezeigten Jahres
@@ -100,7 +103,8 @@ des Lehrplans; die Zeitrichtwerte werden nach Umfang auf die Einheiten verteilt,
 Nach jedem Lernbereich steht eine Pufferstunde; die Lehrplan-Wochen (25 Pflichtwochen) lassen im Schuljahr Reserve für
 Wahlbereich, Klassenarbeiten und Wiederholung. Wahlbereiche liegen als Einheiten bereit („Zeile hinzufügen“ in der Sequenz).
 Der Standard-Stundenplan ergibt sich aus den Zeitrichtwerten (meist 4, OS 6 und LK 5 Wochenstunden) und ist anzupassen.
-Atome (Wiederholungsaufgaben) gibt es bisher nur für GYM 6 und 8.
+Für jede Lehrplan-Einheit gibt es Atome mit Wiederholungsaufgaben auf drei Stufen (`src/atoms_lehrplan/<id>.json`,
+2–4 Atome je Einheit nach Umfang; Wahlbereiche ohne Atome). Sie sind ein Vorschlag und im Atom-Editor anpassbar.
 
 Aktualisieren:
 
