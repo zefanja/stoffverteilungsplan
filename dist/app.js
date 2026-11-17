@@ -297,7 +297,14 @@ const LV_FIELDS = ["q2", "a2", "q3", "a3"];
 function atomsOf(k, code) {
   const base = (unitOf(k, code) || {}).atoms || [], own = S.cls[ck(k)].atoms[code];
   if (!own) return base;
-  return own.map(a => { const t = base.find(b => b.id === a.id); if (!t || a.q2 !== undefined) return a; const x = Object.assign({}, a); LV_FIELDS.forEach(f => { x[f] = t[f]; }); return x; });
+  return own.map(a => {
+    const t = base.find(b => b.id === a.id); if (!t || (a.q2 !== undefined && a.g !== undefined)) return a;
+    const x = Object.assign({}, a);
+    if (a.q2 === undefined) LV_FIELDS.forEach(f => { x[f] = t[f]; });
+    // Generator aus der Vorlage, solange das gespeicherte Atom noch keine eigene Wahl hat (g: "" = feste Fragen).
+    if (a.g === undefined && t.g) x.g = t.g;
+    return x;
+  });
 }
 function atomMap(k) {
   k = ck(k);
@@ -445,9 +452,74 @@ function levelOf(x) {
   return l;
 }
 function taskOf(a, lvl) {
+  if (hasGen(a)) return { l: lvl, gen: true };
   for (let l = lvl; l >= 2; l--) if (a["q" + l]) return { l, q: a["q" + l], a: a["a" + l] || "" };
   return { l: 1, q: a.q, a: a.a };
 }
+
+/* ---------------- Aufgabengeneratoren (Anemo) ----------------
+   Atome mit Feld g (Generator-ID oder Liste) bekommen bei jeder Wiederholung eine neu erzeugte Aufgabe statt der festen
+   Fragen. Die Stufe der Wiederholung wählt die Schwierigkeit im Generator. Eine erzeugte Aufgabe bleibt für Klasse, Atom,
+   Stufe und Tag stehen, bis „Neue Aufgabe“ gedrückt wird. Ohne generators.js gelten die festen Fragen. */
+const GEN_STAGE = { 1: 0, 2: 1, 3: 3 };
+const genIds = a => (a && a.g ? [].concat(a.g) : []).filter(id => window.ANEMO && window.ANEMO.hasGenerator(id));
+const hasGen = a => genIds(a).length > 0;
+const genLabel = id => (window.ANEMO && window.ANEMO.labels[id]) || id;
+const genCache = new Map(), genSeq = {};
+function genTask(k, a, l) {
+  const ids = genIds(a); if (!ids.length) return null;
+  const sk = k + "|" + a.id, key = [sk, l, UI.date, genSeq[sk] || 0].join("|");
+  if (genCache.has(key)) return genCache.get(key);
+  let t = null;
+  for (let i = 0; i < 12 && !t; i++) {
+    try {
+      const x = window.ANEMO.generateTask(ids[Math.floor(Math.random() * ids.length)], GEN_STAGE[l] ?? 0);
+      // Aufgaben, die nur mit einer Eingabe am Zahlenstrahl funktionieren, lassen sich nicht projizieren.
+      if (x && x.prompt && !(x.inputData && x.inputData.totalSections)) t = x;
+    } catch (e) {}
+  }
+  if (genCache.size > 500) genCache.clear();
+  genCache.set(key, t);
+  return t;
+}
+/* Aufgabe, wie sie angezeigt wird: erzeugt (gen) oder fest (q/a). */
+function shownTask(k, a, lvl) {
+  const t = taskOf(a, lvl);
+  if (!t.gen) return t;
+  const g = genTask(k, a, t.l);
+  if (g) return Object.assign(t, { g });
+  const f = taskOf(Object.assign({}, a, { g: null }), lvl);
+  return f;
+}
+/* Text mit LaTeX in \( … \) (Schreibweise der Generatoren) als HTML; die Formeln setzt typesetMath(). */
+function gx(s) {
+  s = String(s ?? ""); const re = /\\\(([\s\S]+?)\\\)/g; let out = "", i = 0, m;
+  // Text außerhalb von \( … \) läuft durch die Formelerkennung mx(); Bindestrich vor Zahlen wird zum Minuszeichen.
+  const txt = x => x.split("\n").map(l => mx(l.replace(/(^|[\s(=+·:|;,])-(?=[\d(])/g, "$1−"))).join("<br>");
+  while ((m = re.exec(s))) { out += txt(s.slice(i, m.index)) + `<span class="m" data-tex="${esc(m[1])}">${esc(m[1])}</span>`; i = re.lastIndex; }
+  return out + txt(s.slice(i));
+}
+const fracTex = s => { const m = /^(-?)(\d+)\/(\d+)$/.exec(String(s)); return m ? `${m[1]}\\frac{${m[2]}}{${m[3]}}` : String(s); };
+function genAnswer(t) {
+  const ca = String(t.correctAnswer), d = t.inputData || {};
+  if (d.type === "fraction_part") return `\\(${d.missing === "numerator" ? `\\frac{${ca}}{${d.knownDen}}` : `\\frac{${d.knownNum}}{${ca}}`}\\)`;
+  if (d.type === "mixed_part") return `\\(${d.missing === "whole" ? `${ca}\\frac{${d.numerator}}{${d.denominator}}` : ca.includes("/") ? d.whole + fracTex(ca) : `${d.whole}\\frac{${ca}}{${d.denominator}}`}\\)`;
+  if (t.answerType === "fraction") return `\\(${fracTex(ca)}\\)`;
+  if (t.answerType === "integer" || t.answerType === "number") return (t.tolerance ? "≈ " : "") + ca.replace(/^-/, "−").replace(".", ",");
+  return ca;
+}
+function genQHtml(t, show) {
+  return `${gx(t.prompt)}${t.svg ? `<div class="gsvg">${t.svg}</div>` : ""}${t.choices && t.choices.length ? `<div class="gchoices">${t.choices.map(c => `<span class="${show && String(c) === String(t.correctAnswer) ? "ok" : ""}">${gx(c)}</span>`).join("")}</div>` : ""}`;
+}
+function genAHtml(t) {
+  const d = t.inputData || {};
+  const steps = d.steps ? d.steps : d.subSteps ? d.subSteps.map(s => `${s.context ? s.context + "  ·  " : ""}${s.subPrompt} ${s.correctAnswer}`) : [];
+  return `<div class="gans">${gx(genAnswer(t))}</div>${t.why ? `<div class="gwhy">${gx(t.why)}</div>` : ""}${steps.length ? `<ol class="gsteps">${steps.map(s => `<li>${gx(s)}</li>`).join("")}</ol>` : ""}`;
+}
+/* Frage und Lösung als HTML, egal ob erzeugt oder fest. */
+const taskQHtml = (t, show) => t.g ? genQHtml(t.g, show) : mx(t.q);
+const taskAHtml = t => t.g ? genAHtml(t.g) : mx(t.a);
+const genBtn = (k, a, t) => t.g ? `<button type="button" class="linkbtn small" data-act="gnew" data-id="${esc(k + "|" + a.id)}" title="Generator: ${esc(genIds(a).map(genLabel).join(" / "))}">Neue Aufgabe</button>` : "";
 const levelPill = l => `<span class="pill lv lv${l}" title="${esc(LEVELS[l][1])}">${esc(LEVELS[l][0])} · ${esc(LEVELS[l][1])}</span>`;
 
 /* ---------------- persistence ---------------- */
@@ -917,12 +989,12 @@ function slotBlock(k, s) {
     </div></div></div>`;
 }
 function reviewItem(k, x) {
-  const id = x.a.id, open = UI.reveal[k + id], task = taskOf(x.a, levelOf(x));
+  const id = x.a.id, open = UI.reveal[k + id], task = shownTask(k, x.a, levelOf(x));
   const state = x.isNew ? `<span class="pill new">erste Wiederholung</span>` : x.backlog ? `<span class="pill">Altbestand · ${esc(fmt(x.intro))}</span>` : `<span class="pill">${Math.round(x.R * 100)} % Abruf</span>`;
   return `<div class="ritem" style="${sty(lbOf(k, x.code))}">
     <div class="rtop"><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(task.l)}${state}</div>
-    <div class="rq">${mx(task.q)}</div>
-    ${open ? `<div class="ra">${mx(task.a)}</div><div class="rt small muted">${mx(x.a.t)}</div>${rateButtons(k, id)}` : `<button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>`}
+    <div class="rq">${taskQHtml(task, open)}</div>
+    ${open ? `<div class="ra${task.g ? " gen" : ""}">${taskAHtml(task)}</div><div class="rt small muted">${mx(x.a.t)}</div>${rateButtons(k, id)}` : `<div class="racts"><button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>${genBtn(k, x.a, task)}</div>`}
   </div>`;
 }
 const RATES = [[1, "Nochmal", "unter 50 % richtig"], [2, "Schwer", "50–70 %"], [3, "Gut", "70–90 %"], [4, "Leicht", "über 90 %"]];
@@ -1051,8 +1123,20 @@ function viewUnit(kc, idx) {
 function atomRow(k, code, a, card) {
   if (UI.editAtom && UI.editAtom.id === a.id) return `<li>${atomForm(k, code, a, a.id)}</li>`;
   const st = card ? `<span class="pill">${Math.round(Rof(Math.max(0, diffDays(card.last, UI.date)), card.s) * 100)} % · ab ${fmt(card.due)}</span>` : "";
-  return `<li class="atom"><div><b>${mx(a.t)}</b> ${st}<div class="small muted">Check: ${mx(a.q)} → ${mx(a.a)}</div>${a.q2 ? `<div class="small muted">Stufe 2: ${mx(a.q2)} → ${mx(a.a2)}</div>` : ""}${a.q3 ? `<div class="small muted">Stufe 3: ${mx(a.q3)} → ${mx(a.a3)}</div>` : ""}</div>
+  return `<li class="atom"><div><b>${mx(a.t)}</b> ${st}${hasGen(a) ? `<div class="small gline">Aufgabengenerator: ${esc(genIds(a).map(genLabel).join(" / "))}</div>` : ""}<div class="small muted">Check: ${mx(a.q)} → ${mx(a.a)}</div>${a.q2 ? `<div class="small muted">Stufe 2: ${mx(a.q2)} → ${mx(a.a2)}</div>` : ""}${a.q3 ? `<div class="small muted">Stufe 3: ${mx(a.q3)} → ${mx(a.a3)}</div>` : ""}</div>
     <span class="nowrap"><button type="button" class="mini" data-act="atomedit" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom bearbeiten">✎</button><button type="button" class="mini del" data-act="atomdel" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom löschen">×</button></span></li>`;
+}
+/* Auswahl des Generators im Atom-Editor; leer = feste Fragen. Mehrere Generatoren (Liste) bleiben als Kombination wählbar. */
+const GEN_DOMAINS = [["arithmetik", "Arithmetik"], ["algebra", "Algebra"], ["geometrie", "Geometrie"], ["logik", "Logik"]];
+function genSelect(a) {
+  const A = window.ANEMO; if (!A) return `<select name="g" disabled><option>Generatoren nicht geladen</option></select>`;
+  const cur = a.g ? [].concat(a.g).join("|") : "";
+  const combo = cur.includes("|") ? `<option value="${esc(cur)}" selected>Kombination: ${esc([].concat(a.g).map(genLabel).join(" / "))}</option>` : "";
+  const groups = GEN_DOMAINS.map(([p, l]) => {
+    const ids = A.ids.filter(id => id.startsWith(p + "__")).sort((x, y) => genLabel(x).localeCompare(genLabel(y), "de"));
+    return ids.length ? `<optgroup label="${l}">${ids.map(id => `<option value="${id}" ${id === cur ? "selected" : ""}>${esc(genLabel(id))}</option>`).join("")}</optgroup>` : "";
+  }).join("");
+  return `<select name="g"><option value="">Keiner: feste Fragen</option>${combo}${groups}</select>`;
 }
 function atomForm(k, code, a, id) {
   return `<form class="aform" data-code="${esc(code)}" data-id="${esc(id)}">
@@ -1063,6 +1147,7 @@ function atomForm(k, code, a, id) {
     <label>Lösung Stufe 2 <input name="a2" value="${esc(a.a2 || "")}"></label>
     <label>Stufe 3 · Vernetzen <input name="q3" value="${esc(a.q3 || "")}" placeholder="z. B. Welcher Bruch fehlt: □ + 2/9 = 1?"></label>
     <label>Lösung Stufe 3 <input name="a3" value="${esc(a.a3 || "")}"></label>
+    <label>Aufgabengenerator (Wiederholung) ${genSelect(a)}</label>
     <label class="sm">Stunde <input name="l" type="number" min="1" value="${a.l}"></label>
     <div class="acts"><button class="btn" type="submit">Speichern</button><button type="button" class="btn ghost" data-act="atomcancel">Abbrechen</button></div></form>`;
 }
@@ -1309,10 +1394,11 @@ function renderOverlay() {
     el.innerHTML = `<div class="ov-card quiz"><header><h2>Fertig</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header><p class="big">Alle ${q.items.length} Wiederholungen bewertet.</p><button type="button" class="btn" data-act="ovclose">Schließen</button></div>`;
     return;
   }
+  const task = shownTask(q.k, x.a, levelOf(x));
   el.innerHTML = `<div class="ov-card quiz" role="dialog" aria-label="Wiederholung" style="${sty(lbOf(q.k, x.code))}">
-    <header><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(taskOf(x.a, levelOf(x)).l)}<span class="mono muted">${q.i + 1} / ${q.items.length}</span><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
-    <div class="qq">${mx(taskOf(x.a, levelOf(x)).q)}</div>
-    ${q.show ? `<div class="qa">${mx(taskOf(x.a, levelOf(x)).a)}</div><div class="small muted center">${mx(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>`}
+    <header><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(task.l)}<span class="mono muted">${q.i + 1} / ${q.items.length}</span><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
+    <div class="qq${task.g ? " gen" : ""}">${taskQHtml(task, q.show)}</div>
+    ${q.show ? `<div class="qa${task.g ? " gen" : ""}">${taskAHtml(task)}</div><div class="small muted center">${mx(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>${task.g ? `<div class="center">${genBtn(q.k, x.a, task).replace("Neue Aufgabe", "Neue Aufgabe <span class=\"muted\">(N)</span>")}</div>` : ""}`}
   </div>`;
   typesetMath(el);
 }
@@ -1423,6 +1509,7 @@ document.addEventListener("click", ev => {
     case "cancel": cancelSlot(b.dataset.k, b.dataset.key); break;
     case "quiz": { const es = engineState(b.dataset.k, UI.date); UI.quiz = { k: b.dataset.k, items: es.pick.slice(), i: 0, show: false }; renderOverlay(); quizFullscreen(); break; }
     case "qshow": UI.quiz.show = true; renderOverlay(); break;
+    case "gnew": { const sk = b.dataset.id; genSeq[sk] = (genSeq[sk] || 0) + 1; if (UI.quiz) renderOverlay(); else render(); break; }
     case "qrate": { const q = UI.quiz, x = q.items[q.i]; rate(q.k, x.a.id, +b.dataset.g); quizNext(); break; }
     case "solinfo": UI.solOpen = true; renderOverlay(); break;
     case "ovclose": closeOverlay(); break;
@@ -1543,6 +1630,7 @@ document.addEventListener("submit", ev => {
   const k = UI.cls, code = fm.dataset.code, id = fm.dataset.id, fd = new FormData(fm);
   const atom = { id: id === "new" ? code + "." + uid() : id, l: Math.max(1, +fd.get("l") || 1), t: String(fd.get("t")).trim(), q: String(fd.get("q")).trim(), a: String(fd.get("a")).trim() };
   LV_FIELDS.forEach(f => { atom[f] = String(fd.get(f) || "").trim(); });
+  if (fd.has("g")) { const g = String(fd.get("g") || "").split("|").filter(Boolean); atom.g = g.length > 1 ? g : g[0] || ""; }
   if (!atom.t) return;
   const list = clone(atomsOf(k, code)); const j = list.findIndex(x => x.id === id);
   if (j >= 0) list[j] = atom; else list.push(atom);
@@ -1555,12 +1643,13 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Escape") { closeOverlay(); return; }
   if (!UI.quiz) return;
   if (ev.key === " " && !UI.quiz.show) { ev.preventDefault(); UI.quiz.show = true; renderOverlay(); }
+  else if ((ev.key === "n" || ev.key === "N") && !UI.quiz.show) { const x = UI.quiz.items[UI.quiz.i]; if (x && hasGen(x.a)) { const sk = UI.quiz.k + "|" + x.a.id; genSeq[sk] = (genSeq[sk] || 0) + 1; renderOverlay(); } }
   else if (UI.quiz.show && /^[1-4]$/.test(ev.key)) { const q = UI.quiz, x = q.items[q.i]; if (!x) return; rate(q.k, x.a.id, +ev.key); quizNext(); }
 });
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

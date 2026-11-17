@@ -72,6 +72,17 @@ for k,c in build_lehrplan(LP,CAL).items():
     out['classes'][k]=c
     print(k,c['label'],'Std.',sum(r[2] for r in c['seq']),'cap',c['cap'],'Stoff',sum(r[2] for r in c['seq'] if r[0][0].isdigit()),'zrw',sum(c['zrw'].values()),'KA',sum(1 for r in c['seq'] if r[0].startswith('KA')),'Ende',c['endRule'])
 for k in META: out['classes'][k].update(variant=None,variantLabel="",source="stoffverteilung")
+# Aufgabengeneratoren (Anemo) je Atom: Feld "g" = Generator-ID oder Liste; ohne Eintrag bleiben die festen Fragen.
+GMAP=json.load(open('src/generator_map.json')); GIDS=set(json.load(open('src/anemo/labels.json')))
+ng=0
+for k,m in GMAP.items():
+    if k.startswith('_'): continue
+    byid={a['id']:a for u in out['classes'][k]['units'].values() for a in u['atoms']}
+    for aid,g in m.items():
+        assert aid in byid,(k,aid)
+        for x in (g if isinstance(g,list) else [g]): assert x in GIDS,(k,aid,x)
+        byid[aid]['g']=g; ng+=1
+print("Atome mit Generator:",ng,"von",sum(len(u['atoms']) for c in out['classes'].values() for u in c['units'].values()))
 out['defaultMine']=list(META.keys())
 out['lehrplanQuelle']=dict(url=LP['quelle'],abgerufen=LP['abgerufen'])
 js="window.PLAN_DATA="+json.dumps(out,ensure_ascii=False,separators=(",",":"))+";"

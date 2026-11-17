@@ -15,10 +15,14 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 | `dist/app.js` | App-Logik: Planberechnung, FSRS, Ansichten, Speicherung |
 | `dist/logo.svg`, `dist/logo-mark.svg` | Schullogo FELS (voll für die Seitenleiste, Felszeichen ohne Schriftzug für Kopf und Handy) |
 | `dist/data.js` | Erzeugt: Einheiten, Atome, Standard-Sequenzen, Kalender, Stundenpläne |
+| `dist/generators.js` | Erzeugt: Aufgabengeneratoren für die Wiederholung (aus der Anemo-Mathe-App) |
 | `src/extract.py` | Liest Einheiten und Sequenzen aus den Excel-Stoffverteilungsplänen in `in/` |
 | `src/atoms.py` | Atome je Einheit: Stunde, Atom, Prüffrage, Lösung |
 | `src/atoms_lehrplan/<id>.json` | Atome der Lehrplan-Klassen je Einheit: `[Stunde, Atom, Frage, Lösung, Frage 2, Lösung 2, Frage 3, Lösung 3]` |
 | `src/build_data.py` | Baut `dist/data.js` und gleicht die Puffer an die Stundenpläne an |
+| `src/anemo/generators.ts` | 194 Aufgabengeneratoren, unverändert übernommen aus [zefanja/anemo](https://github.com/zefanja/anemo) (`src/lib/server/tasks/generators.ts`); `src/anemo/labels.json` enthält ihre Titel |
+| `src/generator_map.json` | Welches Atom welchen Generator nutzt (Klasse → Atom-ID → Generator-ID oder Liste) |
+| `src/build_generators.js` | Baut `dist/generators.js` aus `src/anemo/` (Node ≥ 22.13 entfernt die TypeScript-Typen) und prüft jeden Generator |
 | `src/fetch_lehrplan.js` | Lädt die Mathematik-Lehrpläne GYM/OS aus der Lehrplandatenbank Sachsen (Playwright, Browsersitzung nötig) |
 | `src/parse_lehrplan.py` | Liest die Lehrplan-HTML-Seiten (Lernbereiche, Lernziele, Inhalte, Bemerkungen, MathML-Formeln) nach `src/lehrplan.json` |
 | `src/from_lehrplan.py` | Erzeugt daraus Klassen: Einheiten je Lernziel, Stundenthemen aus den Inhalten, Sequenz, Standard-Stundenplan |
@@ -32,7 +36,8 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 ```bash
 python3 -I src/fetch_ferien.py  # optional: Ferien Sachsen aktualisieren
 python3 -I src/extract.py       # in/*.xlsx -> src/plan.json
-python3 -I src/build_data.py    # plan.json + atoms.py -> dist/data.js
+python3 -I src/build_data.py    # plan.json + atoms.py + generator_map.json -> dist/data.js
+node src/build_generators.js    # src/anemo/generators.ts -> dist/generators.js
 NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, Screenshots nach docs/screenshots
 # ohne Internet: MathJax lokal bereitstellen, z. B. npm pack mathjax@3.2.2 und
 # MATHJAX_JS=/pfad/package/es5/tex-svg.js voranstellen
@@ -64,6 +69,12 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
 - **Schwierigkeitsstufen**: Jedes Atom hat drei Aufgaben (`src/atoms.py` Stufe 1, `src/atoms_levels.py` Stufe 2 und 3).
   Die Heute-Seite und das Quiz wählen nach FSRS-Stabilität: unter 7 Tagen „Abrufen“, ab 7 Tagen „Anwenden“, ab 30 Tagen
   „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
+- **Aufgabengeneratoren**: 335 der 966 Atome (GYM 5–10, OS 5–10) haben einen Generator aus der Anemo-Mathe-App. Für sie
+  zeigen Heute-Seite und Quiz bei jeder Wiederholung eine neu erzeugte Aufgabe statt der festen Fragen, mit Skizze,
+  Antwortauswahl, Lösung, Begründung und Lösungsweg. Die Stufe steuert die Schwierigkeit im Generator (Stufe 1, 2, 3 →
+  Generatorstufe 0, 1, 3). Eine Aufgabe bleibt für Klasse, Atom, Stufe und Tag stehen; „Neue Aufgabe“ (im Quiz Taste N)
+  erzeugt eine andere. Im Atom-Editor lässt sich der Generator wechseln oder mit „Keiner: feste Fragen“ abschalten.
+  Die festen Fragen bleiben als Prüffrage in der Stunde und als Rückfall, falls `generators.js` fehlt.
 - **Lernübersicht** (früher „Learning Engine“): FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
   Quiz-Ansicht zum Projizieren (öffnet im Vollbild, am Ende oder beim Schließen zurück in den vorherigen Modus; Leertaste zeigt die Lösung, 1–4 bewertet), Altbestand für Atome vor dem Startdatum.
 - **Einrichtungsassistent**: öffnet sich, solange im Schuljahr keine Klassen festgelegt sind (oder über Einstellungen → Schuljahre).
