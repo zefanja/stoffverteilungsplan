@@ -7,7 +7,7 @@ CAL=dict(start="2026-08-17",end="2027-07-09",
  holidays=[dict(name="Herbstferien",frm="2026-10-12",to="2026-10-24"),dict(name="Weihnachtsferien",frm="2026-12-23",to="2027-01-02"),
            dict(name="Winterferien",frm="2027-02-08",to="2027-02-19"),dict(name="Osterferien",frm="2027-03-26",to="2027-04-02"),
            dict(name="Pfingstferien",frm="2027-05-15",to="2027-05-18")],
- free=[dict(date="2026-11-18",name="Buß- und Bettag"),dict(date="2027-05-06",name="Christi Himmelfahrt"),dict(date="2027-05-07",name="unterrichtsfreier Tag")])
+ free=[dict(date="2026-11-18",name="Buß- und Bettag"),dict(date="2026-11-19",name="HA-Tag"),dict(date="2026-11-20",name="HA-Tag"),dict(date="2027-05-06",name="Christi Himmelfahrt"),dict(date="2027-05-07",name="unterrichtsfreier Tag")])
 L=lambda day,period,track: dict(day=day,period=period,track=track)
 # Stundenplan-Versionen: jede gilt ab "frm" bis zum Tag vor der nächsten Version
 TT={"kl6":[dict(frm=CAL['start'],lessons=[L(1,3,"A"),L(3,2,"B"),L(4,4,"A"),L(5,1,"B")])],

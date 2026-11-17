@@ -161,7 +161,19 @@ function serve(dir) {
   await p.waitForTimeout(150);
   await p.click('[data-act="confirm"][data-v="ferien"]'); await p.waitForTimeout(50);
   await p.click('[data-act="ferien"]'); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 3), 'Ferien Sachsen importieren füllt Ferien und freie Tage');
+  ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 5), 'Ferien Sachsen importieren füllt Ferien und freie Tage (mit zwei HA-Tagen)');
+  // HA-Tage: die zwei Schultage nach dem Buß- und Bettag, in jedem Schuljahr; einmalig auch in gespeicherten Jahren
+  const ha = await p.evaluate(() => { const M = window.__mp, src = window.PLAN_DATA.ferienSN, out = {};
+    for (const y0 of [2025, 2026, 2027, 2028, 2029]) { const Y = M.sachsenYear(y0, src); if (!Y) continue;
+      const bb = Y.free.find(f => /Buß/.test(f.name)), h = Y.free.filter(f => f.name === 'HA-Tag').map(f => f.date);
+      out[y0] = bb && h.length === 2 && h[0] > bb.date && new Date(h[0]).getDay() !== 0 ? h.join('+') : 'FEHLT'; }
+    const keep = JSON.parse(JSON.stringify(M.S.settings)), old = JSON.parse(JSON.stringify(keep));
+    old.years.forEach(y => { delete y.haDays; y.free = y.free.filter(f => f.name !== 'HA-Tag'); });
+    M.applyDoc('settings', old); const mig = M.S.settings.years.find(y => y.id === '2026-27').free.filter(f => f.name === 'HA-Tag').map(f => f.date).join('+');
+    const del = { free: [{ date: '2026-11-18', name: 'Buß- und Bettag' }], holidays: [], haDays: true }; M.addHaDays(del);
+    M.S.settings = keep; M.touch();
+    return { out, mig, keepDeleted: del.free.length === 1 }; });
+  ok(Object.values(ha.out).length === 5 && !Object.values(ha.out).includes('FEHLT') && ha.out[2026] === '2026-11-19+2026-11-20' && ha.mig === '2026-11-19+2026-11-20' && ha.keepDeleted, 'HA-Tage nach dem Buß- und Bettag in allen Schuljahren, gespeicherte Jahre einmal ergänzt ' + JSON.stringify(ha));
 
   for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'lernuebersicht', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h === 'lernuebersicht' ? 'engine' : h}.png`) }); }
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(200);
@@ -341,6 +353,30 @@ function serve(dir) {
   ok(!!dhb.keys && dhb.keys.split(',').length === 2 && /Stunde \d+–\d+ von/.test(dhb.title) && dhd && dhc && dhr, 'Heute: Doppelstunde als ein Block, gehalten, Ausfall und Rücknahme für beide Schulstunden ' + JSON.stringify([dhb, dhd, dhc, dhr]));
   await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
 
+  // Leistungsnachweise: Test mit eigener Stunde in die Sequenz einfügen, Kurzkontrolle in einer Stunde, Übersicht, Löschen
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.type = 'gym'; M.UI.gid.kl8 = 'a'; M.UI.date = '2026-11-02'; location.hash = 'sequenz'; }); await p.waitForTimeout(250);
+  const ln0 = await p.evaluate(() => { const M = window.__mp, sc = M.schedule('kl8.a'); return { n: M.S.cls.kl8.seq.length, nextStart: (sc.rows.find(r => r.code === 'T1') || {}).start }; });
+  const afterIdx = await p.evaluate(() => window.__mp.S.cls.kl8.seq.findIndex(r => r.code === 'S0'));
+  await p.selectOption('#lnkind', 'test');
+  const lnDef = await p.evaluate(() => [document.getElementById('lnhrs').value, document.getElementById('lnwdh').checked, document.getElementById('lnrueck').checked]);
+  await p.fill('#lntopic', 'Terme'); await p.selectOption('#lnafter', String(afterIdx)); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  const ln1 = await p.evaluate(i => { const M = window.__mp, C = M.S.cls.kl8, sc = M.schedule('kl8.a'), row = C.seq[i + 1];
+    return { n: C.seq.length, code: row.code, hours: row.hours, title: C.ln[row.code] && C.ln[row.code].title, nextStart: (sc.rows.find(r => r.code === 'T1') || {}).start, listed: M.lnDates('kl8.a').some(x => x.code === row.code && x.date) }; }, afterIdx);
+  ok(lnDef.join() === '1,false,true' && ln1.n === ln0.n + 1 && ln1.code === 'LK1' && ln1.hours === 2 && ln1.title === 'Test: Terme' && ln1.nextStart > ln0.nextStart && ln1.listed && (await p.innerText('.lncard')).includes('Test: Terme'),
+    'Leistungsnachweis anlegen: Test mit Rückgabe hinter S0 eingefügt, der Plan rückt nach, Übersicht zeigt den Termin ' + JSON.stringify([lnDef, ln0, ln1]));
+  await p.evaluate(() => { location.hash = 'u-kl8-' + window.__mp.unitOrderOf('kl8').indexOf('T2'); }); await p.waitForTimeout(200);
+  await p.click('[data-act="chknew"][data-l="1"]'); await p.waitForTimeout(150);
+  await p.selectOption('#chkkind', 'kk'); await p.fill('#chktitle', 'Terme zusammenfassen'); await p.click('[data-act="chksave"]'); await p.waitForTimeout(200);
+  const chk = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.inLesson); return x ? { date: x.date, kind: x.kind, title: x.title } : null; });
+  await p.evaluate(d => { window.__mp.UI.date = d; location.hash = 'heute'; }, chk && chk.date); await p.waitForTimeout(200);
+  const chkToday = await p.evaluate(() => [...document.querySelectorAll('.tcard .lcheck')].map(e => e.textContent.trim()).join('|'));
+  ok(!!chk && chk.kind === 'Kurzkontrolle' && chkToday.includes('Kurzkontrolle') && chkToday.includes('Terme zusammenfassen'), 'Kurzkontrolle in einer Stunde: in der Übersicht mit Termin und auf der Heute-Seite ' + JSON.stringify([chk, chkToday]));
+  await p.evaluate(() => { location.hash = 'u-kl8-' + window.__mp.unitOrderOf('kl8').indexOf('LK1'); }); await p.waitForTimeout(200);
+  await p.click('[data-act="confirm"][data-v="lndel-LK1"]'); await p.waitForTimeout(100); await p.click('[data-act="lndel"]'); await p.waitForTimeout(200);
+  const ln2 = await p.evaluate(() => { const C = window.__mp.S.cls.kl8; return { n: C.seq.length, ln: Object.keys(C.ln || {}).length, hash: location.hash }; });
+  await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
+  ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#sequenz', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
+
   // Lehrpläne Sachsen: alle Klassen GYM 5–12 und OS 5–10, OS ab 7 mit HS/RS, GYM 11/12 mit GK/LK
   const lp = await p.evaluate(() => { const C = window.PLAN_DATA.classes, k = Object.keys(C);
     const sum = id => C[id].seq.reduce((a, r) => a + (r[0] === 'P' ? 0 : r[2]), 0);
@@ -394,11 +430,11 @@ function serve(dir) {
   ok((await p.innerText('main')).includes('Zeitrichtwert'), 'Sequenz OS 7 HS mit Zeitrichtwerten');
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   // Doppelstunde: ein Eintrag mit Dauer 2 belegt zwei aufeinanderfolgende Stunden
-  const slotsWeek = () => p.evaluate(() => window.__mp.schedule('os7hs.a').slots.filter(s => s.date >= '2026-11-16' && s.date <= '2026-11-20').map(s => s.date.slice(8) + '/' + s.period).join(','));
+  const slotsWeek = () => p.evaluate(() => window.__mp.schedule('os7hs.a').slots.filter(s => s.date >= '2026-11-23' && s.date <= '2026-11-27').map(s => s.date.slice(8) + '/' + s.period).join(','));
   const dsBefore = await slotsWeek();
   await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '2'); await p.waitForTimeout(150);
   const dsAfter = await slotsWeek();
-  ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('16/2') && dsAfter.includes('16/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
+  ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('23/2') && dsAfter.includes('23/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
   await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '1'); await p.waitForTimeout(150);
   // letzter Unterrichtstag: eigener Wert kürzt den Plan, zurücksetzen auf Schuljahresende
   await p.fill('input[data-act="lastday"]', '2027-06-30'); await p.dispatchEvent('input[data-act="lastday"]', 'change'); await p.waitForTimeout(150);
