@@ -68,7 +68,7 @@
         {
          "text": "Potenzieren als Anwendung der Multiplikation",
          "bem": [
-          "Zehnerpotenzen, Quadratzahlen bis 202"
+          "Zehnerpotenzen, Quadratzahlen bis 20²"
          ],
          "refs": [],
          "sub": []
@@ -5268,7 +5268,7 @@
         {
          "text": "Quadratzahl",
          "bem": [
-          "bis 202 im Kopf"
+          "bis 20² im Kopf"
          ],
          "refs": [],
          "sub": []
@@ -5293,7 +5293,7 @@
          "text": "systematisches Probieren, Benutzen der Umkehroperationen",
          "bem": [
           "540 + y = 684 780 – x = y",
-          "10x = 1000",
+          "10^x = 1000",
           "y + 10 < 25 x ⋅ y = 42"
          ],
          "refs": [],

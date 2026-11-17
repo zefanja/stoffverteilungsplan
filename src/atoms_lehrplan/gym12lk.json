@@ -1,0 +1,278 @@
+{
+"5": [
+[
+1,
+"Stammfunktion und unbestimmtes Integral: ∫f(x) dx = F(x) + c",
+"∫2 · x dx = ?",
+"x² + c",
+"∫(3 · x² − 4) dx = ?",
+"x³ − 4 · x + c",
+"∫e^x dx = ?",
+"e^x + c"
+],
+[
+8,
+"Bestimmtes Integral als orientierter Flächeninhalt; Hauptsatz",
+"∫₀² x dx = ?",
+"2",
+"∫₁³ x² dx = ?",
+"26/3",
+"Warum kann ein bestimmtes Integral negativ sein?",
+"Flächen unterhalb der x-Achse zählen negativ"
+],
+[
+15,
+"Flächen zwischen Graph und x-Achse bzw. zwischen zwei Graphen",
+"Fläche zwischen y = x² und der x-Achse von 0 bis 3?",
+"9",
+"Fläche zwischen y = x und y = x² von 0 bis 1?",
+"1/2 − 1/3 = 1/6",
+"Warum muss man bei Flächen mit Nullstellen abschnittsweise integrieren?",
+"sonst heben sich positive und negative Anteile auf"
+],
+[
+22,
+"Integrale ohne Hilfsmittel: ∫1/x dx = ln|x| + c, ∫sin x dx = −cos x + c",
+"∫1/x dx = ?",
+"ln|x| + c",
+"∫sin x dx = ?",
+"−cos x + c",
+"∫₀^π sin x dx = ?",
+"2"
+]
+],
+"6.1": [
+[
+1,
+"Normalverteilung: glockenförmige Dichte mit den Parametern μ und σ",
+"Wo liegt das Maximum der Gaußschen Glockenkurve?",
+"bei x = μ",
+"Was bewirkt ein größeres σ?",
+"die Kurve wird flacher und breiter",
+"Wie groß ist die Fläche unter der gesamten Dichtekurve?",
+"1"
+],
+[
+4,
+"Wahrscheinlichkeiten als Flächen unter der Dichtefunktion; Sigma-Regeln",
+"P(μ − σ ≤ X ≤ μ + σ) ungefähr?",
+"68 %",
+"P(μ − 2σ ≤ X ≤ μ + 2σ) ungefähr?",
+"95 %",
+"Körpergröße mit μ = 175 cm, σ = 7 cm. Welcher Anteil ist größer als 189 cm?",
+"etwa 2,5 % (oberhalb μ + 2σ)"
+],
+[
+7,
+"Stetige Zufallsgrößen: P(X = a) = 0",
+"P(X = 175) für eine normalverteilte Körpergröße?",
+"0",
+"Warum fragt man bei stetigen Größen nach Intervallen?",
+"Einzelwerte haben die Wahrscheinlichkeit 0",
+"Was gibt der Wert der Dichtefunktion an einer Stelle an?",
+"keine Wahrscheinlichkeit; erst Flächen sind Wahrscheinlichkeiten"
+]
+],
+"6.2": [
+[
+1,
+"Für großes n nähert sich die Binomialverteilung der Normalverteilung",
+"Faustregel für eine brauchbare Näherung?",
+"σ = √(n · p · (1 − p)) > 3",
+"n = 100, p = 0,5: μ und σ?",
+"μ = 50, σ = 5",
+"Warum wird das Histogramm der Binomialverteilung bei großem n glockenförmig?",
+"Satz von de Moivre-Laplace"
+],
+[
+2,
+"Näherung mit Stetigkeitskorrektur",
+"P(X ≤ 55) für n = 100, p = 0,5 näherungsweise?",
+"Φ((55,5 − 50)/5) ≈ 0,86",
+"Wozu dient die Stetigkeitskorrektur ±0,5?",
+"Ausgleich zwischen diskreten Werten und stetiger Fläche",
+"In welchem Bereich liegt die Trefferzahl bei n = 400, p = 0,5 mit etwa 95 % Wahrscheinlichkeit?",
+"zwischen 180 und 220 (μ ± 2σ)"
+],
+[
+3,
+"Sigma-Regeln für Prognosen",
+"Prognoseintervall für 95 % bei μ = 200, σ = 10?",
+"[180; 220]",
+"Ist X = 240 bei μ = 200, σ = 10 noch im Rahmen?",
+"nein, über 3σ entfernt",
+"Warum lassen sich Tests mit den Sigma-Regeln schnell abschätzen?",
+"sie geben ohne Tabelle typische Schwankungsbreiten an"
+]
+],
+"7.1": [
+[
+1,
+"Beurteilende Statistik: von einer Stichprobe auf die Grundgesamtheit schließen",
+"Was ist die Grundgesamtheit bei einer Wahlumfrage?",
+"alle Wahlberechtigten",
+"Warum befragt man nicht alle?",
+"zu aufwendig, eine Stichprobe genügt",
+"Was muss eine Stichprobe erfüllen, damit der Schluss gültig ist?",
+"sie muss zufällig und groß genug sein"
+],
+[
+2,
+"Schlüsse aus Stichproben sind unsicher",
+"Kann eine Stichprobe die Grundgesamtheit genau wiedergeben?",
+"nein, nur näherungsweise",
+"Warum unterscheiden sich zwei Umfragen zur selben Frage?",
+"Zufallsschwankungen der Stichproben",
+"Wie verringert man die Unsicherheit?",
+"größere Stichprobe"
+]
+],
+"7.2": [
+[
+1,
+"Stichprobenmittel schätzt den Mittelwert der Grundgesamtheit",
+"Stichprobe 4, 6, 5, 5. Schätzwert für den Mittelwert?",
+"5",
+"Wie heißt die Schätzgröße für den Anteil?",
+"relative Häufigkeit",
+"200 von 500 Befragten wählen A. Schätzung für den Anteil?",
+"0,4"
+],
+[
+2,
+"Stichprobenvarianz schätzt die Streuung",
+"Wovon hängt die Genauigkeit einer Schätzung ab?",
+"vom Stichprobenumfang und der Streuung",
+"Warum gibt man Messergebnisse oft als Mittelwert ± Abweichung an?",
+"um die Unsicherheit anzugeben",
+"Wie beeinflusst ein vierfacher Stichprobenumfang die Streuung des Mittelwerts?",
+"sie halbiert sich"
+],
+[
+3,
+"Hochrechnungen und Prognosen",
+"Worauf beruht eine Wahlhochrechnung?",
+"auf ausgezählten Stichprobenbezirken",
+"Warum ändern sich Hochrechnungen im Laufe des Abends?",
+"die Stichprobe wird größer",
+"Was bedeutet „Partei A 32 % ± 2 %“?",
+"der wahre Anteil liegt wahrscheinlich zwischen 30 % und 34 %"
+]
+],
+"7.3": [
+[
+1,
+"Hypothesentest: Nullhypothese und Testgröße",
+"Was ist die Nullhypothese beim Prüfen eines Würfels auf Fairness?",
+"p = 1/6 für jede Augenzahl",
+"Was ist die Testgröße beim Zählen der Sechsen in 60 Würfen?",
+"die Anzahl X der Sechsen",
+"Warum kann ein Test die Nullhypothese nie beweisen?",
+"er kann sie nur verwerfen oder nicht verwerfen"
+],
+[
+3,
+"Signifikanzniveau, Ablehnungsbereich, Entscheidungsregel",
+"Was gibt das Signifikanzniveau an?",
+"die höchste zugelassene Irrtumswahrscheinlichkeit beim Verwerfen",
+"Was ist der Ablehnungsbereich?",
+"die Werte der Testgröße, bei denen man die Nullhypothese verwirft",
+"Wann wählt man einen zweiseitigen Test?",
+"wenn Abweichungen in beide Richtungen auffallen sollen"
+],
+[
+4,
+"Fehler 1. und 2. Art",
+"Was ist ein Fehler 1. Art?",
+"eine wahre Nullhypothese wird verworfen",
+"Was ist ein Fehler 2. Art?",
+"eine falsche Nullhypothese wird nicht verworfen",
+"Wie wirkt ein kleineres Signifikanzniveau auf den Fehler 2. Art?",
+"er wird größer"
+]
+],
+"8": [
+[
+1,
+"Skalarprodukt: a · b = a₁b₁ + a₂b₂ + a₃b₃",
+"(1; 2; 3) · (4; 0; −1) = ?",
+"1",
+"Sind (1; 2; −1) und (3; −1; 1) orthogonal?",
+"ja, 3 − 2 − 1 = 0",
+"Winkel zwischen (1; 0; 0) und (1; 1; 0)?",
+"45°"
+],
+[
+7,
+"Normalenvektor und Vektorprodukt",
+"Normalenvektor der Ebene 2 · x − y + 3 · z = 5?",
+"(2; −1; 3)",
+"(1; 0; 0) × (0; 1; 0) = ?",
+"(0; 0; 1)",
+"Was gibt der Betrag des Vektorprodukts geometrisch an?",
+"den Flächeninhalt des aufgespannten Parallelogramms"
+],
+[
+13,
+"Schnittwinkel von Geraden und Ebenen",
+"Womit berechnet man den Winkel zwischen zwei Geraden?",
+"mit den Richtungsvektoren und dem Skalarprodukt",
+"Womit den Winkel zwischen zwei Ebenen?",
+"mit den Normalenvektoren",
+"Warum nimmt man beim Winkel Gerade – Ebene den Sinus?",
+"der Normalenvektor steht senkrecht zur Ebene, der Winkel zur Ebene ist 90° minus Winkel zur Normalen"
+],
+[
+19,
+"Abstände: Punkt – Ebene, Punkt – Gerade, windschiefe Geraden",
+"Abstand von P(0 | 0 | 0) zur Ebene x + 2 · y + 2 · z = 9?",
+"3",
+"Abstand von P(1 | 1 | 1) zur Ebene z = 4?",
+"3",
+"Wie bestimmt man den Abstand zweier windschiefer Geraden?",
+"über einen gemeinsamen Normalenvektor bzw. das Lot"
+]
+],
+"9": [
+[
+1,
+"Minimale und maximale Abstände als Extremwertproblem",
+"Welcher Punkt der Geraden y = x liegt (2 | 0) am nächsten?",
+"(1 | 1)",
+"Wie findet man den Punkt einer Geraden mit kleinstem Abstand zu P?",
+"Lotfußpunkt bestimmen",
+"Wie verbindet man hier Geometrie und Analysis?",
+"Abstand als Funktion von t aufstellen und minimieren"
+],
+[
+6,
+"Spiegelung eines Punktes an einer Ebene",
+"Wie spiegelt man P an einer Ebene?",
+"Lotgerade durch P, Lotfußpunkt F, dann P′ = P + 2 · PF",
+"Bild von P(1 | 2 | 3) bei Spiegelung an z = 0?",
+"P′(1 | 2 | −3)",
+"Bild von P(0 | 0 | 0) bei Spiegelung an x + y + z = 3?",
+"P′(2 | 2 | 2)"
+],
+[
+11,
+"Flächeninhalte elementar, mit Vektorprodukt und mit Integralen",
+"Flächeninhalt des Dreiecks mit a = (2; 0; 0) und b = (0; 3; 0)?",
+"3",
+"Fläche zwischen y = 4 − x² und der x-Achse?",
+"32/3",
+"Welches Verfahren wählst du für eine krummlinig begrenzte Fläche?",
+"Integralrechnung"
+],
+[
+16,
+"Modellieren mit Funktionen und Vektoren",
+"Wie modelliert man die Flugbahn eines Flugzeugs im Steigflug?",
+"als Gerade im Raum",
+"Ein Wasserbehälter füllt sich mit der Rate f(t). Wie bestimmt man die Menge nach 10 min?",
+"∫₀¹⁰ f(t) dt",
+"Warum muss man ein Modellergebnis am Sachzusammenhang prüfen?",
+"Modelle vereinfachen und gelten nur in Grenzen"
+]
+]
+}

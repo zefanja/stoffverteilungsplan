@@ -1,0 +1,69 @@
+{
+"1.1": [
+ [1, "Große natürliche Zahlen lesen, schreiben und am Zahlenstrahl einordnen", "Schreibe in Ziffern: zwei Millionen dreihunderttausend.", "2 300 000", "Welche Zahl liegt am Zahlenstrahl in der Mitte zwischen 1 000 und 2 000?", "1 500", "Welche Ziffer steht in 4 562 891 an der Stelle der Zehntausender?", "6"],
+ [2, "Runden, Vergleichen und Ordnen natürlicher Zahlen", "Runde 7 849 auf Hunderter.", "7 800", "Ordne: 30 300; 3 033; 30 030.", "3 033 < 30 030 < 30 300", "Eine Stadt hat gerundet 12 000 Einwohner (auf Tausender). Wie viele können es höchstens sein?", "12 499"]],
+"1.2": [
+ [1, "Potenzschreibweise: 10³ = 10 · 10 · 10 = 1 000", "Schreibe 10 · 10 · 10 · 10 als Potenz.", "10⁴", "Berechne 3².", "9", "Wie viele Nullen hat 10⁶?", "sechs"],
+ [2, "Große Zahlen mit abgetrennten Zehnerpotenzen", "Schreibe 5 000 000 mit Zehnerpotenz.", "5 · 10⁶", "Der Taschenrechner zeigt 3,2 · 10⁵. Welche Zahl ist das?", "320 000", "Was ist größer: 4 · 10⁵ oder 9 · 10⁴?", "4 · 10⁵"]],
+"1.3": [
+ [1, "Schriftlich addieren, subtrahieren und multiplizieren", "4 568 + 2 879 = ?", "7 447", "8 003 − 2 457 = ?", "5 546", "246 · 34 = ?", "8 364"],
+ [3, "Überschlag zur Kontrolle", "Überschlage: 497 + 312", "etwa 500 + 300 = 800", "Überschlage: 61 · 49", "etwa 60 · 50 = 3 000", "Max rechnet 38 · 52 = 19 760. Passt das zum Überschlag?", "nein, etwa 40 · 50 = 2 000; richtig 1 976"],
+ [5, "Rechengesetze und Vorrangregeln: Klammer vor Punkt vor Strich", "3 + 4 · 5 = ?", "23", "(3 + 4) · 5 = ?", "35", "Rechne geschickt: 4 · 37 · 25", "3 700"],
+ [7, "Schriftliche Division durch einstellige Zahlen", "852 : 4 = ?", "213", "1 234 : 6 = ?", "205 Rest 4", "Wie prüfst du das Ergebnis einer Division?", "Probe: Ergebnis mal Divisor plus Rest"]],
+"1.4": [
+ [1, "Quadratzahlen bis 20² im Kopf", "7² = ?", "49", "15² = ?", "225", "Welche Quadratzahl liegt zwischen 150 und 170?", "169 = 13²"],
+ [3, "Quadratwurzel als Umkehrung des Quadrierens", "√64 = ?", "8", "√144 = ?", "12", "Ein quadratisches Beet hat 81 m². Wie lang ist eine Seite?", "9 m"],
+ [5, "Quadratzahlen in Sachzusammenhängen", "Wie viele Fliesen braucht ein quadratischer Boden mit 6 Fliesen pro Seite?", "36", "Wie viele Quadrate mit 1 cm Seitenlänge passen in ein Quadrat mit 5 cm Seitenlänge?", "25", "Zwischen welchen ganzen Zahlen liegt √30?", "zwischen 5 und 6"]],
+"1.5": [
+ [1, "Gleichungen durch Probieren oder Umkehraufgabe lösen", "540 + y = 684", "y = 144", "x · 7 = 63", "x = 9", "10^x = 1 000", "x = 3"],
+ [3, "Einfache Ungleichungen lösen", "Welche natürlichen Zahlen erfüllen y + 10 < 14?", "0, 1, 2, 3", "Welche natürlichen Zahlen erfüllen 3 · x ≤ 12?", "0, 1, 2, 3, 4", "Nenne die größte natürliche Zahl mit 5 · x < 31.", "6"],
+ [5, "Textgleichungen aufstellen", "„Eine Zahl plus 15 ergibt 40.“ Gleichung?", "x + 15 = 40", "„Das Dreifache einer Zahl ist 27.“ Zahl?", "9", "Lisa ist 4 Jahre älter als Tom, zusammen sind sie 30. Wie alt ist Tom?", "13 Jahre"]],
+"1.6": [
+ [1, "Vielfache und Teiler", "Nenne alle Teiler von 12.", "1, 2, 3, 4, 6, 12", "Nenne die ersten fünf Vielfachen von 7.", "7, 14, 21, 28, 35", "Kleinstes gemeinsames Vielfaches von 4 und 6?", "12"],
+ [3, "Teilbarkeitsregeln für 2, 3, 4, 5, 6 und 10", "Ist 135 durch 5 teilbar?", "ja, Endziffer 5", "Ist 2 316 durch 4 teilbar?", "ja, 16 ist durch 4 teilbar", "Ist 1 234 durch 6 teilbar?", "nein, Quersumme 10 nicht durch 3 teilbar"],
+ [5, "Primzahlen: genau zwei Teiler", "Ist 17 eine Primzahl?", "ja", "Nenne alle Primzahlen zwischen 20 und 30.", "23 und 29", "Warum ist 1 keine Primzahl?", "sie hat nur einen Teiler"]],
+"2.1": [
+ [1, "Brüche als Anteile erkennen und darstellen", "Eine Pizza ist in 8 Stücke geteilt, 3 sind gegessen. Welcher Anteil fehlt?", "3/8", "Färbe 3/4 eines Rechtecks aus 12 Kästchen. Wie viele Kästchen?", "9", "Wie viel sind 2/5 von 30 €?", "12 €"],
+ [4, "Echte und unechte Brüche, gemischte Zahlen", "Ist 7/4 ein echter Bruch?", "nein, unecht (größer als 1)", "Schreibe 7/4 als gemischte Zahl.", "1 3/4", "Schreibe 2 1/3 als Bruch.", "7/3"],
+ [7, "Brüche am Zahlenstrahl", "Wo liegt 1/2 zwischen 0 und 1?", "genau in der Mitte", "Wie viele Achtel liegen zwischen 0 und 1?", "acht", "Welcher Bruch liegt genau zwischen 1/4 und 3/4?", "1/2"],
+ [10, "Zehnerbrüche und endliche Dezimalzahlen umwandeln", "Schreibe 3/10 als Dezimalzahl.", "0,3", "Schreibe 0,07 als Bruch.", "7/100", "Schreibe 1/2 und 1/4 als Dezimalzahlen.", "0,5 und 0,25"]],
+"2.2": [
+ [1, "Dezimalzahlen addieren und subtrahieren", "2,5 + 1,25 = ?", "3,75", "10 − 3,6 = ?", "6,4", "Wie viel fehlt von 4,75 € bis 10 €?", "5,25 €"],
+ [3, "Mit einstelligen Zahlen und Zehnerpotenzen vervielfachen", "2,4 · 6 = ?", "14,4", "24,5 · 1 000 = ?", "24 500", "Ein Heft kostet 1,35 €. Was kosten 4 Hefte?", "5,40 €"],
+ [6, "Durch einstellige Zahlen und Zehnerpotenzen teilen", "2,4 : 6 = ?", "0,4", "24,5 : 1 000 = ?", "0,0245", "Drei Freunde teilen 7,50 €. Wie viel bekommt jeder?", "2,50 €"]],
+"2.3": [
+ [1, "Prozent heißt Hundertstel", "Wie viel Prozent sind 0,25?", "25 %", "Schreibe 10 % als Dezimalzahl.", "0,1", "Wie viel Prozent sind 1/2?", "50 %"],
+ [2, "Einfache Anteile in Prozent", "Wie viel sind 50 % von 60 €?", "30 €", "Wie viel sind 25 % von 200?", "50", "Ein Pullover kostet 40 € und ist um 10 % reduziert. Wie viel sparst du?", "4 €"]],
+"2.4": [
+ [1, "Größen in verschiedenen Schreibweisen", "Schreibe 4 € 3 ct als Dezimalzahl.", "4,03 €", "Schreibe 1 m 20 cm in Metern.", "1,2 m", "Schreibe 2 kg 50 g in Kilogramm.", "2,05 kg"],
+ [3, "Einheiten umrechnen: Länge, Masse, Zeit", "3 km = ? m", "3 000 m", "2,5 kg = ? g", "2 500 g", "Wie viele Minuten sind 2 h 15 min?", "135 min"],
+ [6, "Vorsätze Dezi, Zenti, Milli", "Wie viele Millimeter sind 1 cm?", "10 mm", "Was bedeutet „Zenti“?", "ein Hundertstel", "Wie viele Milliliter hat ein Liter?", "1 000 ml"],
+ [8, "Sachaufgaben mit Größen und Überschlag", "Ein Brot kostet 2,95 €, ein Liter Milch 1,15 €. Überschlage den Preis.", "etwa 4 €", "Wie lang ist eine Strecke aus 3 Teilen zu je 2,4 m?", "7,2 m", "Ein Film beginnt 19:40 Uhr und dauert 1 h 55 min. Wann endet er?", "21:35 Uhr"]],
+"3.1": [
+ [1, "Koordinatensystem: erst x, dann y", "Wie heißt der Punkt 4 nach rechts und 2 nach oben?", "P(4 | 2)", "Welcher Punkt liegt auf der y-Achse: A(3 | 0) oder B(0 | 5)?", "B", "Ein Quadrat hat die Ecken (1 | 1), (4 | 1), (4 | 4). Wo liegt die vierte Ecke?", "(1 | 4)"],
+ [2, "Punkte eintragen und ablesen", "Was gibt die erste Koordinate an?", "den Abstand nach rechts (x-Wert)", "Wie weit ist P(5 | 3) vom Ursprung nach oben entfernt?", "3 Einheiten", "Verbinde (1 | 1), (5 | 1), (3 | 4). Welche Figur entsteht?", "ein Dreieck"]],
+"3.2": [
+ [1, "Parallele und senkrechte Geraden zeichnen", "Wie heißen Geraden, die sich nie schneiden?", "parallel", "Wie heißen Geraden, die sich im rechten Winkel schneiden?", "senkrecht zueinander", "Wie viele Senkrechte zu einer Geraden gibt es durch einen Punkt?", "genau eine"],
+ [3, "Winkel messen, zeichnen und benennen", "Wie groß ist ein rechter Winkel?", "90°", "Wie heißt ein Winkel von 120°?", "stumpfer Winkel", "Wie heißt ein Winkel von 30°?", "spitzer Winkel"],
+ [4, "Winkelarten und Winkelbezeichnung", "Wie heißt ein Winkel von 180°?", "gestreckter Winkel", "Welchen griechischen Buchstaben nimmt man oft für den ersten Winkel?", "α (Alpha)", "Wie groß ist der Winkel zwischen den Uhrzeigern um 3 Uhr?", "90°"]],
+"3.3": [
+ [1, "Würfel: 6 gleich große Quadrate, 12 gleich lange Kanten, 8 Ecken", "Wie viele Ecken hat ein Würfel?", "8", "Wie viele Kanten hat ein Würfel?", "12", "Wie lang sind alle Kanten zusammen bei 3 cm Kantenlänge?", "36 cm"],
+ [2, "Würfelnetze zeichnen", "Aus wie vielen Quadraten besteht ein Würfelnetz?", "6", "Ist ein Kreuz aus 6 Quadraten ein Würfelnetz?", "ja", "Sind sechs Quadrate in einer Reihe ein Würfelnetz?", "nein"],
+ [3, "Schrägbild: Tiefe unter 45° und halb so lang", "Wie zeichnet man im Schrägbild die Tiefe?", "unter 45° und halb so lang", "Ein Würfel hat 4 cm Kantenlänge. Wie lang zeichnest du die Tiefe?", "2 cm", "Warum zeichnet man verdeckte Kanten gestrichelt?", "damit man den Körper besser erkennt"]],
+"3.4": [
+ [1, "Umfang als Summe aller Seitenlängen", "Umfang eines Rechtecks mit 5 cm und 3 cm?", "16 cm", "Umfang eines Quadrats mit 7 cm Seitenlänge?", "28 cm", "Ein Rechteck hat 20 cm Umfang und ist 6 cm lang. Wie breit ist es?", "4 cm"],
+ [2, "Flächeninhalt des Rechtecks: A = a · b", "Flächeninhalt eines Rechtecks mit 8 cm und 3 cm?", "24 cm²", "Flächeninhalt eines Quadrats mit 6 cm Seitenlänge?", "36 cm²", "Ein Zimmer ist 5 m lang und 4 m breit. Wie viel Teppich braucht man?", "20 m²"],
+ [3, "Flächeneinheiten und zusammengesetzte Figuren", "Wie viele cm² sind 1 dm²?", "100 cm²", "Eine L-Form besteht aus Rechtecken mit 6 cm² und 4 cm². Flächeninhalt?", "10 cm²", "Ein 10 m × 8 m großer Garten hat ein 2 m × 3 m großes Beet. Wie groß ist die Rasenfläche?", "74 m²"]],
+"3.5": [
+ [1, "Oberfläche des Würfels: 6 gleiche Quadrate", "Oberfläche eines Würfels mit 2 cm Kantenlänge?", "24 cm²", "Oberfläche eines Würfels mit 5 cm Kantenlänge?", "150 cm²", "Wie viel Geschenkpapier braucht man mindestens für einen Würfel mit 10 cm Kante?", "600 cm²"],
+ [2, "Volumen des Würfels: V = a · a · a", "Volumen eines Würfels mit 3 cm Kantenlänge?", "27 cm³", "Wie viele Würfel mit 1 cm Kante passen in einen Würfel mit 4 cm Kante?", "64", "Ein Würfel hat 8 cm³ Volumen. Wie lang ist eine Kante?", "2 cm"],
+ [3, "Volumeneinheiten: 1 dm³ = 1 000 cm³ = 1 l", "1 dm³ = ? cm³", "1 000 cm³", "Wie viele Liter passen in einen Würfel mit 1 dm Kantenlänge?", "1 l", "Wie viele Liter fasst ein würfelförmiger Behälter mit 20 cm Kante?", "8 l"]],
+"4.1": [
+ [1, "Symmetrieachse: Die Figur lässt sich so falten, dass beide Hälften aufeinanderliegen", "Wie viele Symmetrieachsen hat ein Quadrat?", "4", "Hat ein Schmetterling eine Symmetrieachse?", "ja, ungefähr", "Welche Buchstaben von M, N, O sind achsensymmetrisch?", "M und O"],
+ [3, "Verschiebung: Richtung und Weite", "Was bleibt bei einer Verschiebung gleich?", "Form und Größe der Figur", "Ein Punkt wird um 3 nach rechts verschoben. Wo liegt das Bild von (2 | 4)?", "(5 | 4)", "Wo findest du Verschiebungen im Alltag?", "z. B. Muster auf Tapeten, Zäune"],
+ [5, "Spiegelungen und Verschiebungen in Natur, Kunst und Technik", "Nenne ein Verkehrszeichen mit Symmetrieachse.", "z. B. Vorfahrt achten", "Welche Bewegung erzeugt ein Bandornament?", "Verschiebung", "Ist ein Spiegelbild seitenverkehrt?", "ja"]],
+"4.2": [
+ [1, "Figuren an einer Geraden spiegeln", "Ein Punkt liegt 2 cm vor der Achse. Wo liegt sein Bild?", "2 cm hinter der Achse auf der Senkrechten", "Spiegle P(1 | 3) an der Geraden durch (3 | 0) und (3 | 5).", "P′(5 | 3)", "Welche Punkte ändern beim Spiegeln ihre Lage nicht?", "die Punkte auf der Achse"],
+ [3, "Original und Bild sind deckungsgleich", "Wie lang ist das Bild einer 4 cm langen Strecke?", "4 cm", "Ändert sich ein Winkel beim Spiegeln?", "nein", "Woran erkennst du, dass zwei Figuren deckungsgleich sind?", "sie lassen sich genau aufeinanderlegen"],
+ [5, "Ornamente mit Spiegelung und Verschiebung zeichnen", "Womit zeichnet man Kreise in Ornamenten?", "mit dem Zirkel", "Wie entsteht aus einem Muster ein Band?", "durch wiederholtes Verschieben", "Ein Muster wird erst gespiegelt und dann verschoben. Ist das Ergebnis deckungsgleich zum Original?", "ja"]]
+}

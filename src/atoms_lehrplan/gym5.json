@@ -1,0 +1,60 @@
+{
+"1.1": [
+ [1, "Natürliche Zahlen in der Stellenwerttafel lesen und schreiben", "Welchen Stellenwert hat die 7 in 3 705 000?", "Hunderttausender", "Schreibe in Ziffern: drei Millionen vierzigtausendfünf.", "3 040 005", "Welche Zahl liegt am Zahlenstrahl genau in der Mitte zwischen 480 und 520?", "500"],
+ [2, "Runden: die Ziffer rechts der Rundungsstelle entscheidet (0–4 abrunden, 5–9 aufrunden)", "Runde 46 382 auf Tausender.", "46 000", "Runde 2 849 500 auf Hunderttausender.", "2 800 000", "Welche größte natürliche Zahl ergibt auf Hunderter gerundet 3 400?", "3 449"],
+ [3, "Natürliche Zahlen vergleichen und ordnen", "Ordne: 40 400; 4 044; 40 040.", "4 044 < 40 040 < 40 400", "Setze < oder > ein: 999 999 □ 1 000 000", "<", "Bilde aus den Ziffern 3, 0, 8, 5 die kleinste vierstellige Zahl.", "3 058"]],
+"1.2": [
+ [2, "Rechengesetze nutzen: Vertauschen und Zusammenfassen", "Rechne geschickt: 25 · 17 · 4", "1 700", "Rechne geschickt: 38 + 57 + 62 + 43", "200", "Warum gilt 99 · 7 = 700 − 7?", "99 = 100 − 1, also 100 · 7 − 1 · 7 (Distributivgesetz)"],
+ [6, "Überschlag vor dem genauen Rechnen", "Überschlage: 398 · 21", "etwa 400 · 20 = 8 000", "Überschlage: 6 120 : 29", "etwa 6 000 : 30 = 200", "Tim erhält 8 742 : 3 = 2 914. Passt das zum Überschlag?", "ja, 9 000 : 3 = 3 000"],
+ [9, "Potenzen als verkürzte Multiplikation; Quadratzahlen bis 20²", "Berechne 2⁵.", "32", "Schreibe 10 000 als Zehnerpotenz.", "10⁴", "Welche Quadratzahl liegt zwischen 300 und 330?", "324 = 18²"],
+ [14, "Teilbarkeitsregeln und Primfaktorzerlegung", "Ist 3 714 durch 3 teilbar?", "ja, Quersumme 15", "Zerlege 60 in Primfaktoren.", "60 = 2² · 3 · 5", "Welche Ziffer passt in 52□4, damit die Zahl durch 6 teilbar ist?", "1, 4 oder 7 (gerade und Quersumme durch 3 teilbar)"]],
+"2.1": [
+ [1, "Ein Bruch beschreibt Teile eines Ganzen: Nenner = Anzahl der Teile, Zähler = genommene Teile", "3 von 8 gleichen Stücken sind gefärbt. Welcher Anteil?", "3/8", "Wie viel sind 2/3 von 27?", "18", "28 Schüler, 3/4 fahren mit dem Bus. Wie viele fahren nicht mit dem Bus?", "7"],
+ [4, "Kürzen und Erweitern ändert den Wert eines Bruchs nicht", "Kürze 12/16.", "3/4", "Erweitere 3/5 auf den Nenner 20.", "12/20", "Welcher Bruch ist nicht gleich 2/3: 4/6, 10/15, 6/8?", "6/8"],
+ [8, "Brüche, Dezimalzahlen und Prozentangaben ineinander umwandeln", "Schreibe 1/4 als Dezimalzahl.", "0,25", "Schreibe 0,6 als Bruch und in Prozent.", "6/10 = 3/5 = 60 %", "Schreibe 7/20 als Dezimalzahl.", "35/100 = 0,35"],
+ [12, "Brüche und Dezimalzahlen vergleichen, ordnen und runden", "Was ist größer: 0,5 oder 0,45?", "0,5", "Runde 3,876 auf Zehntel.", "3,9", "Ordne: 3/4; 0,7; 4/5.", "0,7 < 3/4 < 4/5"]],
+"2.2": [
+ [1, "Dezimalzahlen addieren und subtrahieren: Komma unter Komma", "3,7 + 4,25 = ?", "7,95", "12 − 3,48 = ?", "8,52", "Welche Zahl fehlt: 5,6 + □ = 10?", "4,4"],
+ [4, "Mit einstelligen Zahlen und Zehnerpotenzen multiplizieren", "24,5 · 1000 = ?", "24 500", "2,4 · 6 = ?", "14,4", "Mit welcher Zahl muss man 0,35 multiplizieren, um 350 zu erhalten?", "1000"],
+ [7, "Durch einstellige Zahlen und Zehnerpotenzen dividieren", "24,5 : 1000 = ?", "0,0245", "2,4 : 6 = ?", "0,4", "7,2 : □ = 0,8. Welche Zahl fehlt?", "9"],
+ [10, "Arithmetisches Mittel: Summe durch Anzahl", "Mittelwert von 4, 6 und 8?", "6", "Mittelwert von 2,5; 3,0; 3,5 und 4,0?", "3,25", "Nach vier Tests hat Lea im Mittel 12 Punkte. Wie viele braucht sie im fünften für einen Mittelwert von 13?", "17"]],
+"3.1": [
+ [1, "Punkte im Koordinatensystem: erst x-, dann y-Koordinate", "Wie heißt der Punkt 3 nach rechts und 5 nach oben?", "P(3 | 5)", "Welcher Punkt liegt auf der x-Achse: A(0 | 4), B(6 | 0), C(2 | 2)?", "B", "Ein Rechteck hat die Ecken A(1 | 1), B(5 | 1), C(5 | 4). Wo liegt D?", "D(1 | 4)"],
+ [2, "Strecken im Koordinatensystem zeichnen und ihre Länge ablesen", "Wie lang ist die Strecke von (2 | 3) bis (7 | 3)?", "5 Einheiten", "Wie lang ist die Strecke von (4 | 1) bis (4 | 6)?", "5 Einheiten", "Liegen A(1 | 2), B(3 | 2) und C(6 | 2) auf einer Geraden? Wie liegt sie?", "ja, parallel zur x-Achse"],
+ [3, "Parallele und senkrechte Geraden im Koordinatensystem", "Wie liegt die Gerade durch (0 | 2) und (5 | 2) zur x-Achse?", "parallel", "Wie liegt die Gerade durch (3 | 0) und (3 | 6) zur x-Achse?", "senkrecht", "g geht durch (0 | 4) und (6 | 4). Wo schneidet die Senkrechte zu g durch P(2 | 1) die Gerade g?", "in (2 | 4)"]],
+"3.2": [
+ [1, "Winkel mit dem Geodreieck messen und zeichnen", "Wie groß ist ein rechter Winkel?", "90°", "Wie heißt ein Winkel von 135°?", "stumpfer Winkel", "Wie groß ist der Winkel zwischen den Uhrzeigern um 4 Uhr?", "120°"],
+ [3, "Winkelarten: spitz, recht, stumpf, gestreckt, überstumpf, voll", "Wie heißt ein Winkel von 180°?", "gestreckter Winkel", "Ordne zu: 45°, 270°, 360°.", "spitz, überstumpf, Vollwinkel", "Ein Winkel ist doppelt so groß wie ein rechter. Wie heißt er?", "gestreckter Winkel (180°)"],
+ [5, "Scheitelwinkel sind gleich groß, Nebenwinkel ergeben zusammen 180°", "Nebenwinkel von 70°?", "110°", "Scheitelwinkel von 58°?", "58°", "Ein Winkel ist dreimal so groß wie sein Nebenwinkel. Wie groß sind beide?", "45° und 135°"]],
+"3.3": [
+ [2, "Achsensymmetrie: Die Figur deckt sich beim Falten an der Achse", "Wie viele Symmetrieachsen hat ein Quadrat?", "4", "Wie viele Symmetrieachsen hat ein Rechteck, das kein Quadrat ist?", "2", "Welche Großbuchstaben aus A, B, N, H, S sind achsensymmetrisch?", "A, B, H"],
+ [3, "Punktsymmetrie: Die Figur deckt sich nach einer halben Drehung", "Ist der Buchstabe S punktsymmetrisch?", "ja", "Ist ein Parallelogramm punktsymmetrisch?", "ja, zum Schnittpunkt der Diagonalen", "Welche Buchstaben aus N, H, X, E sind punkt- und achsensymmetrisch?", "H und X"],
+ [5, "Bewegungen unterscheiden: Verschiebung, Drehung, Spiegelung", "Welche Bewegung kehrt den Umlaufsinn um?", "Spiegelung", "Ein Muster wiederholt sich in gleichen Abständen nebeneinander. Welche Bewegung?", "Verschiebung", "Ein Windrad dreht sich um 90°. Welcher Punkt bleibt fest?", "nur der Drehpunkt"]],
+"3.4": [
+ [1, "Geradenspiegelung: Punkt und Bildpunkt liegen gleich weit von der Achse auf einer Senkrechten", "P liegt 3 cm links der Achse. Wo liegt P′?", "3 cm rechts der Achse, auf der Senkrechten durch P", "Spiegle P(2 | 3) an der Geraden durch (4 | 0) und (4 | 6).", "P′(6 | 3)", "Ein Punkt und sein Bild sind 8 cm voneinander entfernt. Wie weit ist der Punkt von der Achse entfernt?", "4 cm"],
+ [3, "Zeichenschritte beim Spiegeln beschreiben", "Erster Schritt beim Spiegeln eines Punktes?", "Senkrechte zur Achse durch den Punkt zeichnen", "Wie spiegelt man ein Dreieck?", "jeden Eckpunkt spiegeln, Bildpunkte verbinden", "Welche Punkte bleiben beim Spiegeln an ihrem Platz?", "die Punkte auf der Achse"],
+ [5, "Spiegelung ist maßgleich: Seiten und Winkel bleiben erhalten", "Eine Seite ist 5 cm lang. Wie lang ist ihr Bild?", "5 cm", "Ein Winkel misst 40°. Wie groß ist sein Bild?", "40°", "Was ändert sich beim Spiegeln, obwohl Längen und Winkel gleich bleiben?", "der Umlaufsinn"]],
+"4.1": [
+ [1, "Rechteck: u = 2 · a + 2 · b und A = a · b", "a = 6 cm, b = 4 cm. Umfang?", "20 cm", "a = 7 cm, b = 3 cm. Flächeninhalt?", "21 cm²", "Ein Rechteck hat A = 36 cm² und a = 9 cm. Wie groß ist der Umfang?", "b = 4 cm, u = 26 cm"],
+ [3, "Flächeneinheiten: Umrechnungszahl 100", "3 dm² = ? cm²", "300 cm²", "2 m² = ? dm²", "200 dm²", "Wie viele Quadrate mit 1 cm Seitenlänge passen in 1 dm²?", "100"],
+ [5, "Zusammengesetzte Figuren in Rechtecke zerlegen", "Wie berechnest du den Flächeninhalt einer L-förmigen Figur?", "in zwei Rechtecke zerlegen und addieren", "Rechteck 10 cm × 6 cm, ein Quadrat 2 cm × 2 cm ausgeschnitten. Flächeninhalt?", "56 cm²", "Ein quadratischer Garten mit 12 m Seitenlänge hat innen ringsum einen 1 m breiten Weg. Wie groß ist die Fläche innerhalb des Weges?", "10 m · 10 m = 100 m²"]],
+"4.2": [
+ [1, "Quader: 6 Rechteckflächen, 12 Kanten, 8 Ecken", "Wie viele Kanten hat ein Quader?", "12", "Wie viele Flächen eines Würfels sind gleich groß?", "alle 6", "Wie viele Ecken hat ein Quader aus zwei aneinandergeklebten Würfeln?", "8"],
+ [2, "Körpernetz: alle Flächen zusammenhängend in der Ebene", "Woraus besteht das Netz eines Quaders?", "aus 6 Rechtecken", "Wie viele verschiedene Würfelnetze gibt es?", "11", "Im Netz liegen vier Quadrate in einer Reihe. Liegen das erste und das dritte beim Würfel gegenüber?", "ja"],
+ [4, "Schrägbild: Tiefenkanten unter 45° und halb so lang", "Wie zeichnet man eine 6 cm lange Tiefenkante?", "3 cm lang unter 45°", "Welche Kanten zeichnet man im Schrägbild in Originallänge?", "Breite und Höhe der Vorderfläche", "Wie sieht der Grundriss eines liegenden Quaders 5 cm × 3 cm × 2 cm aus?", "Rechteck 5 cm × 3 cm"]],
+"4.3": [
+ [1, "Aus Quadern zusammengesetzte Körper beschreiben", "Wie viele Einheitswürfel braucht eine Treppe aus 1, 2 und 3 Würfeln hohen Stufen (je ein Würfel breit und tief)?", "6", "Ein Körper sieht von vorn wie ein L aus. Nenne eine passende Zerlegung.", "zwei Quader", "Von oben sieht man ein Quadrat, von vorn ein Dreieck. Ist das ein Körper aus Quadern?", "nein, z. B. eine Pyramide"],
+ [2, "Ansichten von vorn, von oben und von der Seite unterscheiden", "Was zeigt der Grundriss?", "die Ansicht von oben", "Zwei Würfel stehen übereinander. Wie sieht die Vorderansicht aus?", "zwei Quadrate übereinander", "Drei Würfel liegen in einer Reihe. Wie sieht die Ansicht von der schmalen Seite aus?", "ein Quadrat"]],
+"4.4": [
+ [1, "Quader: V = a · b · c und O = 2 · (a · b + a · c + b · c)", "Volumen eines Quaders 5 cm × 4 cm × 2 cm?", "40 cm³", "Oberfläche eines Würfels mit 3 cm Kantenlänge?", "54 cm²", "Ein Quader hat V = 60 cm³, a = 5 cm, b = 3 cm. Wie hoch ist er?", "4 cm"],
+ [3, "Volumeneinheiten: Umrechnungszahl 1000, 1 dm³ = 1 l", "2 dm³ = ? cm³", "2 000 cm³", "3,5 l = ? ml", "3 500 ml", "Wie viele Liter passen in ein Aquarium 50 cm × 20 cm × 30 cm?", "30 l"],
+ [5, "Zusammengesetzte Körper: Volumen in Quader zerlegen", "Wie berechnest du das Volumen eines L-förmigen Körpers?", "in Quader zerlegen, Volumina addieren", "Würfel mit 4 cm Kante, ein Würfel mit 1 cm Kante herausgeschnitten. Volumen?", "63 cm³", "Welche 1-Liter-Verpackung braucht weniger Pappe: 10 cm × 10 cm × 10 cm oder 20 cm × 10 cm × 5 cm?", "der Würfel (600 cm² statt 700 cm²)"]],
+"5.1": [
+ [1, "Größen umrechnen: Zeit mit 60, Masse und Länge mit 1000 bzw. 10", "3 h = ? min", "180 min", "2,5 kg = ? g", "2 500 g", "Wie viele Sekunden hat ein Tag?", "86 400 s"],
+ [3, "Sinnvolle Genauigkeit bei Ergebnissen", "Ein Zug braucht 1,5 h. Wie viele Minuten sind das?", "90 min", "Ist „Die Wanderung ist 1 247,365 m lang“ sinnvoll angegeben?", "nein, etwa 1,2 km reicht", "Ein Schritt ist etwa 70 cm lang. Wie viele Schritte sind ungefähr 1 km?", "etwa 1 400"],
+ [4, "Zeitspannen und Fahrpläne", "Abfahrt 7:48 Uhr, Ankunft 8:13 Uhr. Fahrzeit?", "25 min", "Beginn 7:30 Uhr, 6 Stunden zu 45 min und 75 min Pausen. Wann ist Schluss?", "13:15 Uhr", "Fermi-Frage: Wie viele Unterrichtsstunden hast du etwa in einem Schuljahr?", "etwa 38 Wochen · 30 Stunden ≈ 1 100"]],
+"5.2": [
+ [1, "Benötigte Informationen aus einer Aufgabe herausfinden", "Welche Angabe fehlt, um die Kosten für 4 Hefte zu berechnen?", "der Preis eines Heftes", "Lisa kauft 3 Brötchen zu 0,40 € und zahlt mit 2 €. Wie viel bekommt sie zurück?", "0,80 €", "Formuliere eine Frage zu den Angaben „120 km in 2 Stunden“.", "z. B. Wie viele km fuhr das Auto pro Stunde? (60 km)"],
+ [3, "Probleme in Teilprobleme zerlegen", "Was berechnest du zuerst, um die Tapete für ein Zimmer zu kaufen?", "die Wandfläche", "Zerlege: Wie lange dauert eine Busreise mit Pausen?", "reine Fahrzeit berechnen, Pausen addieren", "25 Schüler laufen je 3 Runden zu 400 m, pro km gibt es 2 €. Wie viel Geld kommt zusammen?", "25 · 1,2 km = 30 km, also 60 €"],
+ [4, "Lösungsplan: verstehen – planen – ausführen – prüfen", "Nenne die vier Schritte eines Lösungsplans.", "verstehen, planen, ausführen, prüfen", "Wozu dient der letzte Schritt?", "das Ergebnis am Sachverhalt prüfen", "Ein Ergebnis lautet „ein Schüler wiegt 450 kg“. Was tust du?", "Rechnung prüfen, das Ergebnis ist unplausibel"]]
+}

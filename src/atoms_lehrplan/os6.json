@@ -1,0 +1,80 @@
+{
+"1.1": [
+ [1, "Mit natürlichen Zahlen ist nicht jede Division lösbar: gebrochene Zahlen nötig", "Welche Zahl löst 3 · x = 2?", "x = 2/3", "Warum braucht man Brüche, um 5 Äpfel auf 2 Kinder aufzuteilen?", "5 : 2 ist keine natürliche Zahl, jedes Kind bekommt 5/2", "Ist 6/3 eine natürliche Zahl?", "ja, 6/3 = 2"],
+ [3, "Menge und Teilmenge", "Ist die Menge der geraden Zahlen eine Teilmenge der natürlichen Zahlen?", "ja", "Gib die Menge der Teiler von 8 an.", "{1, 2, 4, 8}", "Ist {2, 4} eine Teilmenge von {1, 2, 3}?", "nein, 4 fehlt"],
+ [5, "Jede natürliche Zahl ist auch eine gebrochene Zahl", "Schreibe 5 als Bruch.", "z. B. 5/1", "Schreibe 3 als Bruch mit Nenner 4.", "12/4", "Liegt 3/4 in der Menge der natürlichen Zahlen?", "nein"]],
+"1.2": [
+ [1, "Brüche am Zahlenstrahl", "Wo liegt 3/4 am Zahlenstrahl?", "zwischen 0 und 1, näher an 1", "Zwischen welchen ganzen Zahlen liegt 7/2?", "zwischen 3 und 4", "Nenne einen Bruch zwischen 1/2 und 1.", "z. B. 3/4"],
+ [4, "Erweitern und Kürzen", "Kürze 6/8.", "3/4", "Erweitere 2/3 auf Zwölftel.", "8/12", "Welche Brüche sind gleich: 2/4, 3/6, 4/6?", "2/4 und 3/6"],
+ [7, "Brüche in Dezimalzahlen umwandeln und umgekehrt", "Schreibe 3/4 als Dezimalzahl.", "0,75", "Schreibe 0,4 als gekürzten Bruch.", "2/5", "Schreibe 1/3 als Dezimalzahl.", "0,333 … (periodisch)"],
+ [9, "Gebrochene Zahlen vergleichen und ordnen", "Was ist größer: 3/5 oder 2/5?", "3/5", "Was ist größer: 0,6 oder 2/3?", "2/3", "Ordne: 1/2; 0,4; 3/5.", "0,4 < 1/2 < 3/5"]],
+"1.3": [
+ [1, "Brüche addieren und subtrahieren: erst gleichnamig machen", "1/4 + 2/4 = ?", "3/4", "1/2 + 1/3 = ?", "5/6", "3/4 − 1/6 = ?", "7/12"],
+ [3, "Brüche multiplizieren und dividieren", "2/3 · 3/4 = ?", "1/2", "56 · 2/8 = ?", "14", "45 : 1/2 = ?", "90"],
+ [6, "Rechenvorteile und Vorrangregeln mit Brüchen und Dezimalzahlen", "0,4² = ?", "0,16", "(2/3)² = ?", "4/9", "Rechne geschickt: 3/4 + 0,5 + 1/4", "1,5"]],
+"1.4": [
+ [1, "Überschlagen, Abschätzen und Runden", "Runde 4,567 auf Hundertstel.", "4,57", "Überschlage: 19,8 · 5,1", "etwa 20 · 5 = 100", "Drei Artikel kosten 2,99 €, 4,49 € und 1,95 €. Reichen 10 €?", "ja, etwa 9,43 €"],
+ [4, "Arithmetisches Mittel", "Mittelwert von 3, 5 und 7?", "5", "Temperaturen 12 °C, 15 °C, 18 °C, 19 °C. Mittelwert?", "16 °C", "Nach drei Arbeiten hat Ben im Mittel die Note 3. Was braucht er in der vierten für den Schnitt 2,5?", "eine 1"],
+ [7, "Verhältnisgleichungen lösen", "2 : 5 = 6 : x", "x = 15", "Saft und Wasser im Verhältnis 1 : 3. Wie viel Wasser für 2 l Saft?", "6 l", "Auf einer Karte im Maßstab 1 : 1 000 sind 4 cm gemessen. Wie lang ist die Strecke?", "40 m"],
+ [9, "Negative Zahlen in Sachproblemen", "Die Temperatur fällt von 3 °C um 5 °C. Neue Temperatur?", "−2 °C", "Welche Temperatur ist kälter: −4 °C oder −1 °C?", "−4 °C", "Ein Konto steht bei −20 €, es werden 50 € eingezahlt. Neuer Stand?", "30 €"]],
+"2.1": [
+ [1, "Eindeutige, eineindeutige und mehrdeutige Zuordnungen", "Ist Schüler → Geburtsdatum eindeutig?", "ja", "Ist Mutter → Kind eindeutig?", "nein, mehrdeutig (mehrere Kinder möglich)", "Ist Auto → Kennzeichen eineindeutig?", "ja"],
+ [5, "Proportionale Zuordnung: doppelt so viel, doppelt so teuer", "1 kg Äpfel kostet 2 €. Was kosten 3 kg?", "6 €", "Ist Anzahl Brötchen → Preis proportional?", "ja (ohne Rabatt)", "Prüfe: (2 | 6), (4 | 12), (5 | 15). Proportional?", "ja, Quotient immer 3"],
+ [9, "Indirekt proportionale Zuordnung: doppelt so viele, halb so lange", "4 Arbeiter brauchen 6 Tage. Wie lange brauchen 8?", "3 Tage", "Prüfe: (2 | 12), (3 | 8), (4 | 6). Indirekt proportional?", "ja, Produkt immer 24", "Ist Alter → Körpergröße proportional?", "nein"],
+ [12, "Zuordnungen in Tabelle, Graph und Gleichung darstellen", "Wie sieht der Graph einer proportionalen Zuordnung aus?", "Gerade durch den Ursprung", "Gleichung für „Preis = 3 € pro Stück“?", "y = 3 · x", "Wie sieht der Graph einer indirekt proportionalen Zuordnung aus?", "eine fallende Kurve (Hyperbel)"]],
+"2.2": [
+ [1, "Dreisatz bei direkter Proportionalität: über die Einheit rechnen", "5 Hefte kosten 6 €. Was kostet ein Heft?", "1,20 €", "5 Hefte kosten 6 €. Was kosten 8 Hefte?", "9,60 €", "Ein Auto verbraucht 6 l auf 100 km. Wie viel auf 250 km?", "15 l"],
+ [3, "Dreisatz bei indirekter Proportionalität", "3 Pumpen leeren ein Becken in 8 h. Wie lange braucht 1 Pumpe?", "24 h", "3 Pumpen brauchen 8 h. Wie lange brauchen 4 Pumpen?", "6 h", "Ein Vorrat reicht 12 Tage für 5 Tiere. Wie lange für 6 Tiere?", "10 Tage"],
+ [5, "Zuordnungsart vor dem Dreisatz prüfen", "Mehr Arbeiter, weniger Zeit: welche Zuordnung?", "indirekt proportional", "Mehr Ware, höherer Preis: welche Zuordnung?", "direkt proportional", "Darf man bei „Taxi mit Grundgebühr“ den Dreisatz verwenden?", "nein, nicht proportional"]],
+"2.3": [
+ [1, "Sachaufgaben mit proportionalen Zuordnungen", "3 m Stoff kosten 21 €. Was kosten 5 m?", "35 €", "Für 4 Personen braucht man 500 g Nudeln. Wie viel für 6 Personen?", "750 g", "Ein Rezept für 12 Muffins braucht 300 g Mehl. Wie viel für 18 Muffins?", "450 g"],
+ [3, "Sachaufgaben mit indirekt proportionalen Zuordnungen", "6 Kinder teilen einen Gewinn, jedes bekommt 15 €. Wie viel bei 9 Kindern?", "10 €", "Bei 60 km/h dauert eine Fahrt 2 h. Wie lange bei 80 km/h?", "1,5 h", "Ein Zaun wird von 2 Personen in 9 h gestrichen. Wie lange brauchen 3 Personen?", "6 h"],
+ [5, "Ergebnisse auf Sinn prüfen", "Ein Ergebnis lautet „0,4 Busse“. Was antwortest du?", "1 Bus", "Ist „ein Ei kocht 4 Minuten, 3 Eier 12 Minuten“ richtig?", "nein, alle kochen gleichzeitig 4 Minuten", "Warum muss man vor dem Rechnen die Zuordnungsart klären?", "sonst rechnet man falsch herum"]],
+"3.1": [
+ [1, "Vermutungen aufstellen und überprüfen", "Wie überprüft man eine Vermutung über Winkel?", "messen, an mehreren Figuren testen", "Vermutung: „Die Winkelsumme im Dreieck ist immer 180°.“ Wie testest du?", "Winkel verschiedener Dreiecke messen und addieren", "Reichen drei Beispiele als Beweis?", "nein, nur als Hinweis"],
+ [2, "Präformales Beweisen durch Zerschneiden und Legen", "Wie zeigt man die Winkelsumme im Dreieck mit Papier?", "Ecken abreißen und aneinanderlegen", "Was ergibt sich, wenn man die drei Ecken aneinanderlegt?", "ein gestreckter Winkel, 180°", "Warum ist eine Begründung besser als Messen?", "Messungen sind ungenau"]],
+"3.2": [
+ [1, "Nebenwinkel ergänzen sich zu 180°, Scheitelwinkel sind gleich groß", "Nebenwinkel von 60°?", "120°", "Scheitelwinkel von 75°?", "75°", "Zwei Nebenwinkel sind gleich groß. Wie groß ist jeder?", "90°"],
+ [3, "Stufen- und Wechselwinkel an geschnittenen Parallelen sind gleich groß", "Stufenwinkel zu 50°?", "50°", "Wechselwinkel zu 110°?", "110°", "Wie erkennst du, ob zwei Geraden parallel sind?", "Stufenwinkel sind gleich groß"],
+ [5, "Innenwinkelsumme im Dreieck 180°; Einteilung der Dreiecke", "α = 50°, β = 70°. γ = ?", "60°", "Wie heißt ein Dreieck mit einem Winkel von 90°?", "rechtwinklig", "Ein gleichseitiges Dreieck: wie groß ist jeder Winkel?", "60°"]],
+"3.3": [
+ [1, "Kongruenzsätze: SSS, SWS, WSW, SsW", "Welcher Satz passt zu drei gegebenen Seiten?", "SSS", "Welcher Satz passt zu zwei Seiten und dem eingeschlossenen Winkel?", "SWS", "Sind zwei Dreiecke mit gleichen Winkeln immer deckungsgleich?", "nein, sie können verschieden groß sein"],
+ [2, "Dreiecksungleichung: zwei Seiten zusammen länger als die dritte", "Gibt es ein Dreieck mit 3 cm, 4 cm, 9 cm?", "nein, 3 + 4 < 9", "Gibt es ein Dreieck mit 5 cm, 6 cm, 7 cm?", "ja", "Der größeren Seite liegt welcher Winkel gegenüber?", "der größere Winkel"]],
+"3.4": [
+ [1, "Dreieck: A = g · h : 2", "g = 6 cm, h = 4 cm. Flächeninhalt?", "12 cm²", "g = 10 cm, h = 3 cm. Flächeninhalt?", "15 cm²", "Ein Dreieck hat A = 20 cm² und g = 8 cm. Höhe?", "5 cm"],
+ [3, "Parallelogramm: A = g · h", "g = 7 cm, h = 5 cm. Flächeninhalt?", "35 cm²", "Warum hat ein Parallelogramm denselben Flächeninhalt wie ein Rechteck mit g und h?", "man kann ein Dreieck abschneiden und anlegen", "A = 48 cm², h = 6 cm. Grundseite?", "8 cm"],
+ [6, "Trapez und Drachenviereck", "Trapez mit a = 8 cm, c = 4 cm, h = 5 cm. Flächeninhalt?", "30 cm²", "Drachen mit Diagonalen 6 cm und 10 cm. Flächeninhalt?", "30 cm²", "Wie erhält man den Flächeninhalt eines Trapezes durch Zerlegen?", "in Rechteck und Dreiecke zerlegen"]],
+"3.5": [
+ [1, "Umfang als Summe der Seitenlängen", "Umfang eines Dreiecks mit 3 cm, 4 cm, 5 cm?", "12 cm", "Umfang eines Parallelogramms mit 6 cm und 4 cm?", "20 cm", "Ein gleichseitiges Dreieck hat 18 cm Umfang. Seitenlänge?", "6 cm"],
+ [2, "Umfang in Sachaufgaben", "Wie viel Zaun braucht ein Garten 12 m × 8 m?", "40 m", "Eine quadratische Tischdecke hat 1,5 m Seitenlänge. Wie lang ist die Borte ringsum?", "6 m", "Hat eine Figur mit größerem Umfang immer den größeren Flächeninhalt?", "nein"]],
+"3.6": [
+ [1, "Relevante Informationen suchen", "Welche Angabe ist für den Flächeninhalt eines Rechtecks unwichtig: Länge, Breite, Farbe?", "Farbe", "Was musst du wissen, um die Kosten für einen Teppich zu berechnen?", "Fläche und Preis pro m²", "Formuliere eine Frage zu „Der Bus fährt alle 15 Minuten“.", "z. B. Wie oft fährt er in 2 Stunden? (8-mal)"],
+ [3, "Skizzen anfertigen", "Wozu fertigt man bei Sachaufgaben eine Skizze an?", "um den Sachverhalt zu verstehen", "Was trägt man in die Skizze ein?", "die gegebenen und gesuchten Größen", "Warum muss eine Skizze nicht maßstabsgetreu sein?", "sie dient nur der Übersicht"],
+ [5, "Variablen einführen und in Teilprobleme zerlegen", "„Eine Zahl vermehrt um 7 ist 20.“ Gleichung mit Variable?", "x + 7 = 20", "Zerlege: Wie viel kostet das Streichen eines Zimmers?", "Wandfläche, Farbmenge, Preis", "Ein Rechteck ist doppelt so lang wie breit, Umfang 24 cm. Seiten?", "4 cm und 8 cm"]],
+"4.1": [
+ [1, "Reale Objekte mit geometrischen Begriffen beschreiben", "Welche Form hat eine Tischplatte meist?", "Rechteck", "Welche Kanten eines Schranks sind parallel?", "z. B. die senkrechten Kanten", "Beschreibe die Lage von Fußboden und Wand.", "sie stehen senkrecht zueinander"],
+ [2, "Kopfgeometrie: Formen und Lagen vorstellen", "Wie viele Flächen hat ein Schuhkarton?", "6", "Welche Fläche liegt beim Würfel der Unterseite gegenüber?", "die Oberseite", "Ein Würfel wird zweimal nach rechts gekippt. Welche Fläche liegt oben?", "die ursprüngliche Unterseite"],
+ [3, "Objekte genau beschreiben", "Was gehört zu einer genauen Beschreibung eines Gegenstands?", "Form, Maße, Lage der Teile", "Beschreibe einen Briefumschlag mathematisch.", "Rechteck, z. B. 22 cm × 11 cm", "Warum beschreibt man in Mathematik mit Fachbegriffen?", "damit jeder dasselbe versteht"]],
+"4.2": [
+ [1, "Grundriss und Seitenansichten", "Was zeigt der Grundriss?", "die Ansicht von oben", "Wie sieht die Vorderansicht eines liegenden Quaders aus?", "ein Rechteck", "Von oben ein Quadrat, von vorn ein Rechteck. Welcher Körper?", "z. B. ein quadratisches Prisma (Quader)"],
+ [3, "Schrägbild von Quadern und Prismen", "Unter welchem Winkel zeichnet man die Tiefe?", "45°", "Wie lang zeichnet man eine 8 cm lange Tiefenkante?", "4 cm", "Welche Kanten sind im Schrägbild in Originalgröße?", "die Kanten der Vorderfläche"],
+ [6, "Körpernetze von Quadern und Prismen", "Woraus besteht das Netz eines Quaders?", "aus 6 Rechtecken", "Woraus besteht das Netz eines dreiseitigen Prismas?", "2 Dreiecke und 3 Rechtecke", "Wie viele Flächen hat das Netz eines sechsseitigen Prismas?", "8"]],
+"4.3": [
+ [1, "Volumen durch Ausfüllen mit Einheitswürfeln", "Wie viele Einheitswürfel passen in einen Quader 3 × 2 × 4?", "24", "Volumen eines Quaders 5 cm × 3 cm × 2 cm?", "30 cm³", "Ein Quader hat 60 cm³, Grundfläche 12 cm². Höhe?", "5 cm"],
+ [3, "Oberfläche als zusammengesetzte Fläche", "Oberfläche eines Quaders 4 cm × 3 cm × 2 cm?", "52 cm²", "Wie viele Flächen eines Quaders sind jeweils gleich groß?", "je zwei gegenüberliegende", "Wie ändert sich die Oberfläche, wenn man zwei Würfel aneinanderklebt?", "zwei Flächen fallen weg"],
+ [6, "Zusammengesetzte Körper zerlegen oder ergänzen", "Wie berechnest du das Volumen eines L-förmigen Körpers?", "in zwei Quader zerlegen", "Ein Würfel mit 4 cm Kante, ein Würfel mit 2 cm Kante herausgeschnitten. Volumen?", "56 cm³", "Wie viele Liter passen etwa in eine Badewanne 1,5 m × 0,7 m × 0,5 m?", "525 l"]],
+"5.1": [
+ [1, "Systematisches Probieren mit Tabelle", "Zwei Zahlen: Summe 12, Produkt 35?", "5 und 7", "Wie viele Möglichkeiten gibt es, 10 € mit 2-€- und 5-€-Münzen zu bezahlen?", "zwei (5 · 2 € oder 2 · 5 €)", "Hühner und Hasen: 8 Köpfe, 22 Beine. Wie viele Hasen?", "3"],
+ [3, "Zurückführen auf Bekanntes", "Wie berechnest du die Fläche eines Parallelogramms mit Bekanntem?", "Umwandeln in ein Rechteck", "Wie löst du 12 · 25 im Kopf?", "z. B. 12 · 100 : 4 = 300", "Wie findest du den Flächeninhalt einer unregelmäßigen Figur?", "in bekannte Figuren zerlegen"],
+ [4, "Lösungswege vergleichen", "Warum ist es gut, eine Aufgabe auf zwei Wegen zu lösen?", "zur Kontrolle", "Welcher Weg ist schneller für 99 + 47: schriftlich oder 100 + 47 − 1?", "100 + 47 − 1", "Wann ist systematisches Probieren ungünstig?", "wenn es sehr viele Möglichkeiten gibt"]],
+"5.2": [
+ [1, "Ergebnisse eines Zufallsversuchs", "Welche Ergebnisse hat das Werfen eines Würfels?", "1, 2, 3, 4, 5, 6", "Welche Ergebnisse hat das Werfen einer Münze?", "Kopf und Zahl", "Kann man das Ergebnis eines Zufallsversuchs vorhersagen?", "nein"],
+ [2, "Absolute und relative Häufigkeit", "20 Würfe, 4-mal eine Sechs. Absolute Häufigkeit?", "4", "Relative Häufigkeit für 4 von 20?", "4/20 = 0,2 = 20 %", "Bei 100 Würfen kam 15-mal die Sechs. Erwartet hätte man etwa?", "etwa 17-mal (1/6)"],
+ [4, "Häufigkeiten vergleichen", "Was ist häufiger: 6 von 20 oder 10 von 50?", "6 von 20 (30 % statt 20 %)", "Warum vergleicht man relative statt absolute Häufigkeiten?", "die Anzahl der Versuche ist verschieden", "Was passiert mit der relativen Häufigkeit bei vielen Würfen?", "sie schwankt weniger"]],
+"5.3": [
+ [1, "„Wenn-dann“-Aussagen", "Ergänze: Wenn eine Zahl durch 10 teilbar ist, dann ist sie …", "… auch durch 5 teilbar", "Stimmt die Umkehrung: Wenn durch 5 teilbar, dann durch 10 teilbar?", "nein, z. B. 15", "Formuliere als Wenn-dann-Satz: Quadrate haben vier rechte Winkel.", "Wenn ein Viereck ein Quadrat ist, dann hat es vier rechte Winkel."],
+ [3, "„Je-desto“-Aussagen bei Zuordnungen", "Ergänze: Je mehr Äpfel, desto …", "… höher der Preis", "Ergänze: Je schneller man fährt, desto …", "… kürzer die Fahrzeit", "Ist jede Je-mehr-desto-mehr-Zuordnung proportional?", "nein, z. B. Alter → Größe"]],
+"5.4": [
+ [1, "Präsentation planen: Thema, Material, Aufteilung", "Was legt eine Gruppe zuerst fest?", "Thema und Aufgaben der Mitglieder", "Welche Körper findest du an einem Gebäude?", "z. B. Quader, Prismen, Zylinder", "Wie zeigst du die Maße eines Modells?", "mit Maßstab und Beschriftung"],
+ [2, "Präsentieren und auswerten", "Was gehört auf ein Plakat?", "Überschrift, Bilder, kurze Erklärungen", "Wie lange sollte ein Kurzvortrag ungefähr dauern?", "wenige Minuten", "Wie gibst du einer anderen Gruppe faire Rückmeldung?", "erst Gelungenes, dann konkrete Tipps"]]
+}
