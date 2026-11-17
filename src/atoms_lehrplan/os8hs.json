@@ -1,0 +1,64 @@
+{
+"1.1": [
+ [1, "Jahreszinsen: Z = K · p/100", "Zinsen für 800 € bei 2 % in einem Jahr?", "16 €", "Für 1 200 € gibt es 36 € Zinsen. Zinssatz?", "3 %", "Welches Kapital bringt bei 4 % im Jahr 20 € Zinsen?", "500 €"],
+ [5, "Preiserhöhung und Preissenkung", "Ein Fahrrad für 400 € wird um 10 % teurer. Neuer Preis?", "440 €", "Eine Jacke für 80 € wird um 25 % billiger. Neuer Preis?", "60 €", "Ein Preis steigt erst um 10 %, dann sinkt er um 10 %. Ist er wieder gleich?", "nein, er ist 1 % niedriger"],
+ [9, "Rabatt und Skonto", "Was ist Skonto?", "Preisnachlass bei schneller Zahlung", "Rechnung 250 €, 2 % Skonto. Zahlbetrag?", "245 €", "Erst 10 % Rabatt, dann 2 % Skonto auf 500 €. Zahlbetrag?", "441 €"],
+ [12, "Mehrwertsteuer (19 %)", "Nettopreis 100 €. Bruttopreis mit 19 %?", "119 €", "Wie viel Mehrwertsteuer steckt in 238 € (brutto)?", "38 €", "Warum darf man vom Bruttopreis nicht einfach 19 % abziehen, um den Nettopreis zu erhalten?", "die 19 % beziehen sich auf den Nettopreis"]],
+"1.2": [
+ [1, "Diagramme lesen und deuten", "Welches Diagramm zeigt eine Entwicklung über Monate?", "Liniendiagramm", "Welches Diagramm zeigt Anteile am Ganzen?", "Kreisdiagramm", "Ein Säulendiagramm beginnt bei 90 statt bei 0. Was ist zu beachten?", "Unterschiede wirken größer, als sie sind"],
+ [3, "Diagramme erstellen", "Welcher Winkel gehört im Kreisdiagramm zu 20 %?", "72°", "Was gehört an die Achsen eines Diagramms?", "Größe und Einheit", "Monatsausgaben: Miete 500 €, Essen 300 €, Rest 200 €. Winkel für Miete?", "180°"],
+ [4, "Schaubilder kritisch prüfen", "Was fehlt einem Schaubild ohne Quelle?", "die Überprüfbarkeit", "Warum können Bilder statt Säulen täuschen?", "doppelte Höhe ergibt vierfache Fläche", "Wie erkennst du eine irreführende Grafik?", "Achsen, Ausschnitt und Bezugsgrößen prüfen"]],
+"1.3": [
+ [1, "Sparformen vergleichen", "Was bekommt man bei 1 000 € und 3 % Zinsen nach einem Jahr?", "1 030 €", "Was ist Zinseszins?", "Zinsen werden mitverzinst", "Was bringt mehr nach 2 Jahren: 3 % mit Zinseszins oder 6 % einmalig nach 2 Jahren auf 1 000 €?", "3 % mit Zinseszins (1 060,90 € statt 1 060 €)"],
+ [2, "Kredite und Ratenzahlung beurteilen", "Ein Handy kostet 500 € oder 12 Raten zu 45 €. Wie viel teurer ist die Ratenzahlung?", "40 €", "Was bedeutet „effektiver Jahreszins“?", "die tatsächlichen Kosten des Kredits pro Jahr", "Warum sind „0 %-Finanzierungen“ trotzdem riskant?", "Zusatzkosten, Verschuldung, Folgekosten"],
+ [3, "Kalkulationen mit Software", "Womit vergleichst du mehrere Angebote übersichtlich?", "mit einer Tabellenkalkulation", "Formel für den Ratenpreis bei 12 Raten in B2?", "=12*B2", "Woran erkennst du eine Schuldenfalle?", "die monatlichen Raten übersteigen das, was übrig bleibt"]],
+"2.1": [
+ [1, "Formeln lesen: Welche Größe hängt wovon ab?", "In A = a · b: wovon hängt A ab?", "von a und b", "In s = v · t: was bedeutet t?", "die Zeit", "Wie ändert sich A = a · b, wenn a verdoppelt wird?", "A verdoppelt sich"],
+ [4, "Formeln nach einer Größe umstellen", "A = a · b nach b umstellen", "b = A : a", "u = 4 · a nach a umstellen", "a = u : 4", "s = v · t nach v umstellen", "v = s : t"],
+ [7, "Werte mit Formeln berechnen", "u = 2 · a + 2 · b für a = 5, b = 3?", "16", "V = a · b · c für a = 2, b = 3, c = 4?", "24", "Wie lange braucht man für 150 km bei 60 km/h?", "2,5 h"]],
+"2.2": [
+ [1, "Formeln in der Formelsammlung finden", "Wo stehen die Formeln für Prismen in der Formelsammlung?", "im Kapitel Körper", "Welche Formel brauchst du für den Flächeninhalt eines Trapezes?", "A = (a + c) · h : 2", "Was bedeuten die Buchstaben in einer Formel?", "die Größen, die man einsetzt"],
+ [2, "Formeln richtig anwenden", "Welche Einheit hat ein Volumen?", "z. B. cm³", "Was musst du vor dem Einsetzen prüfen?", "gleiche Einheiten", "Kreisfläche mit r = 2 cm (A = π · r²)?", "etwa 12,6 cm²"],
+ [3, "Formelsammlung als Lernhilfe", "Warum steht nicht jede Aufgabe in der Formelsammlung?", "man muss die passende Formel selbst auswählen", "Was tust du, wenn eine Größe fehlt?", "aus anderen Angaben berechnen oder umstellen", "Wie kontrollierst du ein Ergebnis aus einer Formel?", "Überschlag und Einheit prüfen"]],
+"2.3": [
+ [1, "Gleichung zu einem Text aufstellen", "„Das Doppelte einer Zahl plus 4 ist 20.“ Gleichung?", "2 · x + 4 = 20", "Löse 2 · x + 4 = 20.", "x = 8", "Ein Rechteck ist 3 cm länger als breit, Umfang 26 cm. Breite?", "5 cm"],
+ [2, "Gleichungen lösen und die Antwort prüfen", "x − 7 = 15", "x = 22", "3 · x + 5 = 2 · x + 9", "x = 4", "Warum setzt man die Lösung in den Text ein, nicht nur in die Gleichung?", "die Gleichung könnte falsch aufgestellt sein"]],
+"3.1": [
+ [1, "Kreisornamente: Rosetten mit dem Zirkel", "Womit zeichnet man einen Kreis?", "mit dem Zirkel", "Wie oft passt der Radius als Sehne auf den Kreis?", "sechsmal", "Wie entsteht eine sechsblättrige Rosette?", "Kreisbögen mit gleichem Radius um die sechs Teilungspunkte"],
+ [2, "Ornamente entwerfen", "Welche Symmetrie hat ein Mandala meist?", "Dreh- und Achsensymmetrie", "Wie entsteht ein Faltschnitt-Muster?", "Papier mehrfach falten und schneiden", "Um wie viel Grad muss man ein Muster mit 8 gleichen Teilen drehen, damit es sich deckt?", "45°"]],
+"3.2": [
+ [1, "Regelmäßige Vielecke: gleich lange Seiten, gleich große Winkel", "Wie heißt ein regelmäßiges Viereck?", "Quadrat", "Wie viele Symmetrieachsen hat ein regelmäßiges Sechseck?", "6", "Um welchen Winkel kann man ein regelmäßiges Fünfeck drehen, damit es sich deckt?", "72°"],
+ [3, "Innenwinkel regelmäßiger Vielecke", "Innenwinkelsumme im Viereck?", "360°", "Innenwinkelsumme im Sechseck?", "720°", "Wie groß ist ein Innenwinkel im regelmäßigen Sechseck?", "120°"],
+ [4, "Umkreis regelmäßiger Vielecke", "Wo liegen die Ecken eines regelmäßigen Vielecks?", "auf einem Kreis (Umkreis)", "Wie lang ist die Seite eines regelmäßigen Sechsecks mit Umkreisradius 3 cm?", "3 cm", "Wo liegt der Mittelpunkt des Umkreises?", "im Mittelpunkt des Vielecks"]],
+"3.3": [
+ [1, "Regelmäßige Vielecke mit Zirkel und Geodreieck konstruieren", "Wie konstruierst du ein regelmäßiges Sechseck?", "Radius sechsmal auf dem Kreis abtragen", "Welchen Mittelpunktswinkel hat ein regelmäßiges Achteck?", "45°", "Wie erhältst du aus einem Sechseck ein gleichseitiges Dreieck?", "jede zweite Ecke verbinden"],
+ [2, "Vielecke über den Mittelpunktswinkel konstruieren", "Mittelpunktswinkel beim regelmäßigen Fünfeck?", "72°", "Mittelpunktswinkel beim regelmäßigen Zehneck?", "36°", "Wie erhält man aus einem Fünfeck ein Zehneck?", "die Mittelpunktswinkel halbieren"]],
+"3.4": [
+ [1, "Kreisumfang: u = π · d", "Umfang eines Kreises mit d = 10 cm?", "etwa 31,4 cm", "Umfang eines Kreises mit r = 5 m?", "etwa 31,4 m", "Ein Rad hat d = 70 cm. Wie weit rollt es bei einer Umdrehung?", "etwa 2,2 m"],
+ [2, "Kreisfläche: A = π · r²", "Fläche eines Kreises mit r = 3 cm?", "etwa 28,3 cm²", "Fläche einer Pizza mit d = 30 cm?", "etwa 707 cm²", "Wie ändert sich die Fläche, wenn der Radius verdoppelt wird?", "sie vervierfacht sich"],
+ [4, "Kreisring: A = π · (R² − r²)", "Kreisring mit R = 5 cm, r = 3 cm. Fläche?", "16 · π ≈ 50,3 cm²", "Ein runder Tisch mit d = 1 m hat einen 10 cm breiten Rand. Fläche des Randes?", "π · (0,5² − 0,4²) ≈ 0,28 m²", "Ist der Ring zwischen r = 1 und R = 2 größer als die innere Kreisfläche?", "ja, dreimal so groß"]],
+"3.5": [
+ [1, "Sehne, Sekante, Tangente", "Wie heißt eine Strecke, die zwei Punkte des Kreises verbindet?", "Sehne", "Wie heißt die längste Sehne?", "Durchmesser", "Wie viele Punkte hat eine Tangente mit dem Kreis gemeinsam?", "einen"],
+ [2, "Tangente steht senkrecht auf dem Radius", "Wie steht die Tangente zum Radius im Berührpunkt?", "senkrecht", "Wie viele gemeinsame Punkte hat eine Passante mit dem Kreis?", "keinen", "Was besagt der Satz des Thales?", "ein Dreieck über dem Durchmesser mit dritter Ecke auf dem Kreis ist rechtwinklig"]],
+"4.1": [
+ [1, "Netz eines Kreiszylinders: zwei Kreise und ein Rechteck", "Woraus besteht das Netz eines Zylinders?", "zwei Kreise und ein Rechteck", "Wie lang ist das Rechteck im Netz?", "so lang wie der Kreisumfang", "Zylinder mit r = 2 cm, h = 5 cm: Maße des Mantelrechtecks?", "etwa 12,6 cm × 5 cm"],
+ [3, "Ansichten und Schrägbild des Zylinders", "Wie sieht ein stehender Zylinder von oben aus?", "ein Kreis", "Wie sieht ein stehender Zylinder von vorn aus?", "ein Rechteck", "Wie zeichnet man den Kreis im Schrägbild?", "als Ellipse"],
+ [5, "Zylinder im Alltag", "Nenne zwei zylinderförmige Gegenstände.", "z. B. Dose, Rohr", "Ist ein Rohr ein Vollzylinder?", "nein, ein Hohlzylinder", "Warum sind Getränkedosen zylinderförmig?", "stabil, gut zu fertigen, wenig Material"]],
+"4.2": [
+ [1, "Grund-, Mantel- und Oberfläche beim Zylinder", "Welche Form hat die Grundfläche eines Zylinders?", "Kreis", "Wie berechnet man die Mantelfläche?", "Umfang · Höhe", "Woraus setzt sich die Oberfläche zusammen?", "2 · Grundfläche + Mantelfläche"],
+ [3, "Vergleich mit dem Prisma", "Was haben Prisma und Zylinder gemeinsam?", "zwei gleiche, parallele Grundflächen", "Wie berechnet man das Volumen beider Körper?", "Grundfläche · Höhe", "Wie unterscheidet sich der Mantel?", "beim Prisma Rechtecke, beim Zylinder ein gekrümmtes Rechteck"],
+ [5, "Mantelfläche berechnen", "Zylinder mit r = 3 cm, h = 10 cm. Mantelfläche?", "etwa 188,5 cm²", "Wie viel Etikett braucht eine Dose mit d = 7 cm und h = 11 cm?", "etwa 242 cm²", "Wie ändert sich die Mantelfläche bei doppelter Höhe?", "sie verdoppelt sich"]],
+"4.3": [
+ [1, "Zylinder: V = π · r² · h", "Volumen eines Zylinders mit r = 2 cm, h = 5 cm?", "etwa 62,8 cm³", "Wie viele Liter fasst ein Fass mit r = 30 cm, h = 80 cm?", "etwa 226 l", "Wie ändert sich das Volumen, wenn r verdoppelt wird?", "es vervierfacht sich"],
+ [3, "Hohlzylinder: V = π · (R² − r²) · h", "Rohr mit R = 5 cm, r = 4 cm, h = 100 cm. Volumen des Materials?", "900 · π ≈ 2 827 cm³", "Warum zieht man beim Hohlzylinder den inneren Zylinder ab?", "dort ist kein Material", "Masse dieses Rohres aus Stahl (7,8 g/cm³)?", "etwa 22 kg"],
+ [4, "Oberfläche und Masse in Sachaufgaben", "Wie viel Blech braucht eine Dose mit r = 4 cm, h = 10 cm?", "etwa 352 cm²", "Ein Holzzylinder (0,6 g/cm³) hat 1 000 cm³. Masse?", "600 g", "Wie hoch muss ein Zylinder mit r = 5 cm sein, um 1 Liter zu fassen?", "etwa 12,7 cm"]],
+"5.1": [
+ [2, "Haushaltsbuch: Einnahmen und Ausgaben", "Einnahmen 1 800 €, Ausgaben 1 650 €. Was bleibt?", "150 €", "Welcher Anteil der Einnahmen von 2 000 € ist eine Miete von 600 €?", "30 %", "Warum führt man ein Haushaltsbuch?", "um Ausgaben zu überblicken und zu planen"],
+ [8, "Rechnungen lesen und prüfen", "Eine Rechnung: 3 Stunden zu 45 € plus 19 % MwSt. Betrag?", "160,65 €", "Was steht auf einer Handwerkerrechnung?", "Arbeitszeit, Material, Steuer", "Wie prüfst du eine Telefonrechnung?", "Posten mit dem Vertrag vergleichen, nachrechnen"],
+ [14, "Wohn- und Baukosten berechnen", "Eine Wohnung hat 60 m², Miete 8 € pro m². Kaltmiete?", "480 €", "Wie viel Farbe braucht man für 40 m² Wand, wenn 1 l für 8 m² reicht?", "5 l", "Fliesen für einen Boden 4 m × 3 m, 1 m² kostet 25 €, 10 % Verschnitt. Kosten?", "330 €"],
+ [20, "Angebote vergleichen", "Angebot A: 20 € Grundgebühr und 0,10 € pro Minute. Kosten bei 100 Minuten?", "30 €", "Angebot B: 0,30 € pro Minute. Ab wann ist A günstiger?", "ab mehr als 100 Minuten", "Was solltest du neben dem Preis noch vergleichen?", "Laufzeit, Leistungen, Zusatzkosten"]],
+"5.2": [
+ [1, "Maßstab: Bild zu Wirklichkeit", "Was bedeutet der Maßstab 1 : 100?", "1 cm im Plan sind 100 cm in Wirklichkeit", "Im Maßstab 1 : 50 misst eine Wand 8 cm. Wie lang ist sie wirklich?", "4 m", "Ein Zimmer ist 5 m lang. Wie lang ist es im Plan 1 : 100?", "5 cm"],
+ [3, "Grundrisse maßstäblich zeichnen", "Welcher Maßstab passt für einen Wohnungsgrundriss auf A4?", "z. B. 1 : 100", "Ein Grundstück 30 m × 20 m im Maßstab 1 : 500. Maße im Plan?", "6 cm × 4 cm", "Wie ändert sich die Fläche im Maßstab 1 : 10?", "sie wird 100-mal kleiner"],
+ [5, "Vergrößern und Verkleinern", "Ein Modell im Maßstab 1 : 87 ist 23 cm lang. Echte Länge?", "etwa 20 m", "Was bedeutet der Maßstab 10 : 1?", "Vergrößerung auf das Zehnfache", "Warum bleiben Winkel beim maßstäblichen Zeichnen gleich?", "die Form bleibt erhalten, nur die Größe ändert sich"]]
+}

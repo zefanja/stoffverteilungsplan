@@ -67,6 +67,22 @@ def lesson_titles(items, hours, fallback):
     return out
 
 
+COMPETENCE = re.compile(r"^(Kennen|Beherrschen|Anwenden|Übertragen|Einblick gewinnen|Beurteilen|Sich positionieren|Gestalten|Reflektieren|Erkennen)\b")
+
+
+def merge_continuations(lzs):
+    """Lernziele beginnen mit einem Kompetenzverb; Zeilen ohne ein solches (z. B. „y = x; y = x² …“) setzen das vorige fort."""
+    out = []
+    for lz in lzs:
+        if out and not COMPETENCE.match(lz["text"]):
+            prev = out[-1]
+            prev["inhalte"].append(dict(text=lz["text"], bem=lz["bem"], refs=lz["refs"], sub=[]))
+            prev["inhalte"] += lz["inhalte"]
+        else:
+            out.append(dict(lz, inhalte=list(lz["inhalte"])))
+    return out
+
+
 def short_title(text):
     """„Beherrschen des Darstellens von Quadern“ bleibt lesbar, aber ohne überlange Klammerzusätze."""
     return re.sub(r"\s*\([^)]{40,}\)", "", text).strip()
@@ -98,6 +114,25 @@ def unit_from(lz, code, lb_key, hours):
                 begriffe=[], hinweise=hinweise, material=[], stunden=lesson_titles(inh, hours, lz["text"]), atoms=[])
 
 
+def load_atoms(cid):
+    """Atome je Klasse aus src/atoms_lehrplan/<cid>.json: {Einheit: [[Stunde, Atom, Frage, Lösung, Frage2, Lösung2, Frage3, Lösung3], …]}."""
+    import json, os
+    p = f"src/atoms_lehrplan/{cid}.json"
+    return json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {}
+
+
+def attach_atoms(cid, units):
+    data = load_atoms(cid)
+    for code, rows in data.items():
+        u = units.get(code)
+        assert u is not None, (cid, code, "Einheit unbekannt")
+        n = max(1, len(u["stunden"]))
+        u["atoms"] = []
+        for i, r in enumerate(rows):
+            assert len(r) == 8 and all(isinstance(x, str) and x for x in r[1:]), (cid, code, r)
+            u["atoms"].append(dict(id=f"{code}.{i + 1}", l=min(max(1, int(r[0])), n), t=r[1], q=r[2], a=r[3], q2=r[4], a2=r[5], q3=r[6], a3=r[7]))
+
+
 def build(lehrplan, cal_start, weeks=25):
     classes = {}
     for school in ("gym", "os"):
@@ -111,7 +146,7 @@ def build(lehrplan, cal_start, weeks=25):
                 for lb in pflicht:
                     key = f"LB{lb['nr']}"
                     lbnames[key] = lb["title"]; zrw[key] = lb["ustd"]
-                    lzs = [lz for lz in lb["lernziele"] if lz["text"]] or [dict(text=lb["title"], bem=[], refs=[], inhalte=[])]
+                    lzs = merge_continuations([lz for lz in lb["lernziele"] if lz["text"]]) or [dict(text=lb["title"], bem=[], refs=[], inhalte=[])]
                     hours = split_hours(lb["ustd"], [1 + len(lz["inhalte"]) + sum(len(i["sub"]) for i in lz["inhalte"]) / 2 for lz in lzs])
                     for k, (lz, h) in enumerate(zip(lzs, hours), 1):
                         code = f"{lb['nr']}.{k}" if len(lzs) > 1 else f"{lb['nr']}"
@@ -124,6 +159,7 @@ def build(lehrplan, cal_start, weeks=25):
                                   inhalte=[dict(text=lz["text"], bem=[], refs=[], sub=[]) for lz in lb["lernziele"]] + [i for lz in lb["lernziele"] for i in lz["inhalte"]])
                     units[code] = unit_from(lz_all, code, "WB", 2 * w)
                     units[code]["title"] = "Wahlbereich: " + lb["title"]
+                attach_atoms(cid, units)
                 units["P"] = dict(code="P", lb="P", title="Puffer · Wiederholung", stunden=[], atoms=[])
                 lbnames.update(WB="Wahlbereich (2 Wochen, wahlweise)", P="Puffer")
                 days = DAYS_BY_HOURS.get(w, DAYS_BY_HOURS[4])

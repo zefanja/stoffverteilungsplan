@@ -1,0 +1,76 @@
+{
+"1": [
+ [2, "Körpernetze und Seitenansichten zeichnen", "Woraus besteht das Netz eines Würfels?", "aus 6 gleichen Quadraten", "Wie viele Flächen hat das Netz eines Quaders?", "6", "Von vorn ein Rechteck, von oben ein Kreis: welcher Körper?", "ein Zylinder"],
+ [7, "Schrägbilder skizzieren: Tiefe unter 45° und halb so lang", "Wie lang zeichnest du eine 6 cm lange Tiefenkante?", "3 cm", "Welche Kanten zeichnet man gestrichelt?", "die verdeckten", "Warum zeichnet man die Tiefe verkürzt?", "damit der Körper räumlich wirkt"],
+ [12, "Flächeninhalt von Rechteck und Quadrat, Volumen von Quader und Würfel", "Volumen eines Quaders 4 cm × 3 cm × 2 cm?", "24 cm³", "Flächeninhalt eines Rechtecks 7 m × 5 m?", "35 m²", "Ein Würfel hat 64 cm³. Wie lang ist eine Kante?", "4 cm"],
+ [17, "Modelle herstellen und Materialbedarf berechnen", "Wie viel Karton braucht man für einen Würfel mit 5 cm Kante (ohne Klebelaschen)?", "150 cm²", "Wie viele Würfel mit 1 cm Kante passen in einen Quader 5 cm × 2 cm × 3 cm?", "30", "Warum plant man beim Modellbau Klebelaschen ein?", "damit sich die Flächen verbinden lassen"]],
+"2.1": [
+ [1, "Anteile als Bruch, Dezimalzahl und Prozent angeben", "Schreibe 1/4 in Prozent.", "25 %", "Schreibe 0,3 in Prozent.", "30 %", "8 von 20 Schülern kommen mit dem Rad. Anteil in Prozent?", "40 %"],
+ [2, "Anteile in Sachsituationen", "Wie viel sind 3/4 von 40 €?", "30 €", "Wie viel sind 10 % von 250 €?", "25 €", "Welcher Anteil ist größer: 2/5 oder 35 %?", "2/5 (40 %)"],
+ [4, "Zwischen den Schreibweisen wechseln", "Schreibe 75 % als gekürzten Bruch.", "3/4", "Schreibe 3/5 als Dezimalzahl.", "0,6", "Schreibe 1/8 in Prozent.", "12,5 %"]],
+"2.2": [
+ [1, "Anteile vergleichen", "Was ist mehr: 1/3 oder 30 %?", "1/3", "Klasse A: 12 von 24 Mädchen, Klasse B: 15 von 25. Wo ist der Anteil größer?", "Klasse B (60 % statt 50 %)", "Ordne: 0,45; 1/2; 40 %.", "40 % < 0,45 < 1/2"],
+ [3, "Anteile im Kreisdiagramm darstellen", "Welcher Winkel gehört zu 50 %?", "180°", "Welcher Winkel gehört zu 25 %?", "90°", "Welcher Winkel gehört zu 10 %?", "36°"],
+ [6, "Anteile aus Diagrammen ablesen", "Ein Viertelkreis ist blau. Anteil?", "25 %", "Ein Kreissektor hat 72°. Anteil?", "20 %", "Im Säulendiagramm stehen 15 von 60 Stimmen für A. Anteil?", "25 %"]],
+"2.3": [
+ [1, "Grundwert, Prozentwert und Prozentsatz", "Wie heißt das Ganze in der Prozentrechnung?", "Grundwert", "Von 200 € sind 50 € gemeint. Was ist der Prozentwert?", "50 €", "In „20 % von 80 € sind 16 €“: Was ist der Prozentsatz?", "20 %"],
+ [2, "Prozent bedeutet Hundertstel", "Wie viel sind 1 % von 300 €?", "3 €", "Wie viel sind 100 % von 45 €?", "45 €", "Kann ein Prozentsatz größer als 100 % sein?", "ja, z. B. bei einer Preissteigerung"]],
+"2.4": [
+ [1, "Bequeme Prozentsätze: 50 % = 1/2, 25 % = 1/4, 10 % = 1/10", "50 % von 36 €?", "18 €", "25 % von 80 €?", "20 €", "10 % von 45 €?", "4,50 €"],
+ [2, "Grundaufgaben inhaltlich lösen", "Wie viel Prozent sind 30 von 60?", "50 %", "20 € sind 10 %. Grundwert?", "200 €", "Ein Pullover kostet 60 € und ist um 25 % reduziert. Neuer Preis?", "45 €"]],
+"2.5": [
+ [1, "Dreisatz bei direkt proportionalen Zuordnungen", "4 Brötchen kosten 1,60 €. Was kostet eins?", "0,40 €", "4 Brötchen kosten 1,60 €. Was kosten 10?", "4,00 €", "Ein Auto braucht 7 l auf 100 km. Wie viel auf 300 km?", "21 l"],
+ [2, "Dreisatz bei indirekt proportionalen Zuordnungen", "2 Maler brauchen 6 h. Wie lange braucht einer?", "12 h", "2 Maler brauchen 6 h. Wie lange brauchen 3?", "4 h", "Ein Vorrat reicht für 4 Personen 9 Tage. Wie lange für 6 Personen?", "6 Tage"]],
+"2.6": [
+ [1, "Tabellenkalkulation: Zellen, Formeln, Kopieren", "Womit beginnt eine Formel in der Tabellenkalkulation?", "mit =", "Formel für „10 % von A2“?", "=A2*0,1", "Was passiert beim Herunterziehen einer Formel?", "die Zellbezüge passen sich an"],
+ [2, "Prozentaufgaben mit Tabellenkalkulation", "Formel für den neuen Preis nach 20 % Rabatt auf B2?", "=B2*0,8", "Wie berechnet die Tabelle den Prozentsatz von B2 an C2?", "=B2/C2, als Prozent formatiert", "Warum eignet sich die Tabelle für viele Preise?", "eine Formel gilt für alle Zeilen"]],
+"2.7": [
+ [1, "Urliste, Strichliste, absolute und relative Häufigkeit", "Wozu dient eine Strichliste?", "zum Zählen der Ergebnisse", "30 Würfe, 6-mal Sechs. Relative Häufigkeit?", "6/30 = 20 %", "Wie viele Striche hat eine Strichliste bei absoluter Häufigkeit 12?", "12"],
+ [4, "Gleich wahrscheinliche Ergebnisse", "Wahrscheinlichkeit für eine Sechs beim Würfeln?", "1/6", "Wahrscheinlichkeit für Kopf beim Münzwurf?", "1/2", "Wahrscheinlichkeit für eine gerade Zahl beim Würfeln?", "3/6 = 1/2"],
+ [6, "Nicht gleich wahrscheinliche Ergebnisse: relative Häufigkeit wird stabil", "Kann man bei einer Reißzwecke die Wahrscheinlichkeit für „Spitze oben“ vorhersagen?", "nein, man schätzt sie durch viele Würfe", "Nach 200 Würfen 80-mal Spitze oben. Schätzwert?", "40 %", "Warum braucht man viele Würfe?", "die relative Häufigkeit wird erst dann stabil"],
+ [8, "Chancen abschätzen", "Welches Feld eines Glücksrads mit 1 rotem und 3 blauen gleich großen Feldern kommt öfter?", "blau", "Wahrscheinlichkeit für Rot bei diesem Glücksrad?", "1/4", "Ist ein Spiel fair, bei dem man bei Blau gewinnt?", "nein, Blau ist wahrscheinlicher"]]
+,
+"3.1": [
+ [1, "Negative Zahlen im Alltag", "Nenne ein Beispiel für negative Zahlen.", "z. B. Temperatur unter null", "Was bedeutet ein Kontostand von −50 €?", "50 € Schulden", "Ein Taucher ist 12 m unter dem Meeresspiegel. Welche Zahl?", "−12 m"],
+ [2, "Warum man negative Zahlen braucht", "Welche Zahl löst 3 − x = 5?", "x = −2", "Die Temperatur fällt von 2 °C um 6 °C. Neue Temperatur?", "−4 °C", "Ist 5 − 8 in den natürlichen Zahlen lösbar?", "nein"]],
+"3.2": [
+ [1, "Zahlen auf der Zahlengeraden darstellen", "Wo liegt −3 auf der Zahlengeraden?", "drei Einheiten links von 0", "Welche Zahl liegt genau zwischen −4 und 2?", "−1", "Wie heißt die Gegenzahl von 7?", "−7"],
+ [3, "Zahlen vergleichen und ordnen", "Was ist größer: −2 oder −5?", "−2", "Ordne: 3; −1; −4; 0.", "−4 < −1 < 0 < 3", "Welche Temperatur ist wärmer: −8 °C oder −3 °C?", "−3 °C"],
+ [5, "Betrag einer Zahl", "Betrag von −6?", "6", "Welche Zahlen haben den Betrag 4?", "4 und −4", "Was ist weiter von 0 entfernt: −7 oder 5?", "−7"]],
+"3.3": [
+ [1, "Ganze Zahlen addieren und subtrahieren", "−200 − 50 = ?", "−250", "−3 + 8 = ?", "5", "4 − 9 = ?", "−5"],
+ [2, "Vervielfachen und Teilen: Minus mal Plus ergibt Minus", "7 · (−3) = ?", "−21", "−36 : 4 = ?", "−9", "Der Kontostand sinkt 5 Monate lang um je 20 €. Gesamtänderung?", "−100 €"],
+ [3, "Rationale Zahlen mit dem Taschenrechner", "Welche Taste gibt eine negative Zahl ein?", "die Vorzeichentaste (−)", "−2,5 + 7,8 = ?", "5,3", "Warum muss man Vorzeichen und Rechenzeichen unterscheiden?", "sonst rechnet der Taschenrechner falsch"]],
+"3.4": [
+ [1, "Termwerte berechnen", "Wert von 3 · x + 2 für x = 4?", "14", "Wert von 2 · x − 5 für x = −1?", "−7", "Wert von x² + 1 für x = −3?", "10"],
+ [3, "Einfache Gleichungen und Zahlenrätsel lösen", "x + 7 = 3", "x = −4", "„Ich denke mir eine Zahl, verdopple sie und erhalte −10.“ Zahl?", "−5", "2 · x + 1 = 9", "x = 4"],
+ [4, "Koordinatensystem mit vier Quadranten", "In welchem Quadranten liegt P(−2 | 3)?", "im zweiten", "Wie heißt der Punkt 3 nach links und 1 nach unten?", "P(−3 | −1)", "Spiegle P(2 | 4) an der y-Achse.", "P′(−2 | 4)"]],
+"3.5": [
+ [1, "Sachaufgaben mit Gleichungen lösen", "„Eine Zahl vermehrt um 12 ergibt 30.“ Gleichung?", "x + 12 = 30", "Tom hat 5 € mehr als Lea, zusammen 25 €. Wie viel hat Lea?", "10 €", "Warum ist eine Gleichung oft einfacher als Probieren?", "man findet die Lösung direkt"],
+ [2, "Gleichung aufstellen, lösen, Antwort prüfen", "Was ist der erste Schritt?", "die gesuchte Größe als Variable festlegen", "Drei gleich teure Hefte und ein Stift für 1 € kosten 4,60 €. Preis eines Heftes?", "1,20 €", "Wie prüfst du deine Lösung?", "in den Text einsetzen"]],
+"4.1": [
+ [1, "Realobjekte mit geometrischen Begriffen beschreiben", "Welche Form hat ein typisches Fenster?", "Rechteck", "Welche Dreiecke sieht man in einem Fachwerk?", "z. B. rechtwinklige und gleichschenklige", "Wie stehen die Stufen einer Treppe zum Geländer?", "die Stufen sind waagerecht, das Geländer ist schräg"],
+ [2, "Lagebeziehungen an Bauwerken erkennen", "Wie stehen Wand und Fußboden zueinander?", "senkrecht", "Welche Kanten eines Hauses sind parallel?", "z. B. die senkrechten Ecken", "Warum sind Dreiecke in Tragwerken häufig?", "Dreiecke sind stabil, sie verformen sich nicht"],
+ [3, "Objekte in Fachsprache beschreiben", "Welche Form hat eine Satteldach-Giebelseite?", "Dreieck", "Beschreibe einen Damm im Querschnitt.", "ein Trapez", "Warum ist Fachsprache bei Bauplänen wichtig?", "damit alle dasselbe verstehen"]],
+"4.2": [
+ [1, "Dreiecke konstruieren", "Welche Angaben braucht man mindestens für ein Dreieck?", "drei passende Stücke, z. B. drei Seiten", "Konstruiere aus 4 cm, 5 cm, 6 cm: womit beginnst du?", "mit einer Seite, z. B. 6 cm", "Gibt es ein Dreieck mit 2 cm, 3 cm, 7 cm?", "nein"],
+ [2, "Parallelogramme konstruieren", "Welche Seiten sind im Parallelogramm parallel?", "die gegenüberliegenden", "Welche Angaben genügen für ein Parallelogramm?", "z. B. zwei Seiten und ein Winkel", "Wie groß ist der vierte Winkel, wenn einer 70° misst?", "die Winkel sind 70°, 110°, 70°, 110°"],
+ [3, "Drachenvierecke konstruieren", "Welche Seiten sind beim Drachen gleich lang?", "je zwei benachbarte", "Wie stehen die Diagonalen eines Drachens zueinander?", "senkrecht", "Wie viele Symmetrieachsen hat ein Drachen, der keine Raute ist?", "eine"]],
+"4.3": [
+ [1, "Flächeninhalt von Dreieck und Parallelogramm", "Dreieck g = 8 cm, h = 5 cm. Flächeninhalt?", "20 cm²", "Parallelogramm g = 6 cm, h = 4 cm. Flächeninhalt?", "24 cm²", "Dreieck mit A = 18 cm² und g = 6 cm. Höhe?", "6 cm"],
+ [2, "Flächeninhalt von Trapez und Drachen", "Trapez a = 10 cm, c = 6 cm, h = 4 cm. Flächeninhalt?", "32 cm²", "Drachen mit e = 8 cm, f = 5 cm. Flächeninhalt?", "20 cm²", "Woher kommt das „: 2“ in der Dreiecksformel?", "ein Dreieck ist ein halbes Parallelogramm"],
+ [3, "Umfang von Drei- und Vierecken", "Umfang eines Dreiecks mit 5 cm, 6 cm, 7 cm?", "18 cm", "Umfang eines Parallelogramms mit 8 cm und 5 cm?", "26 cm", "Ein Drachen hat Seiten 4 cm und 6 cm. Umfang?", "20 cm"]],
+"4.4": [
+ [1, "Vielecke in bekannte Figuren zerlegen", "Wie berechnest du den Flächeninhalt eines Fünfecks?", "in Dreiecke oder Rechtecke zerlegen", "Ein Haus-Querschnitt: Rechteck 8 m × 4 m und Dreieck mit g = 8 m, h = 3 m. Fläche?", "32 + 12 = 44 m²", "Welche Figuren entstehen beim Tangram?", "Dreiecke, ein Quadrat, ein Parallelogramm"],
+ [2, "Inhaltsgleiche Figuren", "Haben alle Tangram-Figuren aus denselben Teilen denselben Flächeninhalt?", "ja", "Sind zwei Figuren mit gleichem Flächeninhalt immer deckungsgleich?", "nein", "Wie zeigst du, dass ein Parallelogramm so groß ist wie ein Rechteck?", "Dreieck abschneiden und auf der anderen Seite anlegen"]],
+"4.5": [
+ [1, "Prismen darstellen: Netz, Schrägbild, Ansichten", "Woraus besteht das Netz eines dreiseitigen Prismas?", "2 Dreiecke und 3 Rechtecke", "Welche Form hat die Vorderansicht eines liegenden dreiseitigen Prismas?", "ein Dreieck (oder Rechteck, je nach Lage)", "Wie viele Flächen hat ein sechsseitiges Prisma?", "8"],
+ [4, "Oberfläche und Volumen von Prismen: V = G · h", "Prisma mit G = 12 cm², h = 5 cm. Volumen?", "60 cm³", "Wie berechnet man die Oberfläche eines Prismas?", "2 · Grundfläche + Mantelfläche", "Ein dreiseitiges Prisma: Dreieck mit g = 4 cm, h = 3 cm, Körperhöhe 10 cm. Volumen?", "60 cm³"],
+ [6, "Masse berechnen: m = V · Dichte", "Ein Holzklotz hat 500 cm³ und die Dichte 0,7 g/cm³. Masse?", "350 g", "Ein Betonbalken hat 0,2 m³, Beton wiegt 2,4 t pro m³. Masse?", "0,48 t", "Warum braucht man für die Masse die Dichte?", "gleich große Körper aus verschiedenen Stoffen sind verschieden schwer"]],
+"4.6": [
+ [1, "Materialverbrauch von Verpackungen vergleichen", "Was gibt den Pappverbrauch an: Oberfläche oder Volumen?", "die Oberfläche", "Welche Packung braucht weniger Material bei gleichem Inhalt: Würfel oder lang gestreckter Quader?", "meist der Würfel", "Warum haben Verpackungen oft mehr Luft als Inhalt?", "z. B. Schutz oder Werbewirkung"],
+ [2, "Verpackungen beurteilen", "Eine Packung ist halb leer. Was ist das Problem?", "unnötiger Materialverbrauch", "Wie lässt sich Verpackungsmüll verringern?", "passende Größe, Mehrweg, weniger Schichten", "Woran erkennst du eine Mogelpackung?", "der Inhalt ist viel kleiner als die Packung vermuten lässt"]],
+"4.7": [
+ [1, "Prismenmodelle planen", "Was zeichnest du vor dem Ausschneiden?", "das Netz mit Klebelaschen", "Welche Maße brauchst du für ein Prismenmodell?", "Maße der Grundfläche und Höhe", "Warum klebt man die Laschen an jede zweite Kante?", "damit jede Kante einmal verbunden wird"],
+ [2, "Modelle herstellen und prüfen", "Woran erkennst du ein sauber gebautes Modell?", "Kanten treffen genau aufeinander", "Wie prüfst du das Volumen deines Modells?", "Maße messen und berechnen oder mit Sand füllen", "Ein Modell ist im Maßstab 1 : 10 gebaut. Wie lang ist eine 3 cm-Kante in Wirklichkeit?", "30 cm"]]
+}

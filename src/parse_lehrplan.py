@@ -76,6 +76,10 @@ def text(el):
     """Text eines Elements mit übersetzten Formeln, Leerraum normalisiert."""
     if el is None:
         return ""
+    # HTML-Hoch-/Tiefstellung (außerhalb von MathML) in die Textschreibweise übersetzen
+    for t in el.find_all(["sup", "sub"]):
+        if not any(p.name == "math" for p in t.parents):
+            t.replace_with((sup if t.name == "sup" else sub)(t.get_text()))
     out = []
     for c in el.descendants:
         if isinstance(c, Tag) and c.name == "math":

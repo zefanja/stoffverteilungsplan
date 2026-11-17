@@ -1,0 +1,468 @@
+{
+"1.1": [
+[
+1,
+"Verhalten im Unendlichen: Der höchste Potenzterm bestimmt den Verlauf",
+"Grenzwert von f(x) = 1/x für x → ∞?",
+"0",
+"Verhalten von f(x) = −2 · x³ + x für x → ∞?",
+"f(x) → −∞",
+"Grenzwert von f(x) = (3 · x² + 1)/(x² − 4) für x → ∞?",
+"3"
+],
+[
+4,
+"Grenzwert an einer Stelle: links- und rechtsseitig betrachten",
+"Grenzwert von f(x) = x² für x → 2?",
+"4",
+"Grenzwert von (x² − 1)/(x − 1) für x → 1?",
+"2",
+"Existiert der Grenzwert von 1/x für x → 0?",
+"nein, links −∞, rechts +∞"
+],
+[
+8,
+"Grenzwertsätze: Summe, Produkt, Quotient von Grenzwerten",
+"lim (f(x) + g(x)), wenn lim f = 2 und lim g = 5?",
+"7",
+"lim (f(x) · g(x)) unter denselben Bedingungen?",
+"10",
+"Warum darf man lim f/lim g nicht bilden, wenn lim g = 0 ist?",
+"Division durch 0 ist nicht definiert"
+],
+[
+10,
+"Waagerechte und senkrechte Asymptoten über Grenzwerte",
+"Senkrechte Asymptote von f(x) = 1/(x − 3)?",
+"x = 3",
+"Waagerechte Asymptote von f(x) = (2 · x + 1)/x?",
+"y = 2",
+"Hat f(x) = x²/(x + 1) eine waagerechte Asymptote?",
+"nein, Zählergrad größer als Nennergrad"
+],
+[
+1,
+"Stetigkeit: Grenzwert an der Stelle stimmt mit dem Funktionswert überein",
+"Ist f(x) = x² an der Stelle 1 stetig?",
+"ja",
+"Ist f(x) = 1/x an der Stelle 0 stetig?",
+"nein, dort nicht definiert",
+"Eine Funktion ist 1 für x < 0 und 2 für x ≥ 0. Ist sie bei 0 stetig?",
+"nein, Sprungstelle"
+]
+],
+"1.2": [
+[
+1,
+"Differenzenquotient: Anstieg der Sekante, mittlere Änderungsrate",
+"Mittlere Änderungsrate von f(x) = x² zwischen 1 und 3?",
+"(9 − 1)/2 = 4",
+"Mittlere Geschwindigkeit bei 120 km in 1,5 h?",
+"80 km/h",
+"Wie wird aus der Sekante eine Tangente?",
+"der zweite Punkt rückt immer näher an den ersten"
+],
+[
+5,
+"Differentialquotient: Anstieg der Tangente, lokale Änderungsrate",
+"f′(x) für f(x) = x² nach Definition?",
+"2 · x",
+"Anstieg der Tangente an f(x) = x² bei x = 3?",
+"6",
+"Was bedeutet f′(2) = 0 geometrisch?",
+"waagerechte Tangente bei x = 2"
+],
+[
+9,
+"Potenz-, Faktor- und Summenregel",
+"f(x) = x⁵. f′(x)?",
+"5 · x⁴",
+"f(x) = 3 · x² − 4 · x + 7. f′(x)?",
+"6 · x − 4",
+"f(x) = √x. f′(x)?",
+"1/(2 · √x)"
+],
+[
+13,
+"Ableitungen von e^x, ln x, sin x; Kettenregel",
+"f(x) = e^x. f′(x)?",
+"e^x",
+"f(x) = sin(2 · x). f′(x)?",
+"2 · cos(2 · x)",
+"f(x) = ln(3 · x − 5). f′(x)?",
+"3/(3 · x − 5)"
+]
+],
+"1.3": [
+[
+1,
+"Stammfunktion: F′(x) = f(x)",
+"Eine Stammfunktion von f(x) = 2 · x?",
+"F(x) = x²",
+"Eine Stammfunktion von f(x) = x³?",
+"F(x) = x⁴/4",
+"Warum gibt es unendlich viele Stammfunktionen?",
+"Konstanten fallen beim Ableiten weg"
+],
+[
+2,
+"Potenzfunktionen umgekehrt ableiten",
+"Stammfunktion von f(x) = 6 · x²?",
+"F(x) = 2 · x³",
+"Stammfunktion von f(x) = 1?",
+"F(x) = x",
+"Welche Stammfunktion von f(x) = 2 · x geht durch (1 | 5)?",
+"F(x) = x² + 4"
+],
+[
+3,
+"Graph von f und Graph der Stammfunktion",
+"Wo hat F einen Extrempunkt, wenn f eine Nullstelle mit Vorzeichenwechsel hat?",
+"an derselben Stelle",
+"f > 0 auf einem Intervall: Wie verläuft F dort?",
+"steigend",
+"Woran erkennt man am Graphen von F die Funktionswerte von f?",
+"am Anstieg von F"
+]
+],
+"1.4": [
+[
+1,
+"Kurvendiskussion: Nullstellen, Extrema, Wendepunkte, Monotonie",
+"Notwendige Bedingung für ein lokales Extremum?",
+"f′(x) = 0",
+"Extrema von f(x) = x³ − 3 · x?",
+"Hochpunkt (−1 | 2), Tiefpunkt (1 | −2)",
+"Wendepunkt von f(x) = x³ − 3 · x²?",
+"(1 | −2)"
+],
+[
+4,
+"Hinreichende Bedingungen mit Vorzeichenwechsel oder f″",
+"f′(x₀) = 0 und f″(x₀) < 0. Was liegt vor?",
+"lokales Maximum",
+"Hat f(x) = x³ bei 0 ein Extremum?",
+"nein, Sattelpunkt",
+"Warum genügt f′(x₀) = 0 nicht für ein Extremum?",
+"es kann ein Sattelpunkt sein"
+],
+[
+8,
+"Funktionsgleichungen aus Bedingungen bestimmen",
+"Wie viele Bedingungen braucht man für eine Funktion 3. Grades?",
+"vier",
+"Parabel durch (0 | 1) mit Scheitel bei (2 | −3)?",
+"f(x) = (x − 2)² − 3",
+"Übersetze „hat bei x = 1 eine waagerechte Tangente“.",
+"f′(1) = 0"
+],
+[
+11,
+"Optimierungsprobleme",
+"Was ist bei einer Extremwertaufgabe die Zielfunktion?",
+"die Größe, die maximal oder minimal werden soll",
+"Rechteck mit Umfang 40 cm und maximalem Flächeninhalt?",
+"Quadrat 10 cm × 10 cm",
+"Warum muss man die Ränder des Definitionsbereichs prüfen?",
+"das globale Extremum kann am Rand liegen"
+]
+],
+"1.5": [
+[
+1,
+"Regression: Funktion an Messdaten anpassen",
+"Was liefert eine lineare Regression?",
+"die Gerade y = m · x + n mit der besten Anpassung",
+"Welche Regression passt für Bakterienwachstum?",
+"exponentielle Regression",
+"Woran erkennt man eine gute Anpassung?",
+"die Punkte liegen nahe am Graphen, Bestimmtheitsmaß nahe 1"
+],
+[
+2,
+"Regressionsmodell beurteilen",
+"Darf man mit einem Regressionsmodell weit außerhalb der Daten vorhersagen?",
+"nur mit Vorsicht",
+"Ein Polynom 9. Grades geht durch alle 10 Messpunkte. Gutes Modell?",
+"meist nicht, es passt die Messfehler mit an",
+"Warum wählt man den Funktionstyp nach dem Sachzusammenhang?",
+"das Modell soll den Vorgang erklären, nicht nur Punkte treffen"
+],
+[
+3,
+"Regression mit CAS",
+"Was gibt man dem CAS für eine Regression vor?",
+"Datenlisten und Funktionstyp",
+"Was ist das Bestimmtheitsmaß?",
+"Maß für die Güte der Anpassung (0 bis 1)",
+"Wie prüft man ein Regressionsergebnis grafisch?",
+"Datenpunkte und Graph gemeinsam darstellen"
+]
+],
+"2.1": [
+[
+1,
+"Lineare Gleichungssysteme in Matrizenschreibweise A · x = b",
+"Koeffizientenmatrix von x + 2 · y = 5 und 3 · x − y = 1?",
+"(1 2; 3 −1)",
+"Wie viele Zeilen hat die Matrix eines LGS mit 3 Gleichungen?",
+"drei",
+"Was beschreibt der Vektor b in A · x = b?",
+"die rechten Seiten der Gleichungen"
+],
+[
+2,
+"Matrizen multiplizieren: Zeile mal Spalte",
+"(1 2; 3 4) · (1; 1) = ?",
+"(3; 7)",
+"Welcher Typ entsteht aus (2,3) mal (3,1)?",
+"(2,1)",
+"Warum kann man eine (2,3)-Matrix nicht mit einer (2,1)-Matrix multiplizieren?",
+"die Spaltenzahl der ersten muss der Zeilenzahl der zweiten entsprechen"
+],
+[
+3,
+"LGS mit drei Unbekannten lösen (Gauß-Verfahren oder CAS)",
+"Was ist das Ziel des Gauß-Verfahrens?",
+"Stufenform mit Nullen unter der Diagonale",
+"Löse x + y + z = 6, y + z = 5, z = 3.",
+"z = 3, y = 2, x = 1",
+"Was bedeutet eine Zeile 0 0 0 | 4 nach der Umformung?",
+"das LGS hat keine Lösung"
+]
+],
+"2.2": [
+[
+1,
+"Matrizen beschreiben Abbildungen und Verflechtungen",
+"Welche Abbildung beschreibt (0 −1; 1 0)?",
+"Drehung um 90°",
+"Wozu dient eine Verflechtungsmatrix?",
+"sie zeigt, wie viele Teile in welches Produkt eingehen",
+"Wie erhält man die Wirkung zweier Drehungen nacheinander?",
+"durch Multiplikation der Matrizen"
+],
+[
+2,
+"Drehmatrix in der Ebene",
+"Bild von (1; 0) bei Drehung um 90°?",
+"(0; 1)",
+"Wohin dreht (0 −1; 1 0) den Punkt (2; 1)?",
+"(−1; 2)",
+"Warum ändert eine Drehung die Länge eines Vektors nicht?",
+"Drehungen sind längentreu"
+]
+],
+"3.1": [
+[
+1,
+"Räumliches Koordinatensystem: Punkte P(x | y | z)",
+"Wo liegt P(0 | 0 | 4)?",
+"auf der z-Achse",
+"Welche Koordinate ist in der x-y-Ebene null?",
+"z",
+"Welcher Punkt ist der Mittelpunkt von A(2 | 0 | 4) und B(4 | 2 | 0)?",
+"M(3 | 1 | 2)"
+],
+[
+3,
+"Körper im räumlichen Koordinatensystem darstellen",
+"Würfel mit Kante 2 und Ecke im Ursprung: Koordinaten der gegenüberliegenden Ecke?",
+"(2 | 2 | 2)",
+"Wie zeichnet man die x-Achse im Schrägbild meist?",
+"schräg nach vorn, verkürzt",
+"Spitze einer Pyramide über dem Quadrat (0|0|0), (4|0|0), (4|4|0), (0|4|0) mit Höhe 6?",
+"S(2 | 2 | 6)"
+],
+[
+5,
+"Abstand zweier Punkte im Raum",
+"Abstand von (0 | 0 | 0) zu (2 | 3 | 6)?",
+"7",
+"Abstand von (1 | 2 | 3) zu (4 | 6 | 3)?",
+"5",
+"Liegt (1 | 2 | 2) auf der Kugel um den Ursprung mit r = 3?",
+"ja, √9 = 3"
+]
+],
+"3.2": [
+[
+1,
+"Vektoren addieren und subtrahieren",
+"(1; 2; 3) + (4; 0; −1) = ?",
+"(5; 2; 2)",
+"Vektor von A(1 | 2 | 0) nach B(4 | 0 | 5)?",
+"(3; −2; 5)",
+"Warum gilt AB + BC = AC?",
+"Hintereinanderausführen der Verschiebungen"
+],
+[
+3,
+"Vielfache und Rechengesetze für Vektoren",
+"3 · (1; −2; 0) = ?",
+"(3; −6; 0)",
+"Sind (2; 4; 6) und (1; 2; 3) parallel?",
+"ja, (2; 4; 6) = 2 · (1; 2; 3)",
+"Mittelpunkt M von AB als Vektorgleichung?",
+"OM = OA + 1/2 · AB"
+],
+[
+5,
+"Vektorielle Größen in der Physik",
+"Nenne eine vektorielle Größe.",
+"z. B. Kraft oder Geschwindigkeit",
+"Zwei Kräfte (3; 0) N und (0; 4) N. Betrag der Resultierenden?",
+"5 N",
+"Warum ist die Masse keine vektorielle Größe?",
+"sie hat keine Richtung"
+]
+],
+"3.3": [
+[
+1,
+"Geradengleichung in Parameterform: x = a + t · u",
+"Gerade durch A(1 | 0 | 2) mit Richtung (2; 1; 0)?",
+"x = (1; 0; 2) + t · (2; 1; 0)",
+"Liegt P(5 | 2 | 2) auf dieser Geraden?",
+"ja, für t = 2",
+"Gerade durch A(1 | 1 | 1) und B(3 | 2 | 5)?",
+"x = (1; 1; 1) + t · (2; 1; 4)"
+],
+[
+5,
+"Ebenengleichung in Parameter- und Koordinatenform",
+"Wie viele Richtungsvektoren hat eine Ebene in Parameterform?",
+"zwei (linear unabhängig)",
+"Liegt P(1 | 2 | 3) in der Ebene x + y + z = 6?",
+"ja",
+"Spurpunkte der Ebene 2 · x + 3 · y + 6 · z = 12?",
+"(6 | 0 | 0), (0 | 4 | 0), (0 | 0 | 2)"
+],
+[
+10,
+"Lagebeziehungen von Geraden: identisch, parallel, schneidend, windschief",
+"Richtungsvektoren sind Vielfache, ein gemeinsamer Punkt. Lage?",
+"identisch",
+"Richtungsvektoren nicht parallel, kein Schnittpunkt. Lage?",
+"windschief",
+"Warum gibt es windschiefe Geraden nur im Raum?",
+"in der Ebene schneiden sich nicht parallele Geraden immer"
+],
+[
+15,
+"Schnittpunkt Gerade – Ebene",
+"Wie findet man den Schnittpunkt von Gerade und Ebene in Koordinatenform?",
+"Geradengleichung einsetzen, nach t auflösen",
+"Schnittpunkt von x = (0; 0; 0) + t · (1; 1; 1) mit x + y + z = 3?",
+"(1 | 1 | 1)",
+"Was bedeutet eine Gleichung 0 = 5 beim Einsetzen?",
+"Gerade parallel zur Ebene, kein Schnittpunkt"
+]
+],
+"4.1": [
+[
+1,
+"Klassischer Wahrscheinlichkeitsbegriff (Laplace): günstige durch mögliche Ergebnisse",
+"P(Augensumme 4) bei zwei Würfeln?",
+"3/36 = 1/12",
+"Warum ist Laplace bei einer Reißzwecke ungeeignet?",
+"die Ergebnisse sind nicht gleich wahrscheinlich",
+"Wie viele gleich wahrscheinliche Ergebnisse hat das Werfen von drei Münzen?",
+"8"
+],
+[
+2,
+"Statistischer Wahrscheinlichkeitsbegriff: stabilisierte relative Häufigkeit",
+"Reißzwecke: 312 von 500 Würfen Spitze oben. Schätzwert?",
+"0,624",
+"Was besagt das Gesetz der großen Zahlen anschaulich?",
+"relative Häufigkeiten nähern sich mit wachsender Versuchszahl der Wahrscheinlichkeit",
+"Warum ist eine statistisch ermittelte Wahrscheinlichkeit nur ein Schätzwert?",
+"jede Versuchsreihe schwankt zufällig"
+],
+[
+3,
+"Axiomatischer Wahrscheinlichkeitsbegriff (Kolmogorow)",
+"Welchen Wert hat P(Ω)?",
+"1",
+"P(A) = 0,3. P(nicht A)?",
+"0,7",
+"A und B unvereinbar, P(A) = 0,2, P(B) = 0,5. P(A ∪ B)?",
+"0,7"
+]
+],
+"4.2": [
+[
+1,
+"Baumdiagramm und Pfadregeln",
+"Zweimal Würfeln: P(zwei Sechsen)?",
+"1/36",
+"Urne mit 3 roten, 2 blauen Kugeln, zweimal ohne Zurücklegen: P(beide rot)?",
+"3/5 · 2/4 = 3/10",
+"P(mindestens eine Sechs bei vier Würfen)?",
+"1 − (5/6)⁴ ≈ 0,518"
+],
+[
+4,
+"Vierfeldertafel",
+"Was steht in den Randfeldern einer Vierfeldertafel?",
+"die Gesamtwahrscheinlichkeiten der Merkmale",
+"P(A) = 0,4, P(A ∩ B) = 0,1. P(A ∩ nicht B)?",
+"0,3",
+"Wann ist eine Vierfeldertafel übersichtlicher als ein Baum?",
+"wenn zwei Merkmale gleichzeitig betrachtet werden"
+],
+[
+6,
+"Stochastische Unabhängigkeit: P(A ∩ B) = P(A) · P(B)",
+"P(A) = 0,5, P(B) = 0,4, P(A ∩ B) = 0,2. Unabhängig?",
+"ja",
+"P(A) = 0,3, P(B) = 0,5, P(A ∩ B) = 0,1. Unabhängig?",
+"nein, 0,15 ≠ 0,1",
+"Sind „Würfel zeigt gerade Zahl“ und „Würfel zeigt mindestens 5“ unabhängig?",
+"ja, 1/2 · 1/3 = 1/6 = P({6})"
+],
+[
+9,
+"Simulation zum Abschätzen von Wahrscheinlichkeiten",
+"Wozu simuliert man ein Zufallsexperiment?",
+"um Wahrscheinlichkeiten abzuschätzen, wenn die Rechnung schwierig ist",
+"Wie simuliert man einen Würfel mit Zufallszahlen?",
+"ganze Zufallszahlen von 1 bis 6",
+"Warum werden Simulationsergebnisse mit mehr Durchläufen zuverlässiger?",
+"relative Häufigkeiten stabilisieren sich"
+]
+],
+"4.3": [
+[
+1,
+"Bernoulli-Kette: n unabhängige Versuche mit gleicher Trefferwahrscheinlichkeit p",
+"Ist dreimaliges Würfeln mit Treffer „Sechs“ eine Bernoulli-Kette?",
+"ja, n = 3, p = 1/6",
+"Ist Ziehen ohne Zurücklegen eine Bernoulli-Kette?",
+"nein, p ändert sich",
+"Wie viele Pfade mit genau 2 Treffern gibt es bei n = 4?",
+"(4 über 2) = 6"
+],
+[
+3,
+"Binomialverteilung: P(X = k) = (n über k) · pᵏ · (1 − p)^(n−k)",
+"P(X = 2) für n = 3, p = 0,5?",
+"3/8",
+"P(X = 0) für n = 10, p = 0,1?",
+"0,9¹⁰ ≈ 0,349",
+"P(X ≤ 1) für n = 4, p = 0,5?",
+"1/16 + 4/16 = 5/16"
+],
+[
+6,
+"Erwartungswert μ = n · p, Standardabweichung σ = √(n · p · (1 − p))",
+"μ für n = 50, p = 0,2?",
+"10",
+"σ für n = 100, p = 0,5?",
+"5",
+"Was bedeutet σ für die Lage der meisten Ergebnisse?",
+"die meisten liegen in der Nähe von μ, innerhalb weniger σ"
+]
+]
+}

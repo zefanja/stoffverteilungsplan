@@ -1,0 +1,352 @@
+{
+"1.1": [
+[
+1,
+"Dreiecke nach Seiten und Winkeln ordnen",
+"Ist jedes gleichseitige Dreieck gleichschenklig?",
+"ja",
+"Kann ein Dreieck rechtwinklig und gleichschenklig sein?",
+"ja (45°, 45°, 90°)",
+"Kann ein Dreieck zwei stumpfe Winkel haben?",
+"nein, Winkelsumme 180°"
+],
+[
+3,
+"Haus der Vierecke",
+"Ist jedes Quadrat ein Rechteck?",
+"ja",
+"Ist jede Raute ein Parallelogramm?",
+"ja",
+"Welches Viereck ist Rechteck und Raute zugleich?",
+"das Quadrat"
+],
+[
+5,
+"Eigenschaften von Diagonalen",
+"In welchen Vierecken halbieren sich die Diagonalen?",
+"in allen Parallelogrammen",
+"In welchen Vierecken stehen die Diagonalen senkrecht?",
+"Raute, Quadrat, Drachenviereck",
+"Diagonalen gleich lang und halbieren sich. Welches Viereck?",
+"Rechteck (oder Quadrat)"
+]
+],
+"1.2": [
+[
+1,
+"Sinussatz: a/sin α = b/sin β = c/sin γ",
+"a = 5 cm, α = 30°, β = 45°. b?",
+"b = 5 · sin 45°/sin 30° ≈ 7,1 cm",
+"Wann wendet man den Sinussatz an?",
+"bei WSW, SWW oder SsW",
+"Warum kann der Sinussatz bei SsW zwei Lösungen liefern?",
+"zu einem Sinuswert gibt es zwei Winkel unter 180°"
+],
+[
+6,
+"Kosinussatz: c² = a² + b² − 2 · a · b · cos γ",
+"a = 3 cm, b = 4 cm, γ = 90°. c?",
+"5 cm",
+"a = 5 cm, b = 7 cm, γ = 60°. c?",
+"√39 ≈ 6,2 cm",
+"Welcher Satz ergibt sich aus dem Kosinussatz für γ = 90°?",
+"der Satz des Pythagoras"
+],
+[
+11,
+"Flächeninhalt: A = 1/2 · a · b · sin γ",
+"a = 6 cm, b = 4 cm, γ = 30°. A?",
+"6 cm²",
+"Für welchen Winkel ist A bei festen a und b am größten?",
+"γ = 90°",
+"Warum gilt die Formel auch für stumpfe Winkel?",
+"sin γ ist auch für 90° < γ < 180° positiv"
+],
+[
+16,
+"Realitätsnahe Probleme mit Lösungsplan",
+"Ein Turm wird aus 50 m Entfernung unter 32° gesehen. Höhe?",
+"50 · tan 32° ≈ 31 m",
+"Zwei Wege mit 400 m und 600 m bilden einen Winkel von 75°. Entfernung der Endpunkte?",
+"√(400² + 600² − 2 · 400 · 600 · cos 75°) ≈ 627 m",
+"Warum zeichnet man zuerst eine Skizze mit allen gegebenen Stücken?",
+"um den passenden Satz und die Reihenfolge zu finden"
+]
+],
+"2.1": [
+[
+1,
+"Potenzfunktionen y = a · xⁿ für n = −2; −1; 1; 2; 3",
+"Welcher Graph gehört zu y = x³?",
+"durch den Ursprung, punktsymmetrisch",
+"Welcher Graph gehört zu y = 1/x?",
+"Hyperbel mit zwei Ästen",
+"Wo ist y = x⁻² nicht definiert?",
+"bei x = 0"
+],
+[
+3,
+"Explizite Beschreibung: f(x) = c · a^x",
+"f(x) = 200 · 1,05^x. Startwert und Wachstumsrate?",
+"200 und 5 %",
+"Wie viel sind 1 000 € bei 4 % Zins nach 10 Jahren?",
+"1 000 · 1,04¹⁰ ≈ 1 480 €",
+"Für welche a beschreibt y = a^x einen Zerfall?",
+"für 0 < a < 1"
+],
+[
+5,
+"Wachstumsprozesse modellieren",
+"Bakterien verdoppeln sich stündlich, Start 100. Anzahl nach 3 h?",
+"800",
+"Ein Auto verliert jährlich 15 % Wert. Wachstumsfaktor?",
+"0,85",
+"Welcher Funktionstyp passt zu gleichmäßiger Zunahme pro Jahr um 50 €?",
+"linear"
+]
+],
+"2.2": [
+[
+1,
+"Bogenmaß: 360° entsprechen 2 · π",
+"180° im Bogenmaß?",
+"π",
+"π/3 im Gradmaß?",
+"60°",
+"Welche Länge hat der Bogen zu 90° im Einheitskreis?",
+"π/2"
+],
+[
+3,
+"Sinusfunktion: Periode 2 · π, Werte zwischen −1 und 1",
+"Nullstellen von y = sin x im Intervall [0; 2 · π]?",
+"0, π, 2 · π",
+"Maximum von y = sin x?",
+"1 bei x = π/2",
+"Für welche x im Intervall [0; 2 · π] gilt sin x = 1/2?",
+"x = π/6 und x = 5 · π/6"
+],
+[
+5,
+"Parameter: y = a · sin(b · x) + d",
+"Amplitude von y = 3 · sin x?",
+"3",
+"Periode von y = sin(2 · x)?",
+"π",
+"Wie entsteht y = sin(x − π/2) aus y = sin x?",
+"Verschiebung um π/2 nach rechts"
+],
+[
+2,
+"Periode und Amplitude beschreiben periodische Vorgänge",
+"Was gibt die Amplitude an?",
+"die größte Auslenkung von der Mittellage",
+"Ein Pegel schwankt zwischen 2 m und 6 m. Amplitude und Mittellage?",
+"2 m und 4 m",
+"Warum ist ein EKG nur näherungsweise periodisch?",
+"Herzschläge sind nicht exakt gleich lang"
+]
+],
+"2.3": [
+[
+1,
+"Funktionsklassen: linear, quadratisch, Potenz-, Exponential-, Logarithmus-, Winkelfunktionen",
+"Zu welcher Klasse gehört y = 3^x?",
+"Exponentialfunktionen",
+"Zu welcher Klasse gehört y = x⁻²?",
+"Potenzfunktionen",
+"Ordne y = 2 · x − 3, y = x³, y = sin x zu.",
+"linear, Potenzfunktion, Winkelfunktion"
+],
+[
+1,
+"Graphen von y = x, y = x², y = √x und y = 1/x",
+"Welcher Graph ist eine Hyperbel?",
+"y = 1/x",
+"Schnittpunkte von y = x² und y = x?",
+"(0 | 0) und (1 | 1)",
+"Wie liegt der Graph von y = √x zu y = x² (x ≥ 0)?",
+"spiegelbildlich zu y = x"
+],
+[
+9,
+"Graph und Gleichung einander zuordnen",
+"Ein Graph geht durch (0 | 1) und steigt immer steiler. Funktion?",
+"z. B. y = e^x",
+"Ein Graph ist punktsymmetrisch zum Ursprung und hat zwei Äste. Funktion?",
+"y = 1/x",
+"Ein Graph geht durch (1 | 0) und steigt immer flacher. Funktion?",
+"y = ln x"
+]
+],
+"3.1": [
+[
+1,
+"Wahrscheinlichkeitsverteilung: jedem Wert der Zufallsgröße seine Wahrscheinlichkeit",
+"X = Anzahl Kopf bei zwei Münzwürfen. P(X = 1)?",
+"1/2",
+"Wie groß ist die Summe aller Wahrscheinlichkeiten einer Verteilung?",
+"1",
+"X = Augensumme zweier Würfel. P(X = 7)?",
+"6/36 = 1/6"
+],
+[
+3,
+"„genau“, „mindestens“, „höchstens“ übersetzen",
+"P(X ≥ 1) bei drei Münzwürfen (X = Anzahl Kopf)?",
+"1 − 1/8 = 7/8",
+"P(X ≤ 1) bei drei Münzwürfen?",
+"1/8 + 3/8 = 1/2",
+"Warum rechnet man „mindestens einmal“ meist über das Gegenereignis?",
+"dann ist nur ein Pfad zu berechnen"
+],
+[
+3,
+"Zufallsgröße: Ergebnissen Zahlen zuordnen",
+"Zwei Münzwürfe, X = Anzahl Kopf. Welche Werte nimmt X an?",
+"0, 1, 2",
+"P(X = 1) bei zwei Münzwürfen?",
+"1/2",
+"Glücksrad: 2 € Einsatz, 5 € Gewinn. Werte der Zufallsgröße „Reingewinn“?",
+"−2 € und 3 €"
+]
+],
+"3.2": [
+[
+6,
+"Erwartungswert: E(X) = Summe aus Wert mal Wahrscheinlichkeit",
+"Erwartungswert der Augenzahl eines Würfels?",
+"3,5",
+"Gewinn 10 € mit P = 0,1, sonst 0 €. Erwartungswert?",
+"1 €",
+"Was bedeutet E(X) = 3,5 beim Würfeln anschaulich?",
+"Mittelwert der Augenzahlen bei sehr vielen Würfen"
+],
+[
+1,
+"Faires Spiel: Erwartungswert des Gewinns ist 0",
+"Einsatz 1 €, Gewinn 6 € bei einer Sechs (inklusive Einsatz). Fair?",
+"ja, E = 6 · 1/6 − 1 = 0",
+"Einsatz 2 €, Auszahlung 10 € bei einer Sechs. Erwartungswert des Gewinns?",
+"10/6 − 2 ≈ −0,33 €",
+"Wie hoch müsste die Auszahlung dafür sein, damit das Spiel fair ist?",
+"12 €"
+],
+[
+2,
+"Glücksspiele beurteilen",
+"Warum verdient ein Casino langfristig sicher?",
+"der Erwartungswert ist für Spieler negativ",
+"Ist ein Spiel mit Erwartungswert −0,05 € pro Runde schlimm?",
+"auf Dauer verliert man im Mittel 5 Cent je Runde",
+"Warum ist Glücksspiel trotz negativem Erwartungswert verlockend?",
+"seltene große Gewinne werden überschätzt"
+]
+],
+"3.3": [
+[
+1,
+"Zufallsversuche simulieren",
+"Wie simulierst du ein Ereignis mit Wahrscheinlichkeit 0,4?",
+"Zufallszahl 1 bis 10, Treffer bei 1 bis 4",
+"Wie simulierst du 50 Münzwürfe mit der Tabellenkalkulation?",
+"Zufallszahl 0 oder 1 in 50 Zellen",
+"Warum braucht man viele Durchläufe?",
+"damit die Schätzung stabil wird"
+],
+[
+2,
+"Erwartungswert durch Simulation schätzen",
+"Simulierter Mittelwert des Gewinns: −0,48 €. Deutung?",
+"das Spiel ist ungünstig für den Spieler",
+"1 000 Simulationen ergeben Mittelwert 3,52 bei einem Würfel. Theoretischer Wert?",
+"3,5",
+"Wann ist eine Simulation sinnvoller als eine Rechnung?",
+"wenn die Rechnung zu aufwendig ist"
+],
+[
+3,
+"Simulation und Rechnung vergleichen",
+"Simulation: P ≈ 0,26, Rechnung: 0,25. Widerspruch?",
+"nein, zufällige Abweichung",
+"Wie kannst du die Simulation prüfen?",
+"mit einem Fall vergleichen, den man berechnen kann",
+"Simulation weicht stark von der Rechnung ab. Was prüfst du?",
+"Modell und Rechnung auf Fehler"
+]
+],
+"4.1": [
+[
+1,
+"Daten zu Umweltproblemen bewerten",
+"CO₂-Ausstoß pro Kopf oder pro Land – was ist fairer zu vergleichen?",
+"pro Kopf (je nach Fragestellung)",
+"Strom 0,35 €/kWh, Gerät 2 000 W, 3 h am Tag. Kosten pro Tag?",
+"2,10 €",
+"Warum sind Prognosen unsicher?",
+"sie beruhen auf Annahmen"
+],
+[
+3,
+"Wirtschaftliche Entscheidungen berechnen",
+"LED spart 50 kWh pro Jahr bei 0,30 €/kWh. Ersparnis pro Jahr?",
+"15 €",
+"Eine Anschaffung kostet 600 € und spart 150 € pro Jahr. Wann rechnet sie sich?",
+"nach 4 Jahren",
+"Welche Angaben braucht man für einen fairen Angebotsvergleich?",
+"Gesamtkosten über die Laufzeit"
+],
+[
+5,
+"Standpunkt mathematisch begründen",
+"Woran erkennst du ein gutes Argument mit Zahlen?",
+"nachprüfbare Daten und Rechnung",
+"Was ist ein Gegenargument zu „Der Preis stieg um 100 %, also unbezahlbar“?",
+"auf den Ausgangswert achten",
+"Warum gibt man Unsicherheiten an?",
+"um ehrlich über die Aussagekraft zu sein"
+]
+],
+"4.2": [
+[
+1,
+"Problemlösen: verstehen, planen, lösen, prüfen",
+"Erster Schritt beim Problemlösen?",
+"Problem verstehen: gegeben, gesucht",
+"Was hilft beim Planen?",
+"Skizze, ähnliche Aufgabe, Teilprobleme",
+"Was gehört zum Prüfen?",
+"Probe, Einheit, Plausibilität"
+],
+[
+6,
+"Pyramidenstumpf und Kegelstumpf",
+"Wie entsteht ein Kegelstumpf?",
+"Kegel, oben parallel zur Grundfläche abgeschnitten",
+"Volumen des Stumpfes als Differenz?",
+"großer Kegel minus kleiner Kegel",
+"Kegelstumpf: V = π · h/3 · (R² + R · r + r²). Wert für R = 2, r = 1, h = 3?",
+"7 · π ≈ 22,0"
+],
+[
+12,
+"Formeln herleiten",
+"Wie leitest du die Oberfläche eines Zylinders her?",
+"Netz: 2 Kreise plus Rechteck, O = 2 · π · r² + 2 · π · r · h",
+"Fläche eines Trapezes aus zwei Dreiecken?",
+"A = (a + c) · h : 2",
+"Warum lohnt sich das Herleiten?",
+"man kann Formeln rekonstruieren und prüfen"
+],
+[
+18,
+"Gemischte Anwendungsaufgaben",
+"Ein Kapital von 5 000 € wächst 3 Jahre mit 2 %. Endkapital?",
+"≈ 5 306,04 €",
+"Würfel zweimal: Erwartungswert der Augensumme?",
+"7",
+"Eine Leiter von 5 m steht 1,4 m von der Wand. Höhe an der Wand?",
+"4,8 m"
+]
+]
+}

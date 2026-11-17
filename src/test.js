@@ -30,6 +30,27 @@ function serve(dir) {
   await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
   await p.waitForTimeout(200);
 
+  // Einrichtungsassistent: öffnet beim ersten Start, fragt Klassen und Unterrichtszeiten ab
+  ok(!(await p.$eval('#overlay', e => e.hidden)) && (await p.innerText('#overlay')).includes('Willkommen'), 'Assistent öffnet beim ersten Start');
+  await p.click('#overlay [data-act="obstep"][data-v="1"]'); await p.waitForTimeout(100);
+  ok((await p.$$('#overlay [data-act="mine"]')).length === 19 && (await p.$$('#overlay [data-act="mine"]:checked')).length === 2, 'Schritt Klassen: 19 Klassen, GYM 6 und 8 vorausgewählt');
+  await p.screenshot({ path: path.join(OUT, 's_assistent_klassen.png') });
+  await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(100);
+  ok((await p.$$('#overlay .obgrid')).length === 2, 'Schritt Unterrichtszeiten: ein Wochenraster je Klasse');
+  const ttBefore = await p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length);
+  await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(80);
+  const ttMid = await p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length);
+  ok(ttMid === ttBefore + 1, 'Klick ins Raster legt eine Stunde an (Di, 7. Std.)');
+  await p.screenshot({ path: path.join(OUT, 's_assistent_zeiten.png') });
+  // kl6 läuft in Strängen: Spur A → B → frei
+  await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
+  await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
+  ok(await p.evaluate(n => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length === n, ttBefore), 'Weitere Klicks wechseln die Spur und entfernen die Stunde wieder');
+  await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(80);
+  await p.click('#overlay [data-act="obdone"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => document.getElementById('overlay').hidden && window.__mp.S.settings.onboarded && JSON.stringify(window.__mp.cal().classes) === '["kl6","kl8"]'), 'Assistent beendet: Klassen festgelegt');
+  await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p.waitForTimeout(150);
+
   // Ausgangsplan: Kapazitäten wie bisher
   const r = await p.evaluate(() => { const m = window.__mp; const out = {};
     for (const k of ['kl6', 'kl8']) { const sc = m.schedule(k); out[k] = { cap: sc.cap, planned: sc.planned }; }
@@ -238,6 +259,12 @@ function serve(dir) {
       g11: k.filter(x => C[x].type === 'gym' && C[x].grade === 11).map(x => C[x].variant).join(','), sum9: sum('gym9'), sum8hs: sum('os8hs'), zrw8hs: Object.values(C.os8hs.zrw).reduce((a, x) => a + x, 0) }; });
   ok(lp.n === 19 && lp.os7 === 'HS,RS' && lp.os10 === 'RS' && lp.g11 === 'GK,LK', 'Lehrpläne: 19 Klassen, OS 7 HS/RS, OS 10 nur RS, GYM 11 GK/LK ' + JSON.stringify(lp));
   ok(lp.sum9 === 104 && lp.sum8hs === lp.zrw8hs, 'Sequenzen entsprechen den Zeitrichtwerten (GYM 9: 104 Std.)');
+  const noAtoms = await p.evaluate(() => { const C = window.PLAN_DATA.classes, bad = [];
+    for (const id in C) for (const code in C[id].units) { const u = C[id].units[code];
+      if (u.lb && !/^(W|P|KA|JA|A-KA|B-KA)/.test(code) && !u.atoms.length) bad.push(id + ':' + code);
+      for (const a of u.atoms) if (!a.q || !a.a || !a.q2 || !a.a2 || !a.q3 || !a.a3) bad.push(id + ':' + a.id); }
+    return bad; });
+  ok(noAtoms.length === 0, 'Jede Lehrplan-Einheit hat Atome mit Aufgaben auf drei Stufen ' + JSON.stringify(noAtoms.slice(0, 5)));
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   await p.check('[data-act="mine"][data-k="os7hs"]'); await p.waitForTimeout(100);
   await p.check('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);
