@@ -25,6 +25,150 @@ function isoWeek(s) {
   const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
   return Math.ceil(((t - y0) / 864e5 + 1) / 7);
 }
+/* ---------------- Formelsatz mit MathJax ----------------
+   mx(text) liefert HTML: normaler Text bleibt Text, Formelstellen werden zu <span class="m" data-tex="…">Originaltext</span>.
+   Sobald MathJax geladen ist, ersetzt typesetMath() diese Spans durch SVG; ohne MathJax bleibt der Originaltext sichtbar. */
+const MX_CODE = /[*^]|\b(solve|factor|expand|randInt)\b|^=|=A\d/;
+const MX_UNITS = new Set(["mm", "cm", "dm", "km", "ml", "kg", "min", "ct", "€"]);
+const MX_UNIT1 = new Set(["m", "l", "g", "h", "s", "t"]);
+const MX_GREEK = { "α": "\\alpha ", "β": "\\beta ", "γ": "\\gamma ", "δ": "\\delta ", "Δ": "\\Delta ", "Ω": "\\Omega ", "π": "\\pi ", "ℕ": "\\mathbb{N}", "ℤ": "\\mathbb{Z}", "ℚ": "\\mathbb{Q}" };
+const MX_OPS = { "+": "+", "−": "-", "·": "\\cdot ", "×": "\\times ", "=": "=", "<": "<", ">": ">", "≤": "\\le ", "≥": "\\ge ", "≠": "\\ne ", "≈": "\\approx ", "∈": "\\in ", "∉": "\\notin ", "⊂": "\\subset ", "∪": "\\cup ", "∩": "\\cap ", "|": "\\mid ", "…": "\\ldots ", ":": "\\mathbin{:}", ",": ",\\," };
+const MX_SUP = { "²": "2", "³": "3", "⁴": "4" };
+const MX_RE = /(\d{1,3}(?: \d{3})+(?![\d,])|\d+(?:,\d+)?\u0305?)|([A-Za-zÄÖÜäöüß]{2,}[²³]?)|([A-Za-zα-ωΑ-ΩℕℤℚΔ](?:_[a-z])?ₐ?′?)|(½)|([²³⁴])|([+−·×=<>≤≥≠≈∈∉⊂∪∩|…:\/√])|([()[\]{}])|(□)|(\?)|(%|°)|(\s+)|([\s\S])/gu;
+const MX_KINDS = ["num", "word", "let", "half", "sup", "op", "par", "box", "q", "pct", "sp", "other"];
+function mxTokens(s) {
+  const out = []; let m; MX_RE.lastIndex = 0;
+  while ((m = MX_RE.exec(s))) { const k = MX_KINDS[m.slice(1).findIndex(x => x !== undefined)]; out.push({ k, v: m[0], i: m.index }); }
+  for (let i = 0; i < out.length; i++) {
+    const t = out[i], n = out[i + 1], p = out[i - 1], pp = out[i - 2];
+    if (t.k === "let" && n && n.k === "num" && /^[A-Z]$/.test(t.v)) { t.k = "word"; n.k = "word"; }        // Zellbezug A2
+    else if (t.k === "let" && n && n.k === "other" && n.v === ".") t.k = "word";                             // z. B., d. h.
+    else if (t.k === "let" && n && n.k === "other" && n.v === "-" && /^[A-Z]$/.test(t.v)) t.k = "word";      // L-förmig
+    else if (t.k === "let" && p && p.k === "sp" && pp && (pp.k === "num" || pp.k === "q") && MX_UNIT1.has(t.v)) t.k = "unit";   // 2,5 l; ? l
+    else if (t.k === "word") {
+      const base = t.v.replace(/[²³]$/, "");
+      if (MX_UNITS.has(base) || /^(mm|cm|dm|km|m)[²³]$/.test(t.v)) t.k = "unit";
+      else if (p && p.k === "num" && /^[a-z]{2,3}$/.test(t.v)) t.k = "var";                                 // 12ab, 2ac
+    }
+    if (t.k === "let") t.k = "var";
+  }
+  return out;
+}
+const MX_MATH = new Set(["num", "var", "half", "sup", "op", "par", "box", "q", "pct", "unit", "sp"]);
+function mxRuns(tk) {
+  const runs = []; let i = 0;
+  const prevNs = (a, j) => { for (let x = j - 1; x >= a; x--) if (tk[x].k !== "sp") return tk[x]; return null; };
+  const nextNs = j => { for (let x = j + 1; x < tk.length; x++) if (tk[x].k !== "sp") return tk[x]; return null; };
+  while (i < tk.length) {
+    const t = tk[i];
+    if (!MX_MATH.has(t.k) || ["sp", "unit", "pct", "sup", "q"].includes(t.k) || (t.k === "op" && !"−√".includes(t.v))) { i++; continue; }
+    let j = i, depth = 0;
+    for (; j < tk.length; j++) {
+      const u = tk[j];
+      if (u.k === "par") { depth += "([{".includes(u.v) ? 1 : -1; continue; }
+      if (u.k === "other" && u.v === "," && depth > 0) { u.k = "op"; continue; }
+      if (u.k === "q") { const pv = prevNs(i, j); if (pv && pv.v === "=") continue; break; }
+      if (u.k === "op" && u.v === ":") {                                                                     // Division nur als „a : b“ mit Leerzeichen
+        const pv = prevNs(i, j), nx = nextNs(j);
+        if (!(tk[j - 1] && tk[j - 1].k === "sp" && tk[j + 1] && tk[j + 1].k === "sp")) break;
+        const okL = pv && (["num", "var", "sup", "box"].includes(pv.k) || pv.v === ")"), okR = nx && ["num", "var", "half", "box", "par"].includes(nx.k);
+        if (okL && okR) continue;
+        break;
+      }
+      if (!MX_MATH.has(u.k)) break;
+    }
+    let a = i, e = j;
+    while (e > a && ["sp", "op"].includes(tk[e - 1].k) && tk[e - 1].v !== "…") e--;                       // kein Operator am Ende
+    const bal = (x, y) => { let d = 0; for (let z = x; z < y; z++) if (tk[z].k === "par") { d += "([{".includes(tk[z].v) ? 1 : -1; if (d < 0) return false; } return d === 0; };
+    while (e > a && !bal(a, e)) {                                                                            // Klammern ausgleichen
+      if (tk[e - 1].k === "par" && "([{".includes(tk[e - 1].v)) e--;
+      else if (tk[a].k === "par") a++;
+      else e--;
+      while (e > a && ["sp", "op"].includes(tk[e - 1].k)) e--;
+      while (a < e && tk[a].k === "sp") a++;
+    }
+    const seg = tk.slice(a, e);
+    const strong = seg.some(u => (u.k === "op" && u.v !== ",") || u.k === "sup" || u.k === "half" || u.k === "box" || u.k === "pct" || /[\u0305²³ₐ′_]/.test(u.v) || (u.k === "var" && /[α-ωΑ-ΩℕℤℚΔ]/.test(u.v)) || (u.k === "num" && /,\d/.test(u.v)))
+      || seg.some((u, z) => u.k === "var" && z > 0 && seg[z - 1].k === "num")
+      || (seg.length === 1 && seg[0].k === "var");
+    if (seg.length && strong) runs.push([a, e]);
+    i = Math.max(j, i + 1);
+  }
+  return runs;
+}
+function mxTex(tk) {
+  const it = [];
+  const varTex = v => [...v].map(c => MX_GREEK[c] || (c === "′" ? "'" : c === "ₐ" ? "_a" : c)).join("").replace(/_([a-z])/g, "_{$1}");
+  for (let i = 0; i < tk.length; i++) {
+    const t = tk[i], last = it[it.length - 1];
+    if (t.k === "num") it.push({ k: "atom", num: true, tex: t.v.replace(/(\d)\u0305/g, "\\overline{$1}").replace(/,/g, "{,}").replace(/ /g, "\\,") });
+    else if (t.k === "var" || t.k === "half") {
+      const tex = t.k === "half" ? "\\tfrac{1}{2}" : varTex(t.v);
+      if (last && last.k === "atom" && (last.num || last.attach)) { last.tex += tex; last.num = false; last.attach = true; last.paren = false; }
+      else it.push({ k: "atom", tex, attach: t.k === "half" });
+    }
+    else if (t.k === "sup") { if (last) last.tex += "^{" + MX_SUP[t.v] + "}"; }
+    else if (t.k === "par" && "([{".includes(t.v)) {
+      let d = 0, j = i;
+      for (; j < tk.length; j++) if (tk[j].k === "par") { d += "([{".includes(tk[j].v) ? 1 : -1; if (d === 0) break; }
+      const inner = mxTex(tk.slice(i + 1, j)), close = (tk[j] || {}).v || ")";
+      const o = t.v === "{" ? "\\{" : t.v, c = close === "}" ? "\\}" : close;
+      const atom = { k: "atom", tex: o + inner + c, inner, paren: t.v === "(" };
+      if (last && last.k === "atom") { last.tex += atom.tex; last.paren = false; last.num = false; } else it.push(atom);
+      i = j;
+    }
+    else if (t.k === "op" && t.v === "/") it.push({ k: "slash" });
+    else if (t.k === "op" && t.v === "√") it.push({ k: "sqrt" });
+    else if (t.k === "op") it.push({ k: "op", tex: MX_OPS[t.v] || t.v });
+    else if (t.k === "box") it.push({ k: "atom", tex: "\\square " });
+    else if (t.k === "q") it.push({ k: "atom", tex: "\\text{?}" });
+    else if (t.k === "unit") { const b = t.v.replace(/[²³]$/, ""), s = t.v.slice(b.length); it.push({ k: "atom", tex: "\\,\\text{" + b + "}" + (s ? "^{" + MX_SUP[s] + "}" : "") }); }
+    else if (t.k === "pct") { if (t.v === "°" && last) last.tex += "^{\\circ}"; else it.push({ k: "atom", tex: "\\,\\%" }); }
+    else if (t.k === "sp") it.push({ k: "sp" });
+  }
+  // Wurzel auf das nächste Atom, Brüche aus Atom / Atom, gemischte Zahlen „2 1/4“
+  for (let i = 0; i < it.length; i++) if (it[i].k === "sqrt" && it[i + 1] && it[i + 1].k === "atom") { it[i + 1].tex = "\\sqrt{" + (it[i + 1].paren ? it[i + 1].inner : it[i + 1].tex) + "}"; it[i + 1].paren = false; it.splice(i, 1); }
+  for (let i = 0; i < it.length; i++) {
+    if (it[i].k !== "slash") continue;
+    let l = i - 1; while (l >= 0 && it[l].k === "sp") l--;
+    let r = i + 1; while (r < it.length && it[r].k === "sp") r++;
+    if (l < 0 || r >= it.length || it[l].k !== "atom" || it[r].k !== "atom") { it[i] = { k: "op", tex: "/" }; continue; }
+    const opd = x => x.paren ? x.inner : x.tex;
+    let tex = "\\frac{" + opd(it[l]) + "}{" + opd(it[r]) + "}", from = l;
+    const L = it[l], sp = it[l - 1], N = it[l - 2], before = it[l - 3];
+    if (L.num && sp && sp.k === "sp" && N && N.k === "atom" && N.num && (!before || before.k === "op" || (before.k === "sp" && (!it[l - 4] || it[l - 4].k === "op")))) { tex = N.tex + tex; from = l - 2; }
+    it.splice(from, r - from + 1, { k: "atom", tex });
+    i = from;
+  }
+  return it.filter(x => x.k !== "sp").map(x => x.tex || "").join(" ").replace(/\s+/g, " ").trim();
+}
+function mx(s) {
+  s = String(s ?? "");
+  if (!s || MX_CODE.test(s)) return esc(s);
+  const tk = mxTokens(s), runs = mxRuns(tk);
+  if (!runs.length) return esc(s);
+  let html = "", pos = 0;
+  for (const [a, e] of runs) {
+    const from = tk[a].i, to = tk[e - 1].i + tk[e - 1].v.length;
+    html += esc(s.slice(pos, from)) + `<span class="m" data-tex="${esc(mxTex(tk.slice(a, e)))}">${esc(s.slice(from, to))}</span>`;
+    pos = to;
+  }
+  return html + esc(s.slice(pos));
+}
+const mxCache = new Map();
+function typesetMath(root) {
+  const M = window.MathJax;
+  if (!M || !M.tex2svg || !root) return;
+  // MathJax-Stylesheet einmalig einbinden (blendet u. a. die MathML-Fassung für Screenreader visuell aus)
+  if (!typesetMath.css && M.svgStylesheet) { try { document.head.appendChild(M.svgStylesheet()); } catch (e) {} typesetMath.css = true; }
+  root.querySelectorAll("span.m:not(.mj)").forEach(el => {
+    const tex = el.dataset.tex; let node = mxCache.get(tex);
+    try {
+      if (!node) { node = M.tex2svg(tex, { display: false }); if (node.querySelector("[data-mjx-error]")) throw 0; mxCache.set(tex, node); }
+      el.title = el.textContent; el.replaceChildren(node.cloneNode(true)); el.classList.add("mj");
+    } catch (e) { el.classList.add("mj"); }
+  });
+}
 const DAYS = ["", "Mo", "Di", "Mi", "Do", "Fr"];
 const LBVAR = { LB1: "lb1", LB2: "lb2", LB3: "lb3", LB4: "lb4", LB5: "lb5", WB: "wb", test: "test", start: "start", P: "buf" };
 const sty = lb => `--c:var(--${LBVAR[lb] || "buf"});--bg:var(--${LBVAR[lb] || "buf"}-bg)`;
@@ -662,7 +806,7 @@ function todayCard(k, d) {
   body += slots.map(s => slotBlock(k, s)).join("");
   if (!slots.some(s => s.lesson)) {
     const nx = sc.slots.find(s => s.date > d && s.lesson);
-    if (nx) { const li = lessonInfo(k, nx.lesson); body += `<div class="next"><span class="lbl">Nächste Stunde · ${esc(fmt(nx.date, { weekday: "short", day: "2-digit", month: "2-digit" }))}, ${nx.period}. Std.</span>${unitLink(k, nx.lesson.row.code)}<div class="small">${esc(li.title)}</div></div>`; }
+    if (nx) { const li = lessonInfo(k, nx.lesson); body += `<div class="next"><span class="lbl">Nächste Stunde · ${esc(fmt(nx.date, { weekday: "short", day: "2-digit", month: "2-digit" }))}, ${nx.period}. Std.</span>${unitLink(k, nx.lesson.row.code)}<div class="small">${mx(li.title)}</div></div>`; }
   }
   const es = engineState(k, d);
   const rv = es.pick.map(x => reviewItem(k, x)).join("");
@@ -693,9 +837,9 @@ function slotBlock(k, s) {
   const sc = schedule(k);
   return `<div class="slot ${done ? "done" : ""}" style="${sty(lbOf(k, L.row.code))}">${tag}<div class="sbody">
     ${unitLink(k, L.row.code)}
-    <div class="stitle">Stunde ${L.n} von ${L.row.hours}: ${esc(li.title)}</div>
+    <div class="stitle">Stunde ${L.n} von ${L.row.hours}: ${mx(li.title)}</div>
     ${!sc.seqMode ? `<div class="small muted">${esc(trackName(k, s.track))}</div>` : ""}
-    ${li.atoms.length ? `<div class="newatoms"><div class="lbl">Neu in dieser Stunde</div><ul>${li.atoms.map(a => `<li>${esc(a.t)}<span class="q">Check: ${esc(a.q)} <i>→ ${esc(a.a)}</i></span></li>`).join("")}</ul></div>` : ""}
+    ${li.atoms.length ? `<div class="newatoms"><div class="lbl">Neu in dieser Stunde</div><ul>${li.atoms.map(a => `<li>${mx(a.t)}<span class="q">Check: ${mx(a.q)} <i>→ ${mx(a.a)}</i></span></li>`).join("")}</ul></div>` : ""}
     <div class="acts">
       <button type="button" class="btn ${done ? "ok" : ""} sm" data-act="done" data-k="${k}" data-key="${s.key}" aria-pressed="${done}">${done ? "✓ Gehalten" : "Als gehalten markieren"}</button>
       ${L.row.code !== "P" && L.row.code !== "JA" ? `<button type="button" class="btn ghost sm" data-act="addhour" data-k="${k}" data-row="${L.row.idx}">Einheit braucht 1 Std. mehr</button>` : ""}
@@ -707,8 +851,8 @@ function reviewItem(k, x) {
   const state = x.isNew ? `<span class="pill new">erste Wiederholung</span>` : x.backlog ? `<span class="pill">Altbestand · ${esc(fmt(x.intro))}</span>` : `<span class="pill">${Math.round(x.R * 100)} % Abruf</span>`;
   return `<div class="ritem" style="${sty(lbOf(k, x.code))}">
     <div class="rtop"><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(task.l)}${state}</div>
-    <div class="rq">${esc(task.q)}</div>
-    ${open ? `<div class="ra">${esc(task.a)}</div><div class="rt small muted">${esc(x.a.t)}</div>${rateButtons(k, id)}` : `<button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>`}
+    <div class="rq">${mx(task.q)}</div>
+    ${open ? `<div class="ra">${mx(task.a)}</div><div class="rt small muted">${mx(x.a.t)}</div>${rateButtons(k, id)}` : `<button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>`}
   </div>`;
 }
 const RATES = [[1, "Nochmal", "unter 50 % richtig"], [2, "Schwer", "50–70 %"], [3, "Gut", "70–90 %"], [4, "Leicht", "über 90 %"]];
@@ -810,13 +954,13 @@ function viewUnit(kc, idx) {
   if (!u) return `<p>Einheit nicht gefunden.</p>`;
   const sc = schedule(k), r = sc.rows.find(x => x.code === code), E = S.eng[k];
   const atoms = atomsOf(k, code), nL = Math.max(u.stunden.length, r ? r.hours : 0, ...atoms.map(a => a.l), 1);
-  const list = (t, a) => a && a.length ? `<div class="box"><h3>${t}</h3><ul>${a.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
+  const list = (t, a) => a && a.length ? `<div class="box"><h3>${t}</h3><ul>${a.map(x => `<li>${mx(x)}</li>`).join("")}</ul></div>` : "";
   let lessons = "";
   for (let n = 1; n <= nL; n++) {
     const slot = r && r.slots[n - 1];
     const title = u.stunden[n - 1] || (r && n <= r.hours ? "Übung und Vertiefung" : "(über die geplanten Stunden hinaus)");
     const la = atoms.filter(a => a.l === n);
-    lessons += `<div class="lesson"><div class="lhead"><span class="mono muted">Stunde ${n}</span><span class="ltitle">${esc(title)}</span><span class="mono small muted">${slot ? fmt(slot.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + (grp(k).done[slot.key] ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : ""}</span></div>
+    lessons += `<div class="lesson"><div class="lhead"><span class="mono muted">Stunde ${n}</span><span class="ltitle">${mx(title)}</span><span class="mono small muted">${slot ? fmt(slot.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + (grp(k).done[slot.key] ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : ""}</span></div>
       <ul class="alist">${la.map(a => atomRow(k, code, a, E.cards[a.id])).join("")}</ul>
       ${UI.editAtom && UI.editAtom.code === code && UI.editAtom.id === "new" && UI.editAtom.l === n ? atomForm(k, code, { l: n, t: "", q: "", a: "" }, "new") : `<button type="button" class="linkbtn small" data-act="atomnew" data-code="${esc(code)}" data-l="${n}">+ Atom</button>`}
     </div>`;
@@ -836,7 +980,7 @@ function viewUnit(kc, idx) {
 function atomRow(k, code, a, card) {
   if (UI.editAtom && UI.editAtom.id === a.id) return `<li>${atomForm(k, code, a, a.id)}</li>`;
   const st = card ? `<span class="pill">${Math.round(Rof(Math.max(0, diffDays(card.last, UI.date)), card.s) * 100)} % · ab ${fmt(card.due)}</span>` : "";
-  return `<li class="atom"><div><b>${esc(a.t)}</b> ${st}<div class="small muted">Check: ${esc(a.q)} → ${esc(a.a)}</div>${a.q2 ? `<div class="small muted">Stufe 2: ${esc(a.q2)} → ${esc(a.a2)}</div>` : ""}${a.q3 ? `<div class="small muted">Stufe 3: ${esc(a.q3)} → ${esc(a.a3)}</div>` : ""}</div>
+  return `<li class="atom"><div><b>${mx(a.t)}</b> ${st}<div class="small muted">Check: ${mx(a.q)} → ${mx(a.a)}</div>${a.q2 ? `<div class="small muted">Stufe 2: ${mx(a.q2)} → ${mx(a.a2)}</div>` : ""}${a.q3 ? `<div class="small muted">Stufe 3: ${mx(a.q3)} → ${mx(a.a3)}</div>` : ""}</div>
     <span class="nowrap"><button type="button" class="mini" data-act="atomedit" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom bearbeiten">✎</button><button type="button" class="mini del" data-act="atomdel" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom löschen">×</button></span></li>`;
 }
 function atomForm(k, code, a, id) {
@@ -868,7 +1012,7 @@ function viewEngine() {
   const tbl = unitsSorted.map(code => `<tr class="ugroup"><td colspan="6">${unitLink(k, code)}</td></tr>` + byUnit[code].map(x => {
     const c = x.card;
     const R = x.R !== null && x.R !== undefined ? x.R : null;
-    return `<tr><td>${esc(x.a.t)}</td><td>${x.future ? "" : levelPill(taskOf(x.a, levelOf(x)).l)}</td>
+    return `<tr><td>${mx(x.a.t)}</td><td>${x.future ? "" : levelPill(taskOf(x.a, levelOf(x)).l)}</td>
       <td>${R !== null ? `<span class="rbar"><i style="width:${Math.round(R * 100)}%"></i></span><span class="mono small">${Math.round(R * 100)} %</span>` : `<span class="small muted">${x.future ? (x.intro ? "ab " + fmt(x.intro) : "nicht eingeplant") : x.backlog ? "Altbestand" : "neu"}</span>`}</td>
       <td class="mono small">${c ? c.s.toFixed(1) + " T." : "—"}</td>
       <td class="mono small">${c ? fmt(c.due) : x.isNew ? "jetzt" : "—"}</td>
@@ -1014,9 +1158,10 @@ function renderOverlay() {
   }
   el.innerHTML = `<div class="ov-card quiz" role="dialog" aria-label="Wiederholung" style="${sty(lbOf(q.k, x.code))}">
     <header><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(taskOf(x.a, levelOf(x)).l)}<span class="mono muted">${q.i + 1} / ${q.items.length}</span><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
-    <div class="qq">${esc(taskOf(x.a, levelOf(x)).q)}</div>
-    ${q.show ? `<div class="qa">${esc(taskOf(x.a, levelOf(x)).a)}</div><div class="small muted center">${esc(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>`}
+    <div class="qq">${mx(taskOf(x.a, levelOf(x)).q)}</div>
+    ${q.show ? `<div class="qa">${mx(taskOf(x.a, levelOf(x)).a)}</div><div class="small muted center">${mx(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>`}
   </div>`;
+  typesetMath(el);
 }
 
 /* ---------------- router & render ---------------- */
@@ -1044,6 +1189,7 @@ function renderNow() {
   const main = document.getElementById("main");
   const sy = window.scrollY;
   main.innerHTML = html;
+  typesetMath(main);
   if (render.keepScroll) window.scrollTo(0, sy);
   render.keepScroll = true;
   renderOverlay();
@@ -1252,8 +1398,10 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
 render.keepScroll = false;
+/* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
+window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
 renderBanner(); render();
 if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }
 initDb();

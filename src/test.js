@@ -1,4 +1,5 @@
 // Headless-Test: node src/test.js [ausgabeordner-für-screenshots]
+// Ohne Internet: MATHJAX_JS=/pfad/zu/mathjax/es5/tex-svg.js setzen, dann wird die CDN-Adresse dorthin umgeleitet.
 const { chromium } = require('playwright');
 const path = require('path');
 const http = require('http');
@@ -22,6 +23,7 @@ function serve(dir) {
 (async () => {
   const srv = await serve(path.join(ROOT, 'dist')), BASE = `http://127.0.0.1:${srv.address().port}/`;
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
+  if (process.env.MATHJAX_JS) await ctx.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/mathjax\/.*tex-svg/, r => r.fulfill({ path: process.env.MATHJAX_JS, contentType: 'text/javascript' }));
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   // neuer Browser-Kontext = leerer Speicher; ein Neuladen später prüft, ob alles erhalten bleibt
   await p.goto(BASE + 'index.html#heute'); await p.waitForTimeout(500);
@@ -35,6 +37,15 @@ function serve(dir) {
   console.log(JSON.stringify(r));
   ok(r.kl6.cap.A === r.kl6.planned.A, 'Kl. 6 geht auf');
   ok(r.kl8.cap.A === r.kl8.planned.A && r.kl8.cap.SOL > 0, 'Kl. 8 geht auf, SOL ab 26.10.');
+
+  // Formelsatz: Formeln werden als <span class="m" data-tex> ausgezeichnet und mit MathJax als SVG gesetzt
+  ok(await p.evaluate(() => { const h = document.createElement('div'); h.innerHTML = window.__mp.mx('2 1/4 + x² = 0,3̅'); const m = h.querySelector('span.m'); return m && m.dataset.tex === '2\\frac{1}{4} + x^{2} = 0{,}\\overline{3}'; }), 'Formel-Erkennung: gemischte Zahl, Hochzahl, Periode');
+  ok(await p.evaluate(() => !window.__mp.mx('2*(x+1)^2').includes('span') && !window.__mp.mx('z. B. Skizze').includes('span')), 'CAS-Eingaben und Abkürzungen bleiben Text');
+  const mjOk = await p.waitForFunction(() => window.MathJax && window.MathJax.tex2svg, null, { timeout: 20000 }).then(() => true, () => false);
+  if (mjOk) {
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.querySelectorAll('#main span.m.mj svg').length > 0 && document.querySelectorAll('#main span.m:not(.mj)').length === 0), 'MathJax setzt alle Formeln der Seite als SVG');
+  } else console.log('info MathJax nicht erreichbar: Formeln bleiben als Text (MATHJAX_JS setzen, um den Satz zu testen)');
 
   // Design: Seitenleiste mit Logo, Kacheln, Lernübersicht
   ok((await p.innerText('#nav')).includes('Lernübersicht') && !(await p.innerText('#nav')).includes('Engine'), 'Navigation heißt „Lernübersicht“');

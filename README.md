@@ -30,6 +30,8 @@ python3 -I src/fetch_ferien.py  # optional: Ferien Sachsen aktualisieren
 python3 -I src/extract.py       # in/*.xlsx -> src/plan.json
 python3 -I src/build_data.py    # plan.json + atoms.py -> dist/data.js
 NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, Screenshots nach docs/screenshots
+# ohne Internet: MathJax lokal bereitstellen, z. B. npm pack mathjax@3.2.2 und
+# MATHJAX_JS=/pfad/package/es5/tex-svg.js voranstellen
 ```
 
 ## Funktionen
@@ -44,6 +46,9 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   werden einmal für alle geplant. Jede Parallelklasse hat eigenen Stundenplan, Zeiträume ohne Unterricht, Ausfälle,
   Häkchen und Lernstand. „Einheit braucht 1 Std. mehr“ und automatische Pufferkürzung werden als Abweichung nur dieser
   Klasse gespeichert und in der Sequenz neben den Stunden angezeigt (z. B. „8b: +1“). Gewechselt wird oben in der Leiste.
+- **Formelsatz**: Mathematische Ausdrücke in Atomen, Aufgaben, Stundentiteln und Lehrplantexten werden automatisch erkannt
+  (Brüche wie `3/4` und `2 1/4`, Hochzahlen, Periode, Punkte `P(2 | 5)`, Mengen, Einheiten) und mit MathJax 3 (SVG, vom CDN)
+  gesetzt; auch selbst bearbeitete Atome. Ohne MathJax bleibt der normale Text stehen. CAS-Eingaben wie `2*(x+1)^2` bleiben Code.
 - **Design**: Farben aus dem Schullogo (Blau #0094cd, Orange #f59b0a, Grün #afca0b, Rot #d91016; für Text abgedunkelt).
   Seitenleiste mit Felszeichen, Navigation und vollem Logo, auf dem Handy als Kopfzeile. Heute zeigt für die gewählte Klasse
   vier Kacheln: aktuelle Einheit, heute fällig, ø Abruf, Reserve (rot, wenn Stunden fehlen); Rot nur für Warnungen.

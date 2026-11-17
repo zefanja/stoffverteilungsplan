@@ -142,6 +142,9 @@ label.chk{justify-content:flex-start}
 .newatoms{background:var(--soft);border-radius:6px;padding:8px 10px}
 .newatoms ul{margin:4px 0 0;padding-left:18px;display:grid;gap:4px}
 .newatoms .q{display:block;font-size:12.5px;color:var(--muted)}
+/* Formeln (MathJax-SVG) im Textfluss */
+span.m.mj{white-space:nowrap}
+span.m.mj mjx-container{display:inline}
 .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
 .next{display:grid;gap:4px;padding:10px 12px;border:1px dashed var(--line);border-radius:7px}
 .free{font-weight:500}
@@ -321,6 +324,18 @@ ol.sol{margin:0;padding-left:22px;display:grid;gap:8px} ol.sol span{display:bloc
 </div>
 <div id="overlay" hidden></div>
 <div id="toast" role="status" hidden></div>
+<script>
+/* MathJax (SVG-Ausgabe, keine externen Schriften). Die App setzt Formeln selbst über MathJax.tex2svg;
+   ohne MathJax bleibt der normale Text stehen. */
+window.MathJax = {
+  loader: { load: [] },
+  tex: { packages: { "[+]": [] } },
+  svg: { fontCache: "local" },
+  options: { enableMenu: false },
+  startup: { typeset: false, ready() { MathJax.startup.defaultReady(); MathJax.startup.promise.then(() => { if (window.__mpMathReady) window.__mpMathReady(); }); } }
+};
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
 <script src="data.js"></script>
 <script src="app.js"></script>
 </body>
