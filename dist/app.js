@@ -200,7 +200,10 @@ function defaultYear() {
 function defaultSettings() { return { years: [defaultYear()], retention: 0.9, perLesson: 5, autoBuffer: true }; }
 const sortYears = ys => ys.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const sortTT = tt => tt.sort((a, b) => (a.frm || "") < (b.frm || "") ? -1 : (a.frm || "") > (b.frm || "") ? 1 : 0);
-const cloneLessons = ls => ls.map(l => ({ id: uid(), day: +l.day, period: +l.period, track: l.track }));
+const cloneLessons = ls => ls.map(l => Object.assign({ id: uid(), day: +l.day, period: +l.period, track: l.track }, +l.len === 2 ? { len: 2 } : {}));
+/* Unterrichtsstunden pro Woche (Doppelstunde = 2) */
+const lessonLen = l => +l.len === 2 ? 2 : 1;
+const weekHours = ls => (ls || []).reduce((a, l) => a + lessonLen(l), 0);
 function defaultClass(k, y) {
   const c = D.classes[k]; y = y || cal();
   const tt = y.start === D.calendar.start
@@ -309,11 +312,15 @@ function schedule(g) {
       if (h || f) { dayInfo[d] = { school: false, note: h || f }; continue; }
       if (o) { dayInfo[d] = { school: false, note: o, off: true }; continue; }
       dayInfo[d] = { school: true };
+      const seen = new Set();
       for (const t of lessonsOn(d)) {
         if (+t.day !== w) continue;
         const track = t.track === "SOL" ? "SOL" : (seqMode ? "A" : (t.track === "B" ? "B" : "A"));
-        const key = d + "|" + t.period;
-        slots.push({ date: d, period: +t.period, track, key, cancelled: !!G.cancelled[key], lesson: null });
+        for (let n = 0; n < lessonLen(t); n++) {
+          const period = +t.period + n, key = d + "|" + period;
+          if (seen.has(key)) continue; seen.add(key);
+          slots.push({ date: d, period, track, key, cancelled: !!G.cancelled[key], lesson: null });
+        }
       }
     }
   }
@@ -1117,13 +1124,14 @@ function ttCard(k) {
     const current = v.frm <= UI.date && (!next || UI.date < next.frm);
     const rows = v.lessons.map((l, i) => `<tr>
       <td><select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="day" aria-label="Tag">${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${+l.day === d ? "selected" : ""}>${DAYS[d]}</option>`).join("")}</select></td>
-      <td><input class="num" type="number" min="1" max="10" data-act="tl" data-v="${v.id}" data-i="${i}" data-f="period" value="${l.period}" aria-label="Stunde"></td>
+      <td><input class="num" type="number" min="1" max="10" data-act="tl" data-v="${v.id}" data-i="${i}" data-f="period" value="${l.period}" aria-label="Beginn in der wievielten Stunde"></td>
+      <td><select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="len" aria-label="Dauer"><option value="1" ${lessonLen(l) === 1 ? "selected" : ""}>Einzelstunde</option><option value="2" ${lessonLen(l) === 2 ? "selected" : ""}>Doppelstunde</option></select></td>
       <td>${trackSel(v, l, i)}</td>
       <td><button type="button" class="mini del" data-act="tldel" data-v="${v.id}" data-i="${i}" aria-label="Stunde löschen">×</button></td></tr>`).join("");
     return `<div class="ttv ${current ? "cur" : ""}">
       <div class="ttvh"><label>Gültig ab <input type="date" data-act="ttfrm" data-v="${v.id}" value="${esc(v.frm)}"></label><span class="small muted">bis ${esc(until)}${current ? " · gilt am gewählten Tag" : ""}</span>
       ${vs.length > 1 ? `<button type="button" class="linkbtn small" data-act="ttdelv" data-v="${v.id}">Zeitraum löschen</button>` : ""}</div>
-      ${v.lessons.length ? `<table class="form"><thead><tr><th>Tag</th><th>Std.</th><th>Spur</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="small muted">In diesem Zeitraum hat ${esc(groupName(k))} keinen Unterricht.</p>`}
+      ${v.lessons.length ? `<table class="form"><thead><tr><th>Tag</th><th>ab Stunde</th><th>Dauer</th><th>Spur</th><th></th></tr></thead><tbody>${rows}</tbody></table><p class="small muted">${weekHours(v.lessons)} Unterrichtsstunde${weekHours(v.lessons) === 1 ? "" : "n"} pro Woche. „ab Stunde“ ist die Lage im Stundenplan (z. B. 3 = 3. Stunde), nicht die Anzahl.</p>` : `<p class="small muted">In diesem Zeitraum hat ${esc(groupName(k))} keinen Unterricht.</p>`}
       <button type="button" class="linkbtn small" data-act="tladd" data-v="${v.id}">+ Stunde</button></div>`;
   }).join("");
   const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
@@ -1194,8 +1202,8 @@ function obTracks(k) { const c = D.classes[k]; return ["A"].concat(c.mode === "S
 function obGrid(g) {
   const k = ck(g), v = obVersion(g);
   if (!v) return "";
-  const at = (d, p) => v.lessons.find(l => +l.day === d && +l.period === p);
-  const n = v.lessons.length, multi = obTracks(k).length > 1;
+  const at = (d, p) => v.lessons.find(l => +l.day === d && +l.period <= p && p < +l.period + lessonLen(l));
+  const n = weekHours(v.lessons), multi = obTracks(k).length > 1;
   return `<div class="obgrid card"><div class="obh"><b>${esc(fullLabel(g))}</b><span class="small muted">${n} Stunde${n === 1 ? "" : "n"} pro Woche${sortTT(grp(g).tt.slice()).length > 1 ? ` · gilt ab ${esc(fmt(v.frm, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}</span></div>
     <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
     ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
@@ -1204,6 +1212,8 @@ function obGrid(g) {
 }
 function obToggle(g, d, p) {
   const v = obVersion(g), k = ck(g); if (!v) return;
+  const dbl = v.lessons.find(l => +l.day === d && lessonLen(l) === 2 && +l.period <= p && p <= +l.period + 1);
+  if (dbl) { const ls = [0, 1].map(n => Object.assign({}, dbl, { id: uid(), period: +dbl.period + n })); ls.forEach(l => delete l.len); v.lessons.splice(v.lessons.indexOf(dbl), 1, ...ls); }
   const i = v.lessons.findIndex(l => +l.day === d && +l.period === p), tracks = obTracks(k);
   if (i < 0) v.lessons.push({ id: uid(), day: d, period: p, track: "A" });
   else { const n = tracks.indexOf(v.lessons[i].track) + 1; if (n > 0 && n < tracks.length) v.lessons[i].track = tracks[n]; else v.lessons.splice(i, 1); }
@@ -1234,7 +1244,7 @@ function viewOnboarding() {
     ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Sie haben noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else body = `<h2>Fertig</h2>
     <p>Ihr Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
-    <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? obVersion(g).lessons.length : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
+    <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? weekHours(obVersion(g).lessons) : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
     <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passen Sie unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten starten Sie dort erneut.</p>`;
   return `<div class="ov-card onboard" role="dialog" aria-label="Einrichtung">
     <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
@@ -1470,7 +1480,7 @@ document.addEventListener("change", ev => {
     case "engstart": if (t.value) { cal().engineStart = t.value; commit(null, { settings: true }); } break;
     case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
-    case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; row[f] = f === "track" ? t.value : Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
+    case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; if (f === "track") row.track = t.value; else if (f === "len") { if (t.value === "2") row.len = 2; else delete row.len; } else row[f] = Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
     case "mine": {
       const Y = cal(), l = mineList(), kk = t.dataset.k;
