@@ -1,0 +1,2473 @@
+{
+"kl6": {
+"units": {
+"A0": {
+"code": "A0",
+"lb": "start",
+"title": "Start: Brüche und Dezimalzahlen auffrischen",
+"inhalte": [
+"Brüche erkennen, darstellen, am Zahlenstrahl einordnen",
+"Kürzen und Erweitern",
+"Bruch, Dezimalzahl und Prozent für Zehnerbrüche wechselseitig umwandeln",
+"Dezimalzahlen addieren, subtrahieren, mit Zehnerpotenzen multiplizieren und dividieren"
+],
+"tiefe": [
+"Lücken aus dem Eingangstest gezielt in Kurzübungen schließen, statt alles zu wiederholen"
+],
+"vorwissen": [
+"Kl. 5, LB 2: Gemeine Brüche und Dezimalzahlen",
+"Kl. 5, LB 1: Teiler, Vielfache, Teilbarkeitsregeln"
+],
+"begriffe": [
+"Zähler",
+"Nenner",
+"Kürzen",
+"Erweitern",
+"Stellenwerttafel",
+"Zehnerbruch"
+],
+"hinweise": [
+"Kein Lehrplaninhalt der Kl. 6, sondern Brücke aus Kl. 5. Ergebnisse des Eingangstests steuern die Schwerpunkte in A1 und A3."
+],
+"material": [
+"Eingangstest (ca. 20 min, 10–12 Items)",
+"Bruchstreifen, Zahlenstrahl-Vorlagen"
+],
+"stunden": [
+"Eingangstest Brüche und Dezimalzahlen",
+"Brüche: Kürzen, Erweitern, Zahlenstrahl",
+"Dezimalzahlen: Stellenwerttafel, Überschlag, Zehnerpotenzen"
+]
+},
+"A1": {
+"code": "A1",
+"lb": "LB1",
+"title": "Gebrochene Zahlen darstellen",
+"inhalte": [
+"gebrochene Zahlen als gemeine Brüche, als Dezimalzahlen und in Prozentschreibweise darstellen",
+"zwischen endlichen und periodischen Dezimalzahlen unterscheiden",
+"Brüche ohne schriftliche Division in Dezimalzahlen umwandeln (Erweitern auf Zehnerpotenzen)",
+"gebrochene Zahlen vergleichen und ordnen"
+],
+"tiefe": [
+"begründen, warum ein Bruch eine endliche Dezimalzahl ergibt (Nenner nur mit Primfaktoren 2 und 5)",
+"Diskussionsanlass: 0,9̅ und 1"
+],
+"vorwissen": [
+"Kl. 5, LB 2: Umwandeln von Zehnerbrüchen, Prozent für ausgewählte Anteile",
+"Kl. 5, LB 1: einfache Primfaktorzerlegung"
+],
+"begriffe": [
+"gemeiner Bruch",
+"Dezimalzahl",
+"endlich",
+"periodisch",
+"Periode",
+"Prozent",
+"Hauptnenner"
+],
+"hinweise": [
+"Lehrplan LB 1: „Umwandeln ohne schriftliche Division“.",
+"Periodische Dezimalzahlen nur erkennen und notieren, keine Umwandlung periodisch → Bruch."
+],
+"material": [
+"Zahlenstrahl-Streifen",
+"Kartensortierspiel Bruch–Dezimal–Prozent (Memory)"
+],
+"stunden": [
+"Eine Zahl, drei Schreibweisen: Bruch, Dezimalzahl, Prozent",
+"Umwandeln durch Erweitern auf 10, 100, 1000",
+"Endlich oder periodisch? Das Nenner-Kriterium",
+"Vergleichen und Ordnen am Zahlenstrahl",
+"Gemischte Übung und Kurzkontrolle"
+]
+},
+"A2": {
+"code": "A2",
+"lb": "LB1",
+"title": "Zahlbereiche und Mengen",
+"inhalte": [
+"Einblick in die Notwendigkeit der Zahlbereichserweiterung gewinnen",
+"Menge, Element, Teilmenge",
+"Veranschaulichung im Mengendiagramm"
+],
+"tiefe": [
+"Aussagen wie „Jede natürliche Zahl ist eine gebrochene Zahl“ prüfen und begründen"
+],
+"vorwissen": [
+"Kl. 5, LB 1: Division mit Rest",
+"Kl. 5, LB 2: Brüche als Quotient"
+],
+"begriffe": [
+"Menge",
+"Element",
+"Teilmenge",
+"natürliche Zahlen",
+"gebrochene Zahlen",
+"Mengendiagramm"
+],
+"hinweise": [
+"Einstieg über eine Gleichung wie 3 · x = 2, die in den natürlichen Zahlen keine Lösung hat.",
+"Bereitet Kl. 7, LB 2 (rationale Zahlen) vor."
+],
+"material": [
+"Mengendiagramm-Vorlage zum Einsortieren von Zahlenkarten"
+],
+"stunden": [
+"Warum reichen die natürlichen Zahlen nicht? Der Bereich der gebrochenen Zahlen",
+"Menge, Element, Teilmenge im Mengendiagramm"
+]
+},
+"A3": {
+"code": "A3",
+"lb": "LB1",
+"title": "Addieren und Subtrahieren",
+"inhalte": [
+"gleichnamige und ungleichnamige Brüche addieren und subtrahieren",
+"Hauptnenner bestimmen",
+"gemischte Zahlen addieren und subtrahieren",
+"Aufgaben mit Brüchen und Dezimalzahlen gemischt lösen: im Kopf, schriftlich, mit TR"
+],
+"tiefe": [
+"die günstigere Schreibweise begründet wählen",
+"Fehler in Musterlösungen finden und erklären"
+],
+"vorwissen": [
+"A0/A1: Erweitern, Kürzen",
+"Kl. 5, LB 1: Vielfache",
+"Kl. 5, LB 2: Dezimalzahlen addieren"
+],
+"begriffe": [
+"gleichnamig",
+"ungleichnamig",
+"Hauptnenner",
+"gemischte Zahl",
+"Summe",
+"Differenz",
+"Überschlag"
+],
+"hinweise": [
+"Lehrplan-Beispiele „im Kopf“: Aufgaben mit überschaubaren Zahlen, z. B. 5/9 + 2/9.",
+"Kurzkontrolle am Ende der Einheit."
+],
+"material": [
+"Bruchstreifen",
+"Mini-Whiteboards für Kopfrechenrunden"
+],
+"stunden": [
+"Gleichnamige Brüche addieren und subtrahieren",
+"Hauptnenner finden, ungleichnamige Brüche",
+"Gemischte Zahlen",
+"Bruch und Dezimalzahl gemischt: Schreibweise wählen",
+"Übung mit Überschlag und Kurzkontrolle"
+]
+},
+"A4": {
+"code": "A4",
+"lb": "LB1",
+"title": "Multiplizieren und Dividieren",
+"inhalte": [
+"Brüche mit natürlichen Zahlen und mit Brüchen multiplizieren",
+"durch natürliche Zahlen und durch Brüche dividieren (Kehrwert)",
+"Dezimalzahlen multiplizieren und dividieren",
+"schriftlich: Aufgaben mit wenigen Zwischenschritten; mit TR: komplexere Aufgaben"
+],
+"tiefe": [
+"begründen, warum Multiplizieren mit einer Zahl kleiner 1 das Ergebnis verkleinert",
+"Kehrwertregel am Flächenmodell erklären"
+],
+"vorwissen": [
+"A3: Kürzen, gemischte Zahlen",
+"Kl. 5, LB 2: Dezimalzahl · und : Zehnerpotenz bzw. einstellige Zahl"
+],
+"begriffe": [
+"Produkt",
+"Quotient",
+"Faktor",
+"Dividend",
+"Divisor",
+"Kehrwert",
+"Kommaregel"
+],
+"hinweise": [
+"Anteil vom Anteil („2/3 von 3/4“) als Brücke zur Bruchmultiplikation.",
+"Lehrplan-Beispiele: 3/5 : 3/10, 3,6 : 0,4."
+],
+"material": [
+"Flächenmodell (Rechteck falten)",
+"Kärtchen „größer oder kleiner?“"
+],
+"stunden": [
+"Bruch · natürliche Zahl, Bruch : natürliche Zahl",
+"Bruch · Bruch: Anteil vom Anteil",
+"Kürzen vor dem Ausrechnen, gemischte Zahlen",
+"Dividieren durch einen Bruch: der Kehrwert",
+"Dezimalzahlen multiplizieren: die Kommaregel",
+"Dezimalzahlen dividieren: Komma verschieben",
+"Größer oder kleiner? Überschlag und Fehleranalyse",
+"Übung und Kurzkontrolle"
+]
+},
+"A5": {
+"code": "A5",
+"lb": "LB1",
+"title": "Rechengesetze und Rechenwege",
+"inhalte": [
+"Rechengesetze (Kommutativ-, Assoziativ-, Distributivgesetz) bei gebrochenen Zahlen anwenden",
+"Vorrangregeln und Klammern",
+"Rechenwege wählen: im Kopf, schriftlich, mit TR (Vorrangautomatik)",
+"Ergebnisse kritisch beurteilen"
+],
+"tiefe": [
+"Terme vorteilhaft umformen und den Vorteil begründen"
+],
+"vorwissen": [
+"A3, A4: Grundrechenarten",
+"Kl. 5, LB 1: Rechengesetze bei natürlichen Zahlen"
+],
+"begriffe": [
+"Kommutativgesetz",
+"Assoziativgesetz",
+"Distributivgesetz",
+"Vorrangregel",
+"Term",
+"Vorrangautomatik"
+],
+"hinweise": [
+"Lehrplan: TR ohne Grafikdisplay ab Kl. 5 zugelassen."
+],
+"material": [
+"Schul-Taschenrechner",
+"Aufgabenkarten „Welcher Rechenweg?“"
+],
+"stunden": [
+"Vorrangregeln und Klammern",
+"Rechengesetze: vorteilhaft rechnen",
+"Taschenrechner: Vorrangautomatik, Bruchtaste, Ergebnis prüfen",
+"Kopf, Papier oder TR? Rechenweg begründet wählen"
+]
+},
+"A6": {
+"code": "A6",
+"lb": "LB1",
+"title": "Gleichungen und Ungleichungen",
+"inhalte": [
+"Gleichungen im Bereich der gebrochenen Zahlen inhaltlich lösen (Umkehraufgabe, Rückwärtsrechnen, Probieren)",
+"Ungleichungen inhaltlich lösen und Lösungen angeben",
+"Probe durchführen"
+],
+"tiefe": [
+"Lösungsmengen von Ungleichungen am Zahlenstrahl darstellen",
+"Gleichungen selbst zu einem Term erfinden"
+],
+"vorwissen": [
+"A4: Kehrwert",
+"Kl. 5: Platzhalteraufgaben"
+],
+"begriffe": [
+"Gleichung",
+"Ungleichung",
+"Variable",
+"Lösung",
+"Probe",
+"Umkehraufgabe"
+],
+"hinweise": [
+"Schwerpunkt ist das inhaltliche Lösen (Umkehraufgabe, Probieren); Äquivalenzumformungen folgen in Kl. 7."
+],
+"material": [
+"Waage-Modell als Bild",
+"Zahlenstrahl-Vorlagen"
+],
+"stunden": [
+"Gleichungen mit der Umkehraufgabe lösen",
+"Gleichungen mit Brüchen und Dezimalzahlen",
+"Probe und Lösung angeben",
+"Ungleichungen lösen, Lösungen am Zahlenstrahl",
+"Übung und Kurzkontrolle"
+]
+},
+"A7": {
+"code": "A7",
+"lb": "LB1",
+"title": "Sachaufgaben mit gebrochenen Zahlen",
+"inhalte": [
+"Grundrechenarten beim Lösen von Sachaufgaben anwenden",
+"Skizzen anfertigen, Tabellen entwickeln, Variablen einführen, Gleichungen aufstellen",
+"Ergebnisse durch Probieren oder inhaltliches Lösen finden",
+"Ergebnisse am Sachverhalt werten und Antwort formulieren"
+],
+"tiefe": [
+"mehrschrittige Aufgaben in Teilprobleme zerlegen",
+"eigene Sachaufgaben zu einer Gleichung formulieren"
+],
+"vorwissen": [
+"Kl. 5, LB 5: Größen, Einheiten umrechnen, Lösungspläne",
+"GS Kl. 4, LB 2"
+],
+"begriffe": [
+"Sachverhalt",
+"Skizze",
+"Variable",
+"Lösungsplan",
+"Antwortsatz",
+"Plausibilität"
+],
+"hinweise": [
+"Gute Gelegenheit, Lesestrategien für Sachtexte zu üben (Ziel „fachgebundene Sprache“)."
+],
+"material": [
+"Aufgabensammlung mit gestuften Hilfen"
+],
+"stunden": [
+"Der Lösungsplan: verstehen, skizzieren, rechnen, antworten",
+"Tabellen und Skizzen nutzen",
+"Variable einführen, Gleichung aufstellen",
+"Systematisch probieren",
+"Gemischte Sachaufgaben, Ergebnisse prüfen"
+]
+},
+"A-KA1": {
+"code": "A-KA1",
+"lb": "test",
+"title": "Wiederholung und Klassenarbeit LB 1",
+"inhalte": [
+"Wiederholung LB 1 (A1–A7)",
+"Klassenarbeit",
+"Rückgabe, Berichtigung, Fehlerschwerpunkte"
+],
+"tiefe": [],
+"vorwissen": [
+"A1–A7"
+],
+"begriffe": [],
+"hinweise": [
+"Termin vor der Halbjahresinformation (letzte Woche vor den Winterferien)."
+],
+"material": [],
+"stunden": [
+"Wiederholung LB 1",
+"Klassenarbeit LB 1",
+"Rückgabe und Berichtigung"
+]
+},
+"A8": {
+"code": "A8",
+"lb": "LB2",
+"title": "Zuordnungen erkennen und darstellen",
+"inhalte": [
+"Zuordnungen aus der Erfahrungswelt kennen (Schüler – Vorname, Vielfachenfolgen, Punkt – Bildpunkt)",
+"mehrdeutige, eindeutige und eineindeutige Zuordnungen unterscheiden",
+"Zuordnungen in Wortform, Tabelle, Diagramm, Gleichung und Pfeildarstellung darstellen",
+"traditionelle und digitale Medien nutzen"
+],
+"tiefe": [
+"zwischen allen Darstellungsformen sicher wechseln",
+"Zuordnungen zu einem Graphen erfinden"
+],
+"vorwissen": [
+"Kl. 5, LB 3: Punkte im Koordinatensystem",
+"Kl. 5, LB 3: Geradenspiegelung (Punkt – Bildpunkt)"
+],
+"begriffe": [
+"Zuordnung",
+"Ausgangsgröße",
+"zugeordnete Größe",
+"eindeutig",
+"eineindeutig",
+"mehrdeutig",
+"Pfeildarstellung",
+"Koordinatensystem"
+],
+"hinweise": [
+"Querverweis ETH, Kl. 6, LB 1.",
+"Tabellenkalkulation für Wertetabellen und Diagramme."
+],
+"material": [
+"Tabellenkalkulation",
+"Pfeildiagramm-Vorlagen"
+],
+"stunden": [
+"Was ist eine Zuordnung? Pfeildarstellung",
+"Eindeutig, mehrdeutig, eineindeutig",
+"Tabelle, Diagramm, Graph im Koordinatensystem",
+"Zuordnungsvorschrift als Gleichung",
+"Zuordnungen digital darstellen und Kurzkontrolle"
+]
+},
+"A9": {
+"code": "A9",
+"lb": "LB2",
+"title": "Absolute und relative Häufigkeiten",
+"inhalte": [
+"absolute und relative Häufigkeiten als Zuordnungen verstehen",
+"einfache Zufallsversuche und statistische Erhebungen durchführen",
+"Formulierungen „selten“, „häufig“, „Chance“ verwenden"
+],
+"tiefe": [
+"relative Häufigkeiten verschiedener Versuchsreihen vergleichen und Schlüsse ziehen"
+],
+"vorwissen": [
+"A1: Bruch, Dezimalzahl, Prozent",
+"A8: Darstellungen von Zuordnungen"
+],
+"begriffe": [
+"absolute Häufigkeit",
+"relative Häufigkeit",
+"Strichliste",
+"Zufallsversuch",
+"Erhebung",
+"Chance"
+],
+"hinweise": [
+"Relative Häufigkeit verbindet LB 1 und LB 2 – guter Moment für Retrieval aus A1."
+],
+"material": [
+"Würfel, Reißzwecken, Münzen",
+"Umfrage in der Klasse"
+],
+"stunden": [
+"Erhebung in der Klasse: Strichliste und absolute Häufigkeit",
+"Relative Häufigkeit als Bruch, Dezimalzahl, Prozent",
+"Zufallsversuche: selten, häufig, Chance",
+"Diagramme auswerten und Kurzkontrolle"
+]
+},
+"A10": {
+"code": "A10",
+"lb": "LB2",
+"title": "Proportionale Zuordnungen",
+"inhalte": [
+"Vermutungen mit „je-desto“-Aussagen formulieren",
+"auf Quotientengleichheit untersuchen",
+"Sachaufgaben mit Dreisatz oder Verhältnisgleichheit lösen",
+"proportionale Zuordnungen im Koordinatensystem darstellen"
+],
+"tiefe": [
+"erkennen, dass „je mehr, desto mehr“ nicht automatisch proportional bedeutet"
+],
+"vorwissen": [
+"A8: Wertetabelle, Graph",
+"A4: Division mit gebrochenen Zahlen"
+],
+"begriffe": [
+"proportional",
+"Quotientengleichheit",
+"Proportionalitätsfaktor",
+"Dreisatz",
+"Verhältnis",
+"Ursprungshalbgerade"
+],
+"hinweise": [
+"Querverweis PH, Kl. 6, LB 3."
+],
+"material": [
+"Einkaufszettel, Preistabellen",
+"Messreihen (z. B. Wassermenge – Füllhöhe)"
+],
+"stunden": [
+"Je-desto-Aussagen formulieren und prüfen",
+"Vervielfachen in der Tabelle",
+"Quotientengleichheit und Proportionalitätsfaktor",
+"Graph: die Ursprungshalbgerade",
+"Der Dreisatz",
+"Verhältnisgleichheit",
+"Sachaufgaben und Kurzkontrolle"
+]
+},
+"A11": {
+"code": "A11",
+"lb": "LB2",
+"title": "Antiproportionale Zuordnungen",
+"inhalte": [
+"„je mehr, desto weniger“ formulieren",
+"auf Produktgleichheit untersuchen",
+"Sachaufgaben mit Dreisatz bzw. Produktgleichheit lösen",
+"Darstellung im Koordinatensystem"
+],
+"tiefe": [
+"Graphen proportionaler und antiproportionaler Zuordnungen begründet unterscheiden"
+],
+"vorwissen": [
+"A10: Dreisatz, Quotientengleichheit"
+],
+"begriffe": [
+"antiproportional",
+"Produktgleichheit",
+"Dreisatz",
+"Graph"
+],
+"hinweise": [
+"Typische Kontexte: Arbeiter – Zeit, Geschwindigkeit – Fahrzeit, Personen – Anteil."
+],
+"material": [
+"Rechteckflächen mit gleichem Inhalt (24 Kästchen) als Einstieg"
+],
+"stunden": [
+"Je mehr, desto weniger: Beispiele",
+"Produktgleichheit prüfen",
+"Graph im Koordinatensystem",
+"Dreisatz bei antiproportionalen Zuordnungen",
+"Übung und Kurzkontrolle"
+]
+},
+"A12": {
+"code": "A12",
+"lb": "LB2",
+"title": "Zuordnungen im Sachkontext",
+"inhalte": [
+"entscheiden: proportional, antiproportional oder keins von beiden",
+"gemischte und mehrschrittige Sachaufgaben lösen"
+],
+"tiefe": [
+"Grenzen der Modellierung diskutieren (Mengenrabatt, Pausen)"
+],
+"vorwissen": [
+"A10, A11"
+],
+"begriffe": [
+"Modell",
+"Annahme",
+"proportional",
+"antiproportional"
+],
+"hinweise": [
+"Fehleranalyse: häufigster Fehler ist Dreisatz auf nicht-proportionale Situationen."
+],
+"material": [
+"Sortierkarten mit Situationen"
+],
+"stunden": [
+"Welcher Typ? Situationen sortieren",
+"Gemischte Sachaufgaben",
+"Fehleranalyse und Wiederholung"
+]
+},
+"A-KA2": {
+"code": "A-KA2",
+"lb": "test",
+"title": "Wiederholung und Klassenarbeit LB 2",
+"inhalte": [
+"Wiederholung LB 2 (A8–A12)",
+"Klassenarbeit",
+"Rückgabe, Berichtigung"
+],
+"tiefe": [],
+"vorwissen": [
+"A8–A12"
+],
+"begriffe": [],
+"hinweise": [],
+"material": [],
+"stunden": [
+"Wiederholung LB 2",
+"Klassenarbeit LB 2",
+"Rückgabe und Berichtigung"
+]
+},
+"B0": {
+"code": "B0",
+"lb": "start",
+"title": "Start: Geometrie-Werkzeuge auffrischen",
+"inhalte": [
+"Zeichengeräte sicher nutzen (Geodreieck, Zirkel)",
+"Winkel zeichnen, messen, Winkelarten",
+"Scheitel-, Neben-, Stufen- und Wechselwinkel"
+],
+"tiefe": [
+"Winkelbeziehungen begründen statt messen"
+],
+"vorwissen": [
+"Kl. 5, LB 3: Arbeiten mit Winkeln, Lagebeziehungen"
+],
+"begriffe": [
+"Scheitelwinkel",
+"Nebenwinkel",
+"Stufenwinkel",
+"Wechselwinkel",
+"parallel",
+"senkrecht"
+],
+"hinweise": [
+"Stufen- und Wechselwinkel werden für den Beweis des Innenwinkelsatzes (B1) gebraucht."
+],
+"material": [
+"Geodreieck, Zirkel, unliniertes Papier"
+],
+"stunden": [
+"Diagnose und Zeichengeräte",
+"Winkel an Geradenkreuzungen",
+"Winkel an geschnittenen Parallelen begründen"
+]
+},
+"B1": {
+"code": "B1",
+"lb": "LB3",
+"title": "Dreiecke und der Innenwinkelsatz",
+"inhalte": [
+"Dreiecke bezeichnen und nach Seiten und Winkeln einteilen",
+"Innenwinkelsatz für Dreiecke",
+"Einblick in das Verfahren des direkten Beweises",
+"zwischen Definition und Satz unterscheiden"
+],
+"tiefe": [
+"Beweis selbst mit eigenen Worten wiedergeben"
+],
+"vorwissen": [
+"B0: Wechselwinkel an Parallelen"
+],
+"begriffe": [
+"Innenwinkel",
+"Satz",
+"Definition",
+"Voraussetzung",
+"Behauptung",
+"Beweis",
+"spitz-",
+"recht-",
+"stumpfwinklig",
+"gleichschenklig",
+"gleichseitig"
+],
+"hinweise": [
+"Vermutung zuerst durch Messen / Abreißen / DGS, dann Beweis."
+],
+"material": [
+"DGS (z. B. GeoGebra)",
+"Papierdreiecke zum Abreißen"
+],
+"stunden": [
+"Dreiecke bezeichnen und einteilen",
+"Innenwinkelsumme vermuten",
+"Direkter Beweis des Innenwinkelsatzes",
+"Winkel berechnen und Kurzkontrolle"
+]
+},
+"B2": {
+"code": "B2",
+"lb": "LB3",
+"title": "Dreieckskonstruktionen und Kongruenzsätze",
+"inhalte": [
+"Kongruenzsätze (SSS, SWS, WSW, SsW) kennen",
+"Konstruktionsaufgaben lösen",
+"Existenz und Eindeutigkeit der Lösung untersuchen",
+"Sätze in „wenn-dann“-Form formulieren",
+"Arbeit mit DGS"
+],
+"tiefe": [
+"Begründen, warum SSW nicht immer eindeutig ist"
+],
+"vorwissen": [
+"Kl. 5, LB 3: Geradenspiegelung, Maßgleichheit",
+"B1: Innenwinkelsatz"
+],
+"begriffe": [
+"kongruent",
+"Kongruenzsatz",
+"Planfigur",
+"Konstruktionsbeschreibung",
+"eindeutig",
+"Existenz"
+],
+"hinweise": [
+"Wahlbereich 1 (DGS) lässt sich hier integrieren."
+],
+"material": [
+"Zirkel, Geodreieck",
+"DGS"
+],
+"stunden": [
+"Kongruente Figuren",
+"Konstruktion SSS",
+"Konstruktion SWS",
+"Konstruktion WSW",
+"SsW: Wann ist das Dreieck eindeutig?",
+"Planfigur und Konstruktionsbeschreibung",
+"Existenz und Eindeutigkeit mit DGS untersuchen",
+"Gemischte Konstruktionen",
+"Kurzkontrolle und Nacharbeit"
+]
+},
+"B3": {
+"code": "B3",
+"lb": "LB3",
+"title": "Sätze am Dreieck",
+"inhalte": [
+"Basiswinkelsatz",
+"Seiten-Winkel-Relation im Dreieck",
+"Dreiecksungleichung",
+"Sätze für Konstruktionen und einfache Beweise nutzen"
+],
+"tiefe": [
+"Satz und Umkehrung unterscheiden"
+],
+"vorwissen": [
+"B1, B2"
+],
+"begriffe": [
+"Basis",
+"Schenkel",
+"Basiswinkel",
+"Umkehrung",
+"Dreiecksungleichung"
+],
+"hinweise": [
+"Formulierung der Sätze in der „wenn-dann“-Form."
+],
+"material": [
+"Strohhalme oder Stäbe für die Dreiecksungleichung"
+],
+"stunden": [
+"Gleichschenklige Dreiecke: Basiswinkelsatz",
+"Wenn-dann: Satz und Umkehrung",
+"Seiten-Winkel-Relation",
+"Dreiecksungleichung und einfache Beweise"
+]
+},
+"B4": {
+"code": "B4",
+"lb": "LB3",
+"title": "Besondere Linien im Dreieck",
+"inhalte": [
+"Mittelsenkrechte, Winkelhalbierende, Höhe, Seitenhalbierende kennen und konstruieren",
+"Sprechweisen „Lot fällen“, „Mittelsenkrechte errichten“, „Winkel halbieren“"
+],
+"tiefe": [
+"Schnittpunkte der Linien mit DGS erkunden (Ausblick auf Um- und Inkreis in Kl. 7)"
+],
+"vorwissen": [
+"B2: Konstruieren mit Zirkel"
+],
+"begriffe": [
+"Mittelsenkrechte",
+"Winkelhalbierende",
+"Höhe",
+"Lot",
+"Seitenhalbierende"
+],
+"hinweise": [
+"Umkreis und Inkreis selbst folgen in Kl. 7, LB 1."
+],
+"material": [
+"Zirkel, Geodreieck, DGS"
+],
+"stunden": [
+"Mittelsenkrechte errichten",
+"Winkel halbieren",
+"Lot fällen: Höhen",
+"Seitenhalbierende, Schnittpunkte mit DGS"
+]
+},
+"B-KA1": {
+"code": "B-KA1",
+"lb": "test",
+"title": "Wiederholung und Klassenarbeit Dreiecke (LB 3, Teil 1)",
+"inhalte": [
+"Wiederholung B1–B4",
+"Klassenarbeit",
+"Rückgabe, Berichtigung"
+],
+"tiefe": [],
+"vorwissen": [
+"B1–B4"
+],
+"begriffe": [],
+"hinweise": [
+"Liegt vor Weihnachten; Note geht ins Halbjahr ein."
+],
+"material": [],
+"stunden": [
+"Wiederholung Dreiecke",
+"Klassenarbeit",
+"Rückgabe und Berichtigung"
+]
+},
+"B5": {
+"code": "B5",
+"lb": "LB3",
+"title": "Vierecke systematisieren",
+"inhalte": [
+"Vierecksarten und ihre Eigenschaften (Trapez, Parallelogramm, Raute, Drachenviereck, Rechteck, Quadrat)",
+"Eigenschaften entdecken und nachweisen",
+"Systematisieren am Beispiel der Vierecke („Haus der Vierecke“)"
+],
+"tiefe": [
+"Innenwinkelsumme im Viereck durch Zerlegung beweisen"
+],
+"vorwissen": [
+"Kl. 5, LB 3: Achsen- und Punktsymmetrie",
+"B1: Innenwinkelsatz"
+],
+"begriffe": [
+"Trapez",
+"Parallelogramm",
+"Raute",
+"Drachenviereck",
+"Diagonale",
+"Symmetrieachse",
+"Oberbegriff"
+],
+"hinweise": [
+"Lehrplan: „Kennen des Systematisierens am Beispiel von Dreiecken und von Vierecken“."
+],
+"material": [
+"Vierecks-Karten zum Sortieren",
+"DGS"
+],
+"stunden": [
+"Vierecksarten und Definitionen",
+"Seiten, Winkel, Diagonalen, Symmetrie",
+"Haus der Vierecke",
+"Innenwinkelsumme im Viereck",
+"Eigenschaften nachweisen und Kurzkontrolle"
+]
+},
+"B6": {
+"code": "B6",
+"lb": "LB3",
+"title": "Umfang und Flächeninhalt",
+"inhalte": [
+"Umfang und Flächeninhalt bei Dreiecken und Vierecken bestimmen",
+"Formeln anschaulich gewinnen (Zerlegen, Ergänzen, Rückführprinzip)",
+"zusammengesetzte Figuren"
+],
+"tiefe": [
+"Formeln für Raute und Drachenviereck über die Diagonalen herleiten"
+],
+"vorwissen": [
+"Kl. 5, LB 4: Rechteck, Flächeneinheiten",
+"B4: Höhe im Dreieck"
+],
+"begriffe": [
+"Flächeninhalt",
+"Umfang",
+"Grundseite",
+"Höhe",
+"zerlegen",
+"ergänzen",
+"Rückführprinzip"
+],
+"hinweise": [
+"Höhe außerhalb des stumpfwinkligen Dreiecks gezielt üben."
+],
+"material": [
+"Schere, Karopapier",
+"DGS"
+],
+"stunden": [
+"Parallelogramm: zerlegen und ergänzen",
+"Dreieck: A = ½ · g · h",
+"Trapez",
+"Raute und Drachenviereck",
+"Zusammengesetzte Figuren",
+"Umfang, Einheiten, Sachaufgaben",
+"Übung und Kurzkontrolle",
+"Vertiefung"
+]
+},
+"B7": {
+"code": "B7",
+"lb": "LB4",
+"title": "Prismen darstellen",
+"inhalte": [
+"Eigenschaften von Prismen kennen",
+"Prismen in Kavalierperspektive darstellen",
+"Körpernetze zeichnen",
+"Modelle bauen"
+],
+"tiefe": [
+"Körper, Netz und Schrägbild einander zuordnen"
+],
+"vorwissen": [
+"Kl. 5, LB 4: Quader darstellen (Schrägbild, Netz)"
+],
+"begriffe": [
+"Prisma",
+"Grundfläche",
+"Deckfläche",
+"Mantel",
+"Kante",
+"Körpernetz",
+"Schrägbild",
+"Kavalierperspektive"
+],
+"hinweise": [
+"Lehrplan: Bau von Modellen."
+],
+"material": [
+"Karton, Klebeband",
+"Prismen-Modelle"
+],
+"stunden": [
+"Was ist ein Prisma? Modelle untersuchen",
+"Körpernetze zeichnen und falten",
+"Schrägbild in Kavalierperspektive",
+"Schrägbilder drei- und sechsseitiger Prismen",
+"Körper, Netz und Schrägbild zuordnen"
+]
+},
+"B8": {
+"code": "B8",
+"lb": "LB4",
+"title": "Oberfläche und Volumen von Prismen",
+"inhalte": [
+"Oberflächeninhalt und Volumen gerader Prismen berechnen",
+"aus Prismen zusammengesetzte Körper"
+],
+"tiefe": [
+"Volumenformel V = G · h über den Quader begründen"
+],
+"vorwissen": [
+"B6: Flächeninhalt von Dreiecken und Vierecken",
+"Kl. 5, LB 4: Volumen des Quaders, Einheiten"
+],
+"begriffe": [
+"Oberflächeninhalt",
+"Volumen",
+"Grundfläche",
+"Körperhöhe",
+"Hohlmaß"
+],
+"hinweise": [
+"Einheiten (cm³, dm³, Liter) gezielt wiederholen."
+],
+"material": [
+"Messbecher, Prismen-Modelle"
+],
+"stunden": [
+"Oberflächeninhalt aus dem Netz",
+"Volumen V = G · h",
+"Volumen- und Hohlmaßeinheiten",
+"Zusammengesetzte Körper",
+"Übung",
+"Kurzkontrolle"
+]
+},
+"B9": {
+"code": "B9",
+"lb": "LB4",
+"title": "Projekt: Verpackungsmüll",
+"inhalte": [
+"Oberfläche und Volumen an realen Verpackungen anwenden",
+"Verpackungen vergleichen und optimieren"
+],
+"tiefe": [
+"Alternative: „Wir bauen eine Stadt der Fantasie“"
+],
+"vorwissen": [
+"B7, B8"
+],
+"begriffe": [
+"Materialverbrauch",
+"Verhältnis Volumen zu Oberfläche"
+],
+"hinweise": [
+"Bildung für nachhaltige Entwicklung (Lehrplan LB 4)."
+],
+"material": [
+"Mitgebrachte Verpackungen, Messwerkzeuge"
+],
+"stunden": [
+"Verpackungen sammeln, vermessen, skizzieren",
+"Oberfläche und Volumen berechnen",
+"Optimierte Verpackung entwerfen",
+"Präsentation"
+]
+},
+"B-KA2": {
+"code": "B-KA2",
+"lb": "test",
+"title": "Wiederholung und Klassenarbeit Vierecke und Prismen (LB 3/4)",
+"inhalte": [
+"Wiederholung B5–B8",
+"Klassenarbeit",
+"Rückgabe, Berichtigung"
+],
+"tiefe": [],
+"vorwissen": [
+"B5–B8"
+],
+"begriffe": [],
+"hinweise": [],
+"material": [],
+"stunden": [
+"Wiederholung",
+"Klassenarbeit",
+"Rückgabe und Berichtigung"
+]
+},
+"V1": {
+"code": "V1",
+"lb": "LB5",
+"title": "Vernetzung: Anteile (Teil 1)",
+"inhalte": [
+"Anteile bestimmen und darstellen",
+"Bruch- und Prozentschreibweise",
+"Kreisdiagramme erstellen und auswerten"
+],
+"tiefe": [
+"Anteile aus Alltagsdaten (Klassenumfrage) selbst aufbereiten"
+],
+"vorwissen": [
+"A1, A9: Prozent, relative Häufigkeit",
+"B0: Winkel zeichnen"
+],
+"begriffe": [
+"Anteil",
+"Ganzes",
+"Prozent",
+"Kreisdiagramm",
+"Mittelpunktswinkel"
+],
+"hinweise": [
+"Läuft in derselben Woche wie Teil 2 im Geometrie-Strang (Flächen- und Volumenanteile)."
+],
+"material": [
+"Geodreieck, Zirkel",
+"Daten aus A9"
+],
+"stunden": [
+"Anteile in Bruch- und Prozentschreibweise",
+"Kreisdiagramme zeichnen und lesen"
+]
+},
+"V2": {
+"code": "V2",
+"lb": "LB5",
+"title": "Vernetzung: Anteile (Teil 2)",
+"inhalte": [
+"Flächenanteile geometrischer Figuren bestimmen",
+"Volumenanteile geometrischer Körper bestimmen"
+],
+"tiefe": [
+"Anteile in Bruch- und Prozentschreibweise angeben und vergleichen"
+],
+"vorwissen": [
+"B6, B8, A1"
+],
+"begriffe": [
+"Flächenanteil",
+"Volumenanteil"
+],
+"hinweise": [
+"Läuft in derselben Woche wie Teil 1 im Zahlen-Strang."
+],
+"material": [
+"Karopapier, Körpermodelle"
+],
+"stunden": [
+"Flächenanteile",
+"Volumenanteile"
+]
+},
+"W": {
+"code": "W",
+"lb": "WB",
+"title": "Wahlbereich 2: Unterhaltsame Geometrie",
+"inhalte": [
+"optische Täuschungen erkennen, deuten, zeichnen",
+"Perspektiven und ihre Wirkung (Schrägbild, Zweipunktperspektive)",
+"„unmögliche Figuren“ zeichnen und bauen (Penrose-Treppe, Escher)",
+"Legespiele (Pentomino)"
+],
+"tiefe": [
+"Alternativen: WB 1 (DGS) in B2/B4 integrieren oder WB 3 (Primzahlen) im Zahlen-Strang"
+],
+"vorwissen": [
+"B7: Schrägbild"
+],
+"begriffe": [
+"Perspektive",
+"Fluchtpunkt",
+"optische Täuschung",
+"Pentomino"
+],
+"hinweise": [
+"Lehrplan: ein Wahlbereich im Umfang von 2 Wochen. Querverweis KU, Kl. 6, LB 1; Kl. 7, LB 3."
+],
+"material": [
+"Pentomino-Sets",
+"Bildersammlung optischer Täuschungen"
+],
+"stunden": [
+"Optische Täuschungen erkennen und deuten",
+"Täuschungen selbst zeichnen",
+"Zweipunktperspektive",
+"Perspektiven vergleichen",
+"Unmögliche Figuren",
+"Escher und Penrose",
+"Pentomino-Legespiele",
+"Präsentation"
+]
+},
+"P": {
+"code": "P",
+"lb": "P",
+"title": "Puffer · Wiederholung"
+},
+"JA": {
+"code": "JA",
+"lb": "P",
+"title": "Jahresabschluss: Rückblick, Knobelaufgaben"
+}
+},
+"seq": [
+[
+"A0",
+"A",
+3
+],
+[
+"A1",
+"A",
+5
+],
+[
+"A2",
+"A",
+2
+],
+[
+"A3",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"A4",
+"A",
+8
+],
+[
+"A5",
+"A",
+4
+],
+[
+"P",
+"A",
+1
+],
+[
+"A6",
+"A",
+5
+],
+[
+"A7",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"A-KA1",
+"A",
+3
+],
+[
+"A8",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"A9",
+"A",
+4
+],
+[
+"P",
+"A",
+1
+],
+[
+"A10",
+"A",
+7
+],
+[
+"A11",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"A12",
+"A",
+3
+],
+[
+"P",
+"A",
+2
+],
+[
+"A-KA2",
+"A",
+3
+],
+[
+"B0",
+"B",
+3
+],
+[
+"B1",
+"B",
+4
+],
+[
+"B2",
+"B",
+9
+],
+[
+"P",
+"B",
+1
+],
+[
+"B3",
+"B",
+4
+],
+[
+"B4",
+"B",
+4
+],
+[
+"P",
+"B",
+1
+],
+[
+"B-KA1",
+"B",
+3
+],
+[
+"B5",
+"B",
+5
+],
+[
+"P",
+"B",
+1
+],
+[
+"B6",
+"B",
+8
+],
+[
+"P",
+"B",
+2
+],
+[
+"B7",
+"B",
+5
+],
+[
+"P",
+"B",
+1
+],
+[
+"B8",
+"B",
+6
+],
+[
+"P",
+"B",
+1
+],
+[
+"B9",
+"B",
+4
+],
+[
+"P",
+"B",
+1
+],
+[
+"B-KA2",
+"B",
+3
+],
+[
+"V1",
+"A",
+2
+],
+[
+"V2",
+"B",
+2
+],
+[
+"W",
+"B",
+8
+],
+[
+"P",
+"B",
+1
+],
+[
+"JA",
+"A",
+2
+],
+[
+"JA",
+"B",
+2
+]
+],
+"mode": "Stränge",
+"lbnames": {
+"LB1": "Arbeiten mit gebrochenen Zahlen",
+"LB2": "Zuordnungen in der Umwelt",
+"LB3": "Dreiecke und Vierecke",
+"LB4": "Prismen",
+"LB5": "Vernetzung: Anteile",
+"WB": "Wahlbereich 2: Unterhaltsame Geometrie",
+"start": "Start / Auffrischen",
+"test": "Klassenarbeit",
+"P": "Puffer / Abschluss"
+},
+"zrw": {
+"LB1": 34,
+"LB2": 24,
+"LB3": 30,
+"LB4": 12,
+"LB5": 4,
+"WB": 8
+}
+},
+"kl8": {
+"units": {
+"S0": {
+"code": "S0",
+"lb": "start",
+"title": "Start: Kl. 7 auffrischen",
+"inhalte": [
+"mit rationalen Zahlen sicher rechnen",
+"lineare Gleichungen mit wenigen Umformungsschritten lösen",
+"Formeln umstellen"
+],
+"tiefe": [
+"Lücken aus dem Eingangstest gezielt in Kurzübungen schließen"
+],
+"vorwissen": [
+"Kl. 7, LB 2: Rechnen mit rationalen Zahlen, lineare Gleichungen, Umstellen von Formeln"
+],
+"begriffe": [
+"rationale Zahl",
+"Vorzeichen",
+"Äquivalenzumformung",
+"Lösung",
+"Probe"
+],
+"hinweise": [
+"Brücke aus Kl. 7, kein Lehrplaninhalt der Kl. 8. Ergebnisse steuern die Schwerpunkte in T2 und T4."
+],
+"material": [
+"Eingangstest (ca. 20 min)"
+],
+"stunden": [
+"Eingangstest",
+"Gezielte Wiederholung: rationale Zahlen, lineare Gleichungen, Formeln umstellen"
+]
+},
+"T1": {
+"code": "T1",
+"lb": "LB1",
+"title": "Variablen und Struktur von Termen",
+"inhalte": [
+"zwischen Name, Wert und Bedeutung einer Variablen unterscheiden",
+"die Struktur von Termen erkennen: Summe, Produkt, Quotient und ihre Verknüpfungen",
+"Terme zu Sachverhalten aufstellen und deuten"
+],
+"tiefe": [
+"Termbäume zeichnen und die zuletzt ausgeführte Rechenart benennen"
+],
+"vorwissen": [
+"Kl. 7, LB 2: Terme, Vorrangregeln"
+],
+"begriffe": [
+"Variable",
+"Term",
+"Summe",
+"Differenz",
+"Produkt",
+"Quotient",
+"Termstruktur",
+"Termwert"
+],
+"hinweise": [
+"Lehrplan: „Arbeiten mit Variablen im CAS, Unterscheiden von Namen, Wert und Bedeutung einer Variablen“."
+],
+"material": [
+"Kartensortierung: Term – Beschreibung – Termbaum"
+],
+"stunden": [
+"Variable: Name, Wert, Bedeutung",
+"Struktur von Termen: Summe, Produkt, Quotient",
+"Verknüpfte Terme und Termbäume",
+"Terme aufstellen und deuten"
+]
+},
+"T2": {
+"code": "T2",
+"lb": "LB1",
+"title": "Terme umformen",
+"inhalte": [
+"gleichartige Terme zusammenfassen",
+"ausmultiplizieren und ausklammern",
+"Summen multiplizieren",
+"einfache Terme ohne Hilfsmittel umformen"
+],
+"tiefe": [
+"Termumformungen mit Rechteckmodellen begründen"
+],
+"vorwissen": [
+"T1: Termstruktur",
+"Kl. 7, LB 2: Rechengesetze, Vorzeichen"
+],
+"begriffe": [
+"zusammenfassen",
+"ausmultiplizieren",
+"ausklammern",
+"faktorisieren",
+"Distributivgesetz",
+"gleichartige Terme"
+],
+"hinweise": [
+"Lehrplan-Beispiele ohne Hilfsmittel, z. B. Minusklammern und Produkte von Summen."
+],
+"material": [
+"Rechteck- bzw. Flächenmodell",
+"Fehleranalyse-Karten"
+],
+"stunden": [
+"Gleichartige Terme zusammenfassen",
+"Ausmultiplizieren und Minusklammern",
+"Ausklammern",
+"Summen multiplizieren",
+"Gemischte Umformungen ohne Hilfsmittel und Kurzkontrolle"
+]
+},
+"T3": {
+"code": "T3",
+"lb": "LB1",
+"title": "Binomische Formeln",
+"inhalte": [
+"die drei binomischen Formeln kennen und anwenden",
+"die binomischen Formeln geometrisch interpretieren",
+"binomische Formeln zum Faktorisieren nutzen"
+],
+"tiefe": [
+"Kopfrechentricks mit binomischen Formeln (z. B. 49 · 51)"
+],
+"vorwissen": [
+"T2: Summen multiplizieren"
+],
+"begriffe": [
+"Binom",
+"binomische Formel",
+"Quadrat einer Summe",
+"Differenz von Quadraten"
+],
+"hinweise": [
+"Geometrische Interpretation am Quadrat mit Seitenlänge a + b (Lehrplan)."
+],
+"material": [
+"Quadrat-Puzzle aus Papier"
+],
+"stunden": [
+"Erste binomische Formel am Quadrat",
+"Zweite und dritte binomische Formel",
+"Binomische Formeln beim Ausmultiplizieren",
+"Faktorisieren mit binomischen Formeln",
+"Übung und Kurzkontrolle"
+]
+},
+"T4": {
+"code": "T4",
+"lb": "LB1",
+"title": "Lineare Gleichungen",
+"inhalte": [
+"lineare Gleichungen mit Äquivalenzumformungen lösen",
+"Gleichungen mit Klammern und Brüchen lösen",
+"Gleichungen lösen, die nach dem Umformen linear werden",
+"Lösungsfälle unterscheiden"
+],
+"tiefe": [
+"Lösungsfälle vollständig begründen (keine, genau eine, unendlich viele Lösungen)"
+],
+"vorwissen": [
+"Kl. 7, LB 2: lineare Gleichungen",
+"T2, T3: Terme umformen"
+],
+"begriffe": [
+"Gleichung",
+"Äquivalenzumformung",
+"Lösungsmenge",
+"Probe",
+"allgemeingültig",
+"unerfüllbar"
+],
+"hinweise": [
+"Lehrplan-Beispiel: (x + 2)(x – 3) = x² … – Gleichungen, die durch Umformen linear werden."
+],
+"material": [
+"Waagemodell",
+"Gestufte Aufgabenblätter"
+],
+"stunden": [
+"Äquivalenzumformungen wiederholen",
+"Gleichungen mit Klammern",
+"Gleichungen mit Brüchen",
+"Gleichungen, die nach Umformen linear werden",
+"Lösungsfälle",
+"Sachaufgaben mit Gleichungen"
+]
+},
+"T5": {
+"code": "T5",
+"lb": "LB1",
+"title": "CAS und Ungleichungen",
+"inhalte": [
+"CAS beim Umformen komplexerer Terme und Gleichungen verwenden",
+"Einblick in das Lösen von Ungleichungen gewinnen"
+],
+"tiefe": [
+"CAS-Ergebnisse durch Rechnung ohne Hilfsmittel kontrollieren"
+],
+"vorwissen": [
+"T2–T4"
+],
+"begriffe": [
+"CAS",
+"Ungleichung",
+"Lösungsmenge",
+"Intervall"
+],
+"hinweise": [
+"Lehrplan: ab Kl. 8 grafikfähiger TR mit CAS bzw. mathematische Software.",
+"Umkehr des Relationszeichens bei Multiplikation mit negativer Zahl."
+],
+"material": [
+"CAS-Rechner bzw. Software"
+],
+"stunden": [
+"CAS kennenlernen: Terme eingeben",
+"Terme mit CAS vereinfachen und faktorisieren",
+"Gleichungen mit CAS lösen",
+"Ungleichungen lösen und Lösungsmengen am Zahlenstrahl darstellen"
+]
+},
+"KA1": {
+"code": "KA1",
+"lb": "test",
+"title": "Klassenarbeit LB 1",
+"inhalte": [
+"Klassenarbeit",
+"Rückgabe, Berichtigung, Fehlerschwerpunkte"
+],
+"tiefe": [],
+"vorwissen": [
+"T1–T5"
+],
+"begriffe": [],
+"hinweise": [
+"Wiederholung vorher im Puffer bzw. in der SOL-Stunde (Format 4)."
+],
+"material": [],
+"stunden": [
+"Klassenarbeit LB 1",
+"Rückgabe und Berichtigung"
+]
+},
+"Z1": {
+"code": "Z1",
+"lb": "LB2",
+"title": "Zufallsversuche und Ereignisse",
+"inhalte": [
+"Zufallsversuch, Ergebnis, Ergebnismenge, Ereignis",
+"Vereinigung, Durchschnitt, Differenz, Gegenereignis, unmögliches Ereignis",
+"Symbol- und Mengenschreibweise, Venn-Diagramme"
+],
+"tiefe": [
+"Ereignisse in Umgangssprache und Mengenschreibweise übersetzen"
+],
+"vorwissen": [
+"Kl. 6, LB 2: absolute und relative Häufigkeit",
+"Kl. 7, LB 2: Mengen, Schnittmenge, Vereinigungsmenge"
+],
+"begriffe": [
+"Zufallsversuch",
+"Ergebnis",
+"Ergebnismenge Ω",
+"Ereignis",
+"Gegenereignis",
+"Vereinigung",
+"Durchschnitt",
+"Venn-Diagramm"
+],
+"hinweise": [
+"Lehrplan: Verwendung der Mengenschreibweise und des Elementbegriffs."
+],
+"material": [
+"Würfel, Münzen, Glücksräder"
+],
+"stunden": [
+"Zufallsversuch, Ergebnis, Ergebnismenge",
+"Ereignisse in Mengenschreibweise",
+"Vereinigung und Durchschnitt im Venn-Diagramm",
+"Gegenereignis, Differenz, unmögliches Ereignis",
+"Übung"
+]
+},
+"Z2": {
+"code": "Z2",
+"lb": "LB2",
+"title": "Häufigkeit und Wahrscheinlichkeit",
+"inhalte": [
+"absolute und relative Häufigkeit, Stabilisierung der relativen Häufigkeit",
+"Begriff Wahrscheinlichkeit",
+"Wahrscheinlichkeiten bei Laplace-Versuchen berechnen",
+"Realexperimente durchführen"
+],
+"tiefe": [
+"symmetrische und asymmetrische Zufallsgeräte vergleichen"
+],
+"vorwissen": [
+"Kl. 6, LB 2: Häufigkeiten",
+"Z1"
+],
+"begriffe": [
+"relative Häufigkeit",
+"Stabilisierung",
+"Wahrscheinlichkeit",
+"Laplace-Versuch",
+"gleichwahrscheinlich"
+],
+"hinweise": [
+"Einsatz von Computer/CAS zur Darstellung langer Versuchsreihen."
+],
+"material": [
+"Reißzwecken, Kronkorken, Quader-Würfel",
+"Tabellenkalkulation"
+],
+"stunden": [
+"Realexperiment: Reißzwecke und Kronkorken",
+"Relative Häufigkeit und ihre Stabilisierung",
+"Begriff Wahrscheinlichkeit",
+"Laplace-Versuche und Laplace-Wahrscheinlichkeiten",
+"Übung und Kurzkontrolle"
+]
+},
+"Z3": {
+"code": "Z3",
+"lb": "LB2",
+"title": "Mehrstufige Zufallsversuche",
+"inhalte": [
+"mehrstufige Zufallsversuche modellieren: Urnenmodell, Baumdiagramm",
+"Pfadregeln anwenden",
+"abhängige und unabhängige Zufallsversuche",
+"logische Begriffe UND, ODER, NICHT verwenden"
+],
+"tiefe": [
+"Gegenereignis bei „mindestens einmal“-Aufgaben nutzen"
+],
+"vorwissen": [
+"Z1, Z2"
+],
+"begriffe": [
+"mehrstufig",
+"Urnenmodell",
+"Baumdiagramm",
+"Pfad",
+"Pfadregel",
+"mit/ohne Zurücklegen",
+"UND",
+"ODER",
+"NICHT"
+],
+"hinweise": [
+"Abgrenzung der Fachsprache von der Umgangssprache (Lehrplan)."
+],
+"material": [
+"Urnen bzw. Säckchen mit Kugeln"
+],
+"stunden": [
+"Mehrstufige Versuche und Baumdiagramm",
+"Urnenmodell mit Zurücklegen",
+"1. Pfadregel",
+"2. Pfadregel",
+"Ohne Zurücklegen: abhängige Versuche",
+"Mindestens einmal: das Gegenereignis",
+"UND, ODER, NICHT",
+"Übung und Kurzkontrolle"
+]
+},
+"Z4": {
+"code": "Z4",
+"lb": "LB2",
+"title": "Abzählprobleme",
+"inhalte": [
+"Produktregel zur Anzahlbestimmung",
+"Ziehen mit und ohne Zurücklegen, mit und ohne Beachtung der Reihenfolge (inhaltlich)"
+],
+"tiefe": [
+"Abzählprobleme mit Laplace-Wahrscheinlichkeiten verbinden"
+],
+"vorwissen": [
+"Z3: Baumdiagramm"
+],
+"begriffe": [
+"Produktregel",
+"Anzahl",
+"mit/ohne Reihenfolge"
+],
+"hinweise": [
+"Lehrplan: inhaltliche Betrachtungen, keine Formeln für Binomialkoeffizienten nötig."
+],
+"material": [
+"Zahlenschlösser, Kleiderkombinationen als Einstieg"
+],
+"stunden": [
+"Produktregel",
+"Mit und ohne Zurücklegen, mit Reihenfolge",
+"Ohne Beachtung der Reihenfolge",
+"Gemischte Abzählprobleme"
+]
+},
+"Z5": {
+"code": "Z5",
+"lb": "LB2",
+"title": "Simulation von Zufallsversuchen",
+"inhalte": [
+"Einblick in die Simulation mit Zufallszahlen aus dem CAS"
+],
+"tiefe": [
+"Simulationsergebnisse mit berechneten Wahrscheinlichkeiten vergleichen"
+],
+"vorwissen": [
+"Z2, Z3"
+],
+"begriffe": [
+"Zufallszahl",
+"Simulation"
+],
+"hinweise": [
+"Bei Wahl von Wahlbereich 3 (Simulation mit Zufallszahlen) hier vertiefen."
+],
+"material": [
+"CAS bzw. Tabellenkalkulation"
+],
+"stunden": [
+"Zufallszahlen erzeugen und einen Zufallsversuch simulieren",
+"Simulation mit der Rechnung vergleichen"
+]
+},
+"KA2": {
+"code": "KA2",
+"lb": "test",
+"title": "Klassenarbeit LB 2",
+"inhalte": [
+"Klassenarbeit",
+"Rückgabe, Berichtigung, Fehlerschwerpunkte"
+],
+"tiefe": [],
+"vorwissen": [
+"Z1–Z5"
+],
+"begriffe": [],
+"hinweise": [
+"Wiederholung vorher im Puffer bzw. in der SOL-Stunde (Format 4)."
+],
+"material": [],
+"stunden": [
+"Klassenarbeit LB 2",
+"Rückgabe und Berichtigung"
+]
+},
+"F1": {
+"code": "F1",
+"lb": "LB3",
+"title": "Der Funktionsbegriff",
+"inhalte": [
+"Begriff Funktion und Darstellungsformen kennen",
+"Funktionen in Alltag und Fächern erkennen: Klimadiagramm, Weg-Zeit-Gesetz, P(E)",
+"Schreibweisen f(x) und Zuordnungsvorschrift f: x ↦ …"
+],
+"tiefe": [
+"entscheiden und begründen, ob eine Zuordnung eine Funktion ist"
+],
+"vorwissen": [
+"Kl. 6, LB 2: Zuordnungen, Proportionalität",
+"Z2: Wahrscheinlichkeit"
+],
+"begriffe": [
+"Funktion",
+"eindeutig",
+"Funktionswert",
+"Argument",
+"Zuordnungsvorschrift",
+"Graph"
+],
+"hinweise": [
+"Querverweis PH, Kl. 6, LB 2 (Weg-Zeit-Gesetz).",
+"Print- und digitale Medien nutzen."
+],
+"material": [
+"Klimadiagramme",
+"Weg-Zeit-Diagramme"
+],
+"stunden": [
+"Von der Zuordnung zur Funktion",
+"Darstellungsformen von Funktionen",
+"Funktionen im Alltag: Klimadiagramm, Weg-Zeit",
+"Schreibweisen f(x) und f: x ↦ …",
+"Ist das eine Funktion? Übung"
+]
+},
+"F2": {
+"code": "F2",
+"lb": "LB3",
+"title": "Eigenschaften von Funktionen",
+"inhalte": [
+"Definitionsbereich und Wertebereich",
+"Monotonie",
+"Schnittpunkte des Graphen mit den Koordinatenachsen",
+"Extrema und Symmetrie"
+],
+"tiefe": [
+"Eigenschaften einfacher ganz- und gebrochenrationaler Funktionen am Graphen erkennen"
+],
+"vorwissen": [
+"F1"
+],
+"begriffe": [
+"Definitionsbereich",
+"Wertebereich",
+"monoton steigend/fallend",
+"Nullstelle",
+"Extremum",
+"achsensymmetrisch",
+"punktsymmetrisch"
+],
+"hinweise": [
+"Lehrplan: inhaltliches Verständnis anhand der Graphen, keine Rechnung."
+],
+"material": [
+"GTR/CAS, Funktionsplotter"
+],
+"stunden": [
+"Definitions- und Wertebereich",
+"Monotonie",
+"Schnittpunkte mit den Achsen",
+"Extrema und Symmetrie; Graphen mit dem CAS untersuchen",
+"Übung und Kurzkontrolle"
+]
+},
+"F3": {
+"code": "F3",
+"lb": "LB3",
+"title": "Lineare Funktionen",
+"inhalte": [
+"Gleichung und Graph linearer Funktionen",
+"Anstieg und Differenzenquotient",
+"Einfluss der Parameter m und n",
+"Nullstellen grafisch und rechnerisch",
+"Gleichungen linearer Funktionen finden"
+],
+"tiefe": [
+"einen CAS-Algorithmus zum Aufstellen der Geradengleichung entwickeln"
+],
+"vorwissen": [
+"Kl. 6, LB 2: proportionale Zuordnungen",
+"T4: lineare Gleichungen"
+],
+"begriffe": [
+"lineare Funktion",
+"Anstieg m",
+"Steigungsdreieck",
+"Differenzenquotient",
+"y-Achsenabschnitt n",
+"Nullstelle"
+],
+"hinweise": [
+"Parametereinfluss mit DGS, CAS oder TK untersuchen (Lehrplan)."
+],
+"material": [
+"DGS mit Schiebereglern"
+],
+"stunden": [
+"Proportionale Funktionen y = m · x",
+"Lineare Funktionen y = m · x + n",
+"Einfluss von m und n",
+"Anstieg und Differenzenquotient",
+"Graph aus Gleichung und umgekehrt",
+"Nullstellen grafisch und rechnerisch",
+"Gleichung aus Punkt und Anstieg",
+"Gleichung aus zwei Punkten, CAS-Algorithmus",
+"Übung und Kurzkontrolle"
+]
+},
+"F4": {
+"code": "F4",
+"lb": "LB3",
+"title": "Modellieren mit linearen Funktionen",
+"inhalte": [
+"Sachsituationen mit linearen Funktionen modellieren",
+"Gleichungen für Messreihen mit linearer Regression (CAS oder TK) finden",
+"Ergebnisse der Regression werten"
+],
+"tiefe": [
+"„Je – desto“-Formulierungen kritisch prüfen"
+],
+"vorwissen": [
+"F3"
+],
+"begriffe": [
+"Modell",
+"Messreihe",
+"Ausgleichsgerade",
+"lineare Regression"
+],
+"hinweise": [
+"Querverweis PH, Kl. 8, LB 3."
+],
+"material": [
+"Messreihen aus Physik oder eigenen Experimenten"
+],
+"stunden": [
+"Sachsituationen modellieren (Tarife)",
+"Messreihen und Ausgleichsgerade",
+"Lineare Regression mit CAS oder TK",
+"Je – desto kritisch betrachten"
+]
+},
+"F5": {
+"code": "F5",
+"lb": "LB3",
+"title": "Lineare Gleichungssysteme",
+"inhalte": [
+"LGS mit zwei Gleichungen und zwei Unbekannten grafisch und rechnerisch lösen",
+"ohne Hilfsmittel: überschaubare Koeffizienten; mit CAS: kompliziertere",
+"Lösbarkeitsfälle mit vollständiger Fallunterscheidung",
+"Vor- und Nachteile grafischer und rechnerischer Verfahren beurteilen",
+"inner- und außermathematische Sachverhalte modellieren"
+],
+"tiefe": [
+"Ausblick auf Systeme mit mehr Gleichungen und Unbekannten"
+],
+"vorwissen": [
+"F3: Geradengleichungen",
+"T4: lineare Gleichungen"
+],
+"begriffe": [
+"Gleichungssystem",
+"Zahlenpaar",
+"Einsetzungsverfahren",
+"Gleichsetzungsverfahren",
+"Additionsverfahren",
+"Lösbarkeit"
+],
+"hinweise": [
+"Lehrplan: Beim rechnerischen Lösen genügt die Beschränkung auf ein Verfahren.",
+"Geometrische Interpretation der Lösbarkeitsfälle."
+],
+"material": [
+"CAS",
+"Geradenpaare im DGS"
+],
+"stunden": [
+"Was ist ein LGS? Lösung als Zahlenpaar",
+"Grafisches Lösen",
+"Lösbarkeitsfälle grafisch",
+"Rechnerisches Verfahren",
+"Rechnerisch üben ohne Hilfsmittel",
+"Vollständige Fallunterscheidung",
+"LGS mit CAS",
+"Sachaufgaben modellieren",
+"Grafisch oder rechnerisch? Vor- und Nachteile; Kurzkontrolle"
+]
+},
+"KA3": {
+"code": "KA3",
+"lb": "test",
+"title": "Klassenarbeit LB 3",
+"inhalte": [
+"Klassenarbeit",
+"Rückgabe, Berichtigung, Fehlerschwerpunkte"
+],
+"tiefe": [],
+"vorwissen": [
+"F1–F5"
+],
+"begriffe": [],
+"hinweise": [
+"Wiederholung vorher im Puffer bzw. in der SOL-Stunde (Format 4)."
+],
+"material": [],
+"stunden": [
+"Klassenarbeit LB 3",
+"Rückgabe und Berichtigung"
+]
+},
+"Ä1": {
+"code": "Ä1",
+"lb": "LB4",
+"title": "Zentrische Streckung",
+"inhalte": [
+"Einblick in die zentrische Streckung gewinnen: Konstruktion",
+"Eigenschaften: Winkeltreue, gleiches Verhältnis entsprechender Strecken",
+"Fachsprache „ähnlich“ von der Alltagssprache abgrenzen"
+],
+"tiefe": [
+"Streckfaktoren 0 < k < 1 und k > 1 vergleichen"
+],
+"vorwissen": [
+"Kl. 5, LB 3: Abbildungen (Spiegelung)",
+"Kl. 7, WB 2: Maßstäbe (falls behandelt)"
+],
+"begriffe": [
+"zentrische Streckung",
+"Streckzentrum",
+"Streckfaktor k",
+"Bildfigur",
+"winkeltreu",
+"Streckenverhältnis"
+],
+"hinweise": [
+"Konstruktionen mit DGS (Lehrplan)."
+],
+"material": [
+"DGS",
+"Zoom-Beispiele (Kamera, Kopierer)"
+],
+"stunden": [
+"Vergrößern und Verkleinern im Alltag",
+"„Ähnlich“ in Fach- und Alltagssprache",
+"Zentrische Streckung konstruieren",
+"Streckfaktor und Bildstrecken",
+"Eigenschaften mit DGS untersuchen",
+"Übung Konstruktion",
+"Kurzkontrolle"
+]
+},
+"Ä2": {
+"code": "Ä2",
+"lb": "LB4",
+"title": "Ähnliche Figuren",
+"inhalte": [
+"ähnliche Figuren erkennen",
+"Hauptähnlichkeitssatz anwenden",
+"Hilfsfiguren bei Konstruktions- und Beweisaufgaben nutzen"
+],
+"tiefe": [
+"Strategien Vorwärts- und Rückwärtsarbeiten bewusst einsetzen"
+],
+"vorwissen": [
+"Ä1",
+"Kl. 6, LB 3: Kongruenzsätze"
+],
+"begriffe": [
+"ähnlich",
+"Hauptähnlichkeitssatz",
+"entsprechende Seiten",
+"Hilfsfigur"
+],
+"hinweise": [
+"Vergleich Kongruenz – Ähnlichkeit als Retrieval-Anlass."
+],
+"material": [
+"DGS"
+],
+"stunden": [
+"Ähnliche Figuren erkennen",
+"Der Hauptähnlichkeitssatz",
+"Ähnlichkeit nachweisen",
+"Seitenlängen über Verhältnisse berechnen",
+"Hilfsfiguren bei Konstruktionsaufgaben",
+"Beweisaufgaben: vorwärts und rückwärts arbeiten"
+]
+},
+"Ä3": {
+"code": "Ä3",
+"lb": "LB4",
+"title": "Anwendungen der Ähnlichkeit",
+"inhalte": [
+"Streckenlängen, Flächeninhalte und Volumina ähnlicher Objekte berechnen",
+"Abstände, Höhen und Maßstäbe bestimmen"
+],
+"tiefe": [
+"Flächen wachsen mit k², Volumina mit k³ – Folgen diskutieren (Gullivers Reisen)"
+],
+"vorwissen": [
+"Ä1, Ä2",
+"Kl. 7, LB 3: Volumen von Prismen und Pyramiden"
+],
+"begriffe": [
+"Maßstab",
+"Flächenverhältnis k²",
+"Volumenverhältnis k³"
+],
+"hinweise": [
+"Lehrplan: Gullivers Reisen; Abstände, Höhen, Maßstäbe."
+],
+"material": [
+"Maßband, Stab für Höhenmessung auf dem Schulhof"
+],
+"stunden": [
+"Höhen und Entfernungen bestimmen (Schatten, Stab)",
+"Maßstäbe",
+"Flächeninhalte ähnlicher Figuren",
+"Volumina ähnlicher Körper",
+"Projekt Gullivers Reisen",
+"Präsentation",
+"Übung und Kurzkontrolle"
+]
+},
+"KA4": {
+"code": "KA4",
+"lb": "test",
+"title": "Klassenarbeit LB 4",
+"inhalte": [
+"Klassenarbeit",
+"Rückgabe, Berichtigung, Fehlerschwerpunkte"
+],
+"tiefe": [],
+"vorwissen": [
+"Ä1–Ä3"
+],
+"begriffe": [],
+"hinweise": [
+"Wiederholung vorher im Puffer bzw. in der SOL-Stunde (Format 4)."
+],
+"material": [],
+"stunden": [
+"Klassenarbeit LB 4",
+"Rückgabe und Berichtigung"
+]
+},
+"V": {
+"code": "V",
+"lb": "LB5",
+"title": "Vernetzung: Heuristische Strategien",
+"inhalte": [
+"heuristische Strategien Vorwärts- und Rückwärtsarbeiten kennen",
+"Lösungspläne aufstellen, Teilziele formulieren",
+"Hilfsmittel sachgerecht auswählen (Skizzen, Tabellen, Variable)",
+"Strategien bei Bestimmungsaufgaben, Beweisen und Sachaufgaben nutzen",
+"Lösungswege dokumentieren und präsentieren"
+],
+"tiefe": [],
+"vorwissen": [
+"Kl. 7, LB 1: Problemlösestrategien",
+"LB 1–4"
+],
+"begriffe": [
+"Vorwärtsarbeiten",
+"Rückwärtsarbeiten",
+"Teilziel",
+"Lösungsplan"
+],
+"hinweise": [
+"Aufgaben bewusst aus allen Lernbereichen des Jahres wählen."
+],
+"material": [
+"Aufgabensammlung aus LB 1–4"
+],
+"stunden": [
+"Vorwärts- und Rückwärtsarbeiten, Teilziele",
+"Lösungspläne und heuristische Hilfsmittel",
+"Strategien bei Bestimmungs-, Beweis- und Sachaufgaben",
+"Lösungswege dokumentieren und präsentieren"
+]
+},
+"W": {
+"code": "W",
+"lb": "WB",
+"title": "Wahlbereich 1: Programmierung mathematischer Algorithmen",
+"inhalte": [
+"Algorithmen umgangssprachlich beschreiben",
+"einfache Algorithmen im CAS umsetzen: Sequenz, Verzweigung, Zyklus",
+"Programme für Flächen, Volumina, Prozentwerte, Textausgabe, einfache Zufallsversuche"
+],
+"tiefe": [
+"Alternativen: WB 2 Lineare Optimierung (nach F5) oder WB 3 Simulation mit Zufallszahlen (nach Z5)"
+],
+"vorwissen": [
+"F3: CAS-Algorithmus",
+"Z5: Zufallszahlen"
+],
+"begriffe": [
+"Algorithmus",
+"Sequenz",
+"Verzweigung",
+"Zyklus",
+"EVA-Prinzip"
+],
+"hinweise": [
+"Bei 3 Wochenstunden ist im Fachunterricht kein Platz: als Projekt über mehrere SOL-Stunden bearbeiten.",
+"Querverweis INF, Kl. 8, LB 2."
+],
+"material": [
+"CAS-Programmierebene"
+],
+"stunden": [
+"Algorithmen im Alltag beschreiben",
+"Sequenz und EVA-Prinzip",
+"Programm: Flächen und Volumina",
+"Verzweigung",
+"Zyklus",
+"Prozentrechnung und Textausgabe",
+"Zufallsversuch simulieren",
+"Präsentation"
+]
+},
+"P": {
+"code": "P",
+"lb": "P",
+"title": "Puffer · Wiederholung"
+},
+"JA": {
+"code": "JA",
+"lb": "P",
+"title": "Jahresabschluss: Rückblick, Knobelaufgaben"
+}
+},
+"seq": [
+[
+"S0",
+"A",
+2
+],
+[
+"T1",
+"A",
+4
+],
+[
+"T2",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"T3",
+"A",
+5
+],
+[
+"T4",
+"A",
+6
+],
+[
+"P",
+"A",
+1
+],
+[
+"T5",
+"A",
+4
+],
+[
+"P",
+"A",
+1
+],
+[
+"KA1",
+"A",
+2
+],
+[
+"Z1",
+"B",
+5
+],
+[
+"Z2",
+"B",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"Z3",
+"B",
+8
+],
+[
+"P",
+"A",
+1
+],
+[
+"Z4",
+"B",
+4
+],
+[
+"Z5",
+"B",
+2
+],
+[
+"P",
+"A",
+1
+],
+[
+"KA2",
+"B",
+2
+],
+[
+"F1",
+"A",
+5
+],
+[
+"F2",
+"A",
+5
+],
+[
+"P",
+"A",
+1
+],
+[
+"F3",
+"A",
+9
+],
+[
+"P",
+"A",
+1
+],
+[
+"F4",
+"A",
+4
+],
+[
+"F5",
+"A",
+9
+],
+[
+"P",
+"A",
+2
+],
+[
+"KA3",
+"A",
+2
+],
+[
+"Ä1",
+"B",
+7
+],
+[
+"Ä2",
+"B",
+6
+],
+[
+"P",
+"A",
+1
+],
+[
+"Ä3",
+"B",
+7
+],
+[
+"P",
+"B",
+1
+],
+[
+"KA4",
+"B",
+2
+],
+[
+"V",
+"A",
+4
+],
+[
+"P",
+"A",
+2
+]
+],
+"mode": "nacheinander",
+"lbnames": {
+"LB1": "Arbeiten mit Termen und Gleichungen",
+"LB2": "Zufallsversuche",
+"LB3": "Funktionen und lineare Gleichungssysteme",
+"LB4": "Ähnlichkeit",
+"LB5": "Vernetzung: Heuristische Strategien",
+"WB": "Wahlbereich (im SOL möglich)",
+"start": "Start / Auffrischen",
+"test": "Klassenarbeit",
+"P": "Puffer"
+},
+"zrw": {
+"LB1": 24,
+"LB2": 24,
+"LB3": 32,
+"LB4": 20,
+"LB5": 4,
+"WB": 8
+}
+}
+}
