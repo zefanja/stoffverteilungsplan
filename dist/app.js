@@ -47,9 +47,18 @@ function defaultClass(k, y) {
   const tt = y.start === D.calendar.start
     ? c.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))
     : [{ id: uid(), frm: y.start, lessons: cloneLessons(c.tt[c.tt.length - 1].lessons) }];
-  return { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })),
-    tt, off: [], cancelled: {}, done: {}, atoms: {} };
+  return { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })), atoms: {},
+    groups: [newGroup("a", "", tt)] };
 }
+/* Parallelklassen (höchstens 2): Sequenz, Modus und Atome teilen sie sich; jede Gruppe hat eigenen Stundenplan,
+   eigene Ausfälle, Häkchen, Lernstand und Abweichungen von der Sequenz (adj: Zeilen-ID -> zusätzliche Stunden). */
+const GIDS = ["a", "b"];
+function newGroup(id, name, tt) { return { id, name: name || "", tt: tt || [], off: [], cancelled: {}, done: {}, adj: {} }; }
+const ck = g => String(g).split(".")[0];
+const gidOf = g => String(g).split(".")[1] || "a";
+const gkey = (k, gid) => `${k}.${gid || "a"}`;
+function grp(g) { const C = S.cls[ck(g)]; return C.groups.find(x => x.id === gidOf(g)) || C.groups[0]; }
+const groupsOf = k => S.cls[k].groups.map(x => gkey(k, x.id));
 /* Alte Stundenpläne (Zeilen mit eigenem ab/bis) in Versionen „gültig ab“ umwandeln. */
 function ttFromLegacy(rows, start) {
   const pts = new Set([start]);
@@ -80,19 +89,27 @@ function pickYear() {
 }
 function cal() { return S.settings.years.find(y => y.id === UI.year) || S.settings.years[0]; }
 UI.year = pickYear();
-CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); });
+const resetYearState = () => CLASSES.forEach(k => { S.cls[k] = defaultClass(k); GIDS.forEach(gid => { S.eng[gkey(k, gid)] = defaultEngine(); }); });
+resetYearState();
 /* Gewählte Klasse, sofern sie zur gewählten Schulart gehört; sonst null (z. B. Oberschule ohne Lehrplan). */
 const curClass = () => D.classes[UI.cls] && D.classes[UI.cls].type === UI.type ? UI.cls : null;
-const hasLessons = k => (S.cls[k].tt || []).some(v => v.lessons && v.lessons.length);
-const fullLabel = k => `${(TYPES[D.classes[k].type] || {}).short || ""} · ${D.classes[k].label}`;
+UI.gid = {};
+try { UI.gid = JSON.parse(localStorage.getItem("mp-gid") || "{}") || {}; } catch (e) {}
+/* Gewählte Parallelklasse als Schlüssel "kl8.a"; null, wenn keine Klasse gewählt ist. */
+function curG() { const k = curClass(); if (!k) return null; const id = UI.gid[k]; return gkey(k, S.cls[k].groups.some(x => x.id === id) ? id : S.cls[k].groups[0].id); }
+const hasLessons = g => (grp(g).tt || []).some(v => v.lessons && v.lessons.length);
+const myGroups = () => CLASSES.flatMap(groupsOf).filter(hasLessons);
+const groupName = g => { const G = grp(g), C = S.cls[ck(g)]; return G.name || (C.groups.length > 1 ? `${D.classes[ck(g)].label} ${G.id}` : D.classes[ck(g)].label); };
+const fullLabel = g => `${(TYPES[D.classes[ck(g)].type] || {}).short || ""} · ${groupName(g.includes(".") ? g : gkey(g, "a"))}`;
 
 let ver = 0; const cache = {};
 const touch = () => { ver++; };
 
-const unitOf = (k, code) => D.classes[k].units[code];
+const unitOf = (k, code) => D.classes[ck(k)].units[code];
 const lbOf = (k, code) => (unitOf(k, code) || {}).lb || "P";
-const atomsOf = (k, code) => S.cls[k].atoms[code] || (unitOf(k, code) || {}).atoms || [];
+const atomsOf = (k, code) => S.cls[ck(k)].atoms[code] || (unitOf(k, code) || {}).atoms || [];
 function atomMap(k) {
+  k = ck(k);
   const key = "am" + k;
   if (cache[key] && cache[key].ver === ver) return cache[key].m;
   const m = {};
@@ -102,13 +119,13 @@ function atomMap(k) {
 const titleOf = (k, code) => code === "P" ? "Puffer · Wiederholung" : code === "JA" ? "Jahresabschluss" : (unitOf(k, code) || {}).title || code;
 
 /* ---------------- scheduling ---------------- */
-function schedule(k) {
-  if (cache[k] && cache[k].ver === ver) return cache[k];
-  const Y = cal(), C = S.cls[k], seqMode = C.mode === "nacheinander";
+function schedule(g) {
+  if (cache[g] && cache[g].ver === ver) return cache[g];
+  const k = ck(g), Y = cal(), C = S.cls[k], G = grp(g), seqMode = C.mode === "nacheinander";
   const free = {}; (Y.free || []).forEach(f => { if (f.date) free[f.date] = f.name || "unterrichtsfrei"; });
   const holidayOf = d => { for (const h of Y.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; return null; };
-  const offOf = d => { for (const o of C.off || []) if (o.frm && o.to && o.frm <= d && d <= o.to) return o.name || "Kein Unterricht in dieser Klasse"; return null; };
-  const tts = sortTT((C.tt || []).filter(v => v.frm).slice());
+  const offOf = d => { for (const o of G.off || []) if (o.frm && o.to && o.frm <= d && d <= o.to) return o.name || "Kein Unterricht in dieser Klasse"; return null; };
+  const tts = sortTT((G.tt || []).filter(v => v.frm).slice());
   const lessonsOn = d => { let cur = null; for (const v of tts) { if (v.frm <= d) cur = v; else break; } return cur ? cur.lessons : []; };
   const slots = [], dayInfo = {};
   if (Y.start && Y.end && Y.start <= Y.end) {
@@ -122,12 +139,12 @@ function schedule(k) {
         if (+t.day !== w) continue;
         const track = t.track === "SOL" ? "SOL" : (seqMode ? "A" : (t.track === "B" ? "B" : "A"));
         const key = d + "|" + t.period;
-        slots.push({ date: d, period: +t.period, track, key, cancelled: !!C.cancelled[key], lesson: null });
+        slots.push({ date: d, period: +t.period, track, key, cancelled: !!G.cancelled[key], lesson: null });
       }
     }
   }
   slots.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.period - b.period);
-  const rows = C.seq.map((r, i) => Object.assign({}, r, { idx: i, track: seqMode ? "A" : (r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
+  const rows = C.seq.map((r, i) => Object.assign({}, r, { base: r.hours, adj: (G.adj || {})[r.id] || 0, hours: Math.max(0, r.hours + ((G.adj || {})[r.id] || 0)), idx: i, track: seqMode ? "A" : (r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
   const tracks = { A: [], B: [] };
   rows.forEach(r => { for (let n = 1; n <= r.hours; n++) tracks[r.track].push({ row: r, n }); });
   const cap = { A: 0, B: 0, SOL: 0 }, planned = { A: tracks.A.length, B: tracks.B.length };
@@ -146,7 +163,7 @@ function schedule(k) {
     atomsOf(k, r.code).forEach(a => { const n = Math.min(a.l, r.hours); const s = r.slots[n - 1]; if (s && !intro[a.id]) intro[a.id] = { date: s.date, code: r.code }; });
   });
   const byDate = {}; slots.forEach(s => { (byDate[s.date] || (byDate[s.date] = [])).push(s); });
-  return (cache[k] = { ver, slots, rows, cap, planned, intro, byDate, dayInfo, seqMode });
+  return (cache[g] = { ver, slots, rows, cap, planned, intro, byDate, dayInfo, seqMode });
 }
 function lessonInfo(k, L) {
   const r = L.row, u = unitOf(k, r.code), st = u ? u.stunden : [];
@@ -184,8 +201,8 @@ function fsrsReview(card, g, date, r) {
   const d = clampD(W[7] * W[4] + (1 - W[7]) * (card.d - W[6] * (g - 3)));
   return { s, d, reps: card.reps + 1, lapses: (card.lapses || 0) + (g === 1 ? 1 : 0), last: date, due: addDays(date, ivl(s, r)) };
 }
-function engineState(k, date) {
-  const sc = schedule(k), E = S.eng[k], am = atomMap(k), list = [];
+function engineState(g, date) {
+  const sc = schedule(g), E = S.eng[g], am = atomMap(g), list = [];
   const start = cal().engineStart || cal().start || "0000-00-00";
   for (const id in sc.intro) {
     const a = am[id]; if (!a) continue;
@@ -216,14 +233,14 @@ function engineState(k, date) {
 const engDoc = k => "e:" + k;
 const isEngDoc = n => n.startsWith("e:");
 const clsOfDoc = n => isEngDoc(n) ? n.slice(2) : n;
-const YEAR_DOCS = CLASSES.flatMap(k => [k, engDoc(k)]);
+const YEAR_DOCS = CLASSES.flatMap(k => [k, ...GIDS.map(gid => engDoc(gkey(k, gid)))]);
 const LEGACY_IDS = ["kl6", "kl8"];
 function pathOf(name, y) {
   if (name === "settings") return "planner/settings";
   y = y || cal();
-  const k = clsOfDoc(name), eng = isEngDoc(name);
-  if (y.legacyDocs && LEGACY_IDS.includes(k)) return (eng ? "engine/" : "planner/") + k;
-  return `jahr-${y.id}/${eng ? "engine-" : ""}${k}`;
+  const g = clsOfDoc(name), k = ck(g), eng = isEngDoc(name), sfx = eng && gidOf(g) !== "a" ? "-" + gidOf(g) : "";
+  if (y.legacyDocs && LEGACY_IDS.includes(k)) return (eng ? "engine/" : "planner/") + k + sfx;
+  return `jahr-${y.id}/${eng ? "engine-" : ""}${k}${sfx}`;
 }
 let db = null, dbState = "loading", yearGen = 0, yearUnsubs = [], local = false;
 /* Ohne Claude-Datenbank (z. B. auf GitHub Pages) wird im Browser gespeichert. */
@@ -266,12 +283,17 @@ function applyDoc(name, data) {
   } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
     const c = Object.assign(defaultClass(name), data);
-    if (!Array.isArray(data.tt)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : c.tt;
+    if (!Array.isArray(data.tt) && !Array.isArray(data.groups)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : defaultClass(name).groups[0].tt;
     delete c.timetable;
-    if (!Array.isArray(c.off)) c.off = [];
-    sortTT(c.tt);
+    if (!Array.isArray(data.groups) || !data.groups.length) {
+      const G = newGroup("a", "", c.tt); G.off = Array.isArray(c.off) ? c.off : []; G.cancelled = c.cancelled || {}; G.done = c.done || {};
+      c.groups = [G];
+    }
+    ["tt", "off", "cancelled", "done"].forEach(f => { delete c[f]; });
+    c.groups = c.groups.filter(G => G && GIDS.includes(G.id)).map(G => { const x = Object.assign(newGroup(G.id), G); sortTT(x.tt); return x; });
+    if (!c.groups.length) c.groups = [newGroup("a", "", defaultClass(name).groups[0].tt)];
     S.cls[name] = c;
-  } else if (isEngDoc(name) && CLASSES.includes(clsOfDoc(name))) {
+  } else if (isEngDoc(name) && CLASSES.includes(ck(clsOfDoc(name)))) {
     S.eng[clsOfDoc(name)] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
   }
 }
@@ -305,7 +327,7 @@ function switchYear(id, remember) {
   yearGen++;
   for (const n of YEAR_DOCS) dirty[n] = false;
   UI.year = id; UI.confirm = null; UI.reveal = {}; undoStack = null;
-  CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); });
+  resetYearState();
   touch(); subscribeYear(); render();
 }
 async function initDb() {
@@ -314,7 +336,7 @@ async function initDb() {
     local = lsOk();
     if (local) {
       const st = lsGet(pathOf("settings")); if (st) applyDoc("settings", st);
-      const p = pickYear(); if (p !== UI.year) { yearGen++; UI.year = p; CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); }); }
+      const p = pickYear(); if (p !== UI.year) { yearGen++; UI.year = p; resetYearState(); }
       subscribeYear();
     }
     setDbState(local ? "local" : "off");
@@ -336,62 +358,66 @@ async function initDb() {
 
 /* ---------------- actions ---------------- */
 let undoStack = null;
-function snapshotFor(k) { return { k, cls: clone(S.cls[k]), eng: clone(S.eng[k]), settings: clone(S.settings) }; }
-function commit(k, opts) {
+/* Aktionen nehmen eine Klasse ("kl8") oder eine Parallelklasse ("kl8.b"); gespeichert wird immer das Klassendokument
+   und die Lernstände aller Parallelklassen dieser Klasse. */
+function snapshotFor(g) { const k = ck(g); const eng = {}; GIDS.forEach(gid => { eng[gkey(k, gid)] = clone(S.eng[gkey(k, gid)]); }); return { k, cls: clone(S.cls[k]), eng, settings: clone(S.settings) }; }
+function commit(g, opts) {
   touch();
-  if (k) save(k);
-  if (opts && opts.eng) save(engDoc(k));
+  if (g) save(ck(g));
+  if (g && opts && opts.eng) GIDS.forEach(gid => save(engDoc(gkey(ck(g), gid))));
   if (opts && opts.settings) save("settings");
   render();
 }
-function withUndo(k, msg, fn) {
-  const snap = snapshotFor(k); fn();
-  undoStack = snap; commit(k, { eng: true, settings: true }); toast(msg, true);
+function withUndo(g, msg, fn) {
+  const snap = snapshotFor(g); fn();
+  undoStack = snap; commit(g, { eng: true, settings: true }); toast(msg, true);
 }
 function doUndo() {
   if (!undoStack) return; const u = undoStack; undoStack = null;
-  S.cls[u.k] = u.cls; S.eng[u.k] = u.eng; S.settings = u.settings;
+  S.cls[u.k] = u.cls; Object.assign(S.eng, u.eng); S.settings = u.settings;
   commit(u.k, { eng: true, settings: true }); toast("Rückgängig gemacht");
 }
-function consumeBuffer(k, fromIdx, track) {
-  const sc = schedule(k);
+/* Mehrbedarf und Pufferkürzung gelten nur für die eine Parallelklasse: als Abweichung adj von der gemeinsamen Sequenz. */
+function adjRow(g, rowIdx, delta) { const G = grp(g), id = S.cls[ck(g)].seq[rowIdx].id; G.adj = G.adj || {}; G.adj[id] = (G.adj[id] || 0) + delta; if (!G.adj[id]) delete G.adj[id]; }
+function consumeBuffer(g, fromIdx, track) {
+  const sc = schedule(g);
   for (let i = fromIdx + 1; i < sc.rows.length; i++) {
     const r = sc.rows[i];
-    if (r.code === "P" && r.track === track && r.hours > 0) { S.cls[k].seq[i].hours -= 1; return i; }
+    if (r.code === "P" && r.track === track && r.hours > 0) { adjRow(g, i, -1); return i; }
   }
   return -1;
 }
-function addHour(k, rowIdx) {
-  const row = schedule(k).rows[rowIdx]; let note = "";
-  withUndo(k, "", () => {
-    S.cls[k].seq[rowIdx].hours += 1;
-    if (S.settings.autoBuffer) { const j = consumeBuffer(k, rowIdx, row.track); note = j >= 0 ? " Ein Puffer weiter hinten wurde um 1 Std. gekürzt." : " Kein Puffer mehr frei: Reserve prüfen."; }
+function addHour(g, rowIdx) {
+  const row = schedule(g).rows[rowIdx]; let note = "";
+  withUndo(g, "", () => {
+    adjRow(g, rowIdx, 1);
+    if (S.settings.autoBuffer) { const j = consumeBuffer(g, rowIdx, row.track); note = j >= 0 ? " Ein Puffer weiter hinten wurde um 1 Std. gekürzt." : " Kein Puffer mehr frei: Reserve prüfen."; }
   });
-  toast(`${row.code}: eine Stunde mehr eingeplant.${note}`, true);
+  toast(`${groupName(g)}, ${row.code}: eine Stunde mehr eingeplant.${note}`, true);
 }
-function cancelSlot(k, key) {
-  const sc = schedule(k), s = sc.slots.find(x => x.key === key); if (!s) return;
-  const wasCancelled = !!S.cls[k].cancelled[key]; let note = "";
-  withUndo(k, "", () => {
-    if (wasCancelled) { delete S.cls[k].cancelled[key]; }
+function cancelSlot(g, key) {
+  const sc = schedule(g), s = sc.slots.find(x => x.key === key); if (!s) return;
+  const G = grp(g), wasCancelled = !!G.cancelled[key]; let note = "";
+  withUndo(g, "", () => {
+    if (wasCancelled) { delete G.cancelled[key]; }
     else {
-      S.cls[k].cancelled[key] = true;
-      if (S.settings.autoBuffer && s.lesson) { const j = consumeBuffer(k, s.lesson.row.idx, s.track); note = j >= 0 ? " Ein Puffer wurde um 1 Std. gekürzt." : " Kein Puffer mehr frei: Reserve prüfen."; }
+      G.cancelled[key] = true;
+      if (S.settings.autoBuffer && s.lesson) { const j = consumeBuffer(g, s.lesson.row.idx, s.track); note = j >= 0 ? " Ein Puffer wurde um 1 Std. gekürzt." : " Kein Puffer mehr frei: Reserve prüfen."; }
     }
   });
   toast(wasCancelled ? "Stunde findet wieder statt." : `Stunde als ausgefallen markiert, der Plan rückt nach.${note}`, true);
 }
-function toggleDone(k, key) {
-  if (S.cls[k].done[key]) delete S.cls[k].done[key]; else S.cls[k].done[key] = true;
-  commit(k);
+function toggleDone(g, key) {
+  const G = grp(g); if (G.done[key]) delete G.done[key]; else G.done[key] = true;
+  commit(g);
 }
-function rate(k, id, g) {
-  const date = UI.date, prev = S.eng[k].cards[id];
-  withUndo(k, "", () => {
-    S.eng[k].cards[id] = fsrsReview(prev, g, date, S.settings.retention);
-    S.eng[k].log.push({ d: date, id, g });
+function rate(g, id, grade) {
+  const date = UI.date, E = S.eng[g], prev = E.cards[id];
+  withUndo(g, "", () => {
+    E.cards[id] = fsrsReview(prev, grade, date, S.settings.retention);
+    E.log.push({ d: date, id, g: grade });
   });
-  const c = S.eng[k].cards[id];
+  const c = E.cards[id];
   toast(`Gespeichert. Nächste Wiederholung ab ${fmt(c.due)} (in ${diffDays(date, c.due)} Tagen).`, true);
 }
 
@@ -453,8 +479,12 @@ async function createYear(id, copySeq, copyTT) {
   CLASSES.forEach(k => {
     const P = prev.cls[k], C = S.cls[k];
     if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); }
-    if (copyTT && P.tt && P.tt.length) { const last = sortTT(P.tt.slice())[P.tt.length - 1]; C.tt = [{ id: uid(), frm: Y.start, lessons: cloneLessons(last.lessons) }]; }
-    save(k); save(engDoc(k));
+    /* Parallelklassen mit Namen übernehmen; Stundenplan je Gruppe aus ihrem letzten Zeitraum oder aus der Vorlage */
+    C.groups = P.groups.map(PG => {
+      const last = PG.tt && PG.tt.length ? sortTT(PG.tt.slice())[PG.tt.length - 1] : null;
+      return newGroup(PG.id, PG.name, copyTT && last ? [{ id: uid(), frm: Y.start, lessons: cloneLessons(last.lessons) }] : clone(C.groups[0].tt).map(v => Object.assign(v, { id: uid() })));
+    });
+    save(k); GIDS.forEach(gid => save(engDoc(gkey(k, gid))));
   });
   touch(); render();
   toast(r ? `Schuljahr ${yearLabel(id)} angelegt, Ferien Sachsen übernommen.` : `Schuljahr ${yearLabel(id)} angelegt. Ferien konnten nicht geladen werden (${err}); bitte unter Einstellungen eintragen.`);
@@ -487,12 +517,12 @@ function chip(k, code, extra) {
   return `<span class="chip" style="${sty(lb)}"><b>${esc(code)}</b>${extra ? `<span>${extra}</span>` : ""}</span>`;
 }
 function unitLink(k, code, label) {
-  const i = D.classes[k].unitOrder.indexOf(code);
+  const i = D.classes[ck(k)].unitOrder.indexOf(code);
   if (i < 0 || code === "P" || code === "JA") return `<span class="ulink plain" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</span>`;
-  return `<a class="ulink" href="#u-${k}-${i}" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</a>`;
+  return `<a class="ulink" href="#u-${ck(k)}-${i}" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</a>`;
 }
 /* Kontext-Hinweis in den Überschriften; umgeschaltet wird oben in der Leiste. */
-function clsTabs() { const k = curClass(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
+function clsTabs() { const k = curG(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
 function noClassView(title) {
   const T = TYPES[UI.type] || {};
   return `<section><div class="vhead"><h1>${esc(title)}</h1>${clsTabs()}</div>
@@ -503,11 +533,12 @@ function renderCtx() {
   const T = TYPES[UI.type] || { grades: [] }, cur = curClass();
   el.innerHTML = `<span class="ctxl">Schulart</span><div class="seg small" role="group" aria-label="Schulart">${Object.entries(TYPES).map(([t, x]) => `<button type="button" aria-pressed="${UI.type === t}" data-act="type" data-v="${t}" title="${esc(x.label)}">${esc(x.short)}</button>`).join("")}</div>
     <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => { const k = classFor(UI.type, g);
-      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k ? `data-act="cls" data-k="${k}" title="${esc(fullLabel(k))}"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k ? `data-act="cls" data-k="${k}" title="${esc(D.classes[k].label)}"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+    ${cur && S.cls[cur].groups.length > 1 ? `<div class="seg small" role="group" aria-label="Parallelklasse">${groupsOf(cur).map(g => `<button type="button" aria-pressed="${g === curG()}" data-act="grp" data-g="${g}">${esc(groupName(g))}</button>`).join("")}</div>` : ""}
     <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
 function trackName(k, tr) {
-  const c = D.classes[k], sc = schedule(k);
+  const c = D.classes[ck(k)], sc = schedule(k);
   if (tr === "SOL") return "SOL-Stunde";
   if (sc.seqMode) return "Fachunterricht";
   return tr === "A" ? "Strang A · " + c.nameA : "Strang B · " + c.nameB;
@@ -521,7 +552,7 @@ function capCards(k) {
       <div class="nums"><span><b class="mono">${sc.cap[tr]}</b> verfügbar</span><span><b class="mono">${sc.planned[tr]}</b> geplant</span></div>
       <div class="res mono">${res === 0 ? "geht genau auf" : res > 0 ? `+${res} Std. Reserve` : `${-res} Std. fehlen`}</div></div>`);
   }
-  if (D.classes[k].sol) out.push(`<div class="cap"><div class="lbl">SOL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
+  if (D.classes[ck(k)].sol) out.push(`<div class="cap"><div class="lbl">SOL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
   return `<div class="caps">${out.join("")}</div>`;
 }
 const SOL_FORMATS = {
@@ -547,8 +578,8 @@ function currentUnit(k, date) {
 /* ---------------- views: Heute ---------------- */
 function viewToday() {
   const d = UI.date, isToday = d === todayIso();
-  const mine = CLASSES.filter(hasLessons);
-  const show = UI.todayAll ? (mine.length ? mine : CLASSES) : curClass() ? [UI.cls] : [];
+  const mine = myGroups();
+  const show = UI.todayAll ? (mine.length ? mine : CLASSES.map(k => gkey(k, "a"))) : curG() ? [curG()] : [];
   return `<section class="today">
     <div class="datebar">
       <button type="button" class="iconbtn" data-act="day" data-n="-1" aria-label="Vorheriger Tag">‹</button>
@@ -556,13 +587,13 @@ function viewToday() {
       <button type="button" class="iconbtn" data-act="day" data-n="1" aria-label="Nächster Tag">›</button>
       ${isToday ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
       <input type="date" id="pickdate" value="${d}" aria-label="Datum wählen">
-      <div class="seg small">${[["one", curClass() ? fullLabel(UI.cls) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
+      <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
     ${show.length ? `<div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>` : `<div class="card"><p>Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
   </section>`;
 }
 function todayCard(k, d) {
-  const c = D.classes[k], sc = schedule(k), info = sc.dayInfo[d];
+  const c = D.classes[ck(k)], sc = schedule(k), info = sc.dayInfo[d];
   const slots = sc.byDate[d] || [];
   let body = "";
   if (!info) {
@@ -572,7 +603,7 @@ function todayCard(k, d) {
       : `<a class="btn ghost sm" href="#einstellungen">Schuljahr ${esc(yearLabel(yearIdOf(d)))} anlegen →</a>`);
   }
   else if (!info.school) body = `<p class="free">${esc(info.note || "Wochenende")}: kein Unterricht.</p>`;
-  else if (!slots.length) body = `<p class="muted">Heute hat ${esc(c.label)} laut Stundenplan keine Mathestunde.</p>`;
+  else if (!slots.length) body = `<p class="muted">Heute hat ${esc(groupName(k))} laut Stundenplan keine Mathestunde.</p>`;
   body += slots.map(s => slotBlock(k, s)).join("");
   if (!slots.some(s => s.lesson)) {
     const nx = sc.slots.find(s => s.date > d && s.lesson);
@@ -581,9 +612,9 @@ function todayCard(k, d) {
   const es = engineState(k, d);
   const rv = es.pick.map(x => reviewItem(k, x)).join("");
   const res = ["A", "B"].filter(t => !(sc.seqMode && t === "B")).map(t => sc.cap[t] - sc.planned[t]);
-  const warn = res.some(r => r < 0) ? `<a class="warn" href="#sequenz" data-act="cls" data-k="${k}">Der Plan ist voller als das Schuljahr: ${-Math.min(...res)} Std. fehlen. Zur Sequenz →</a>` : "";
+  const warn = res.some(r => r < 0) ? `<a class="warn" href="#sequenz" data-act="cls" data-k="${ck(k)}">Der Plan ist voller als das Schuljahr: ${-Math.min(...res)} Std. fehlen. Zur Sequenz →</a>` : "";
   return `<article class="card tcard">
-    <header class="thead"><h2>${esc(UI.todayAll ? fullLabel(k) : c.label)}</h2><span class="badge">${sc.seqMode ? "nacheinander" : "in Strängen"}</span></header>
+    <header class="thead"><h2>${esc(UI.todayAll ? fullLabel(k) : groupName(k))}</h2><span class="badge">${sc.seqMode ? "nacheinander" : "in Strängen"}</span></header>
     ${warn}
     <div class="lessons">${body}</div>
     <section class="engine-box">
@@ -603,7 +634,7 @@ function slotBlock(k, s) {
   }
   if (s.cancelled) return `<div class="slot x">${tag}<div class="sbody"><div class="stitle">Ausgefallen</div><div class="acts"><button type="button" class="btn ghost sm" data-act="cancel" data-k="${k}" data-key="${s.key}">Findet doch statt</button></div></div></div>`;
   if (!s.lesson) return `<div class="slot">${tag}<div class="sbody"><div class="stitle">Frei: In der Sequenz ist nichts mehr geplant.</div></div></div>`;
-  const L = s.lesson, li = lessonInfo(k, L), done = !!S.cls[k].done[s.key];
+  const L = s.lesson, li = lessonInfo(k, L), done = !!grp(k).done[s.key];
   const sc = schedule(k);
   return `<div class="slot ${done ? "done" : ""}" style="${sty(lbOf(k, L.row.code))}">${tag}<div class="sbody">
     ${unitLink(k, L.row.code)}
@@ -632,20 +663,20 @@ function rateButtons(k, id) {
 
 /* ---------------- views: Jahresplan ---------------- */
 function viewPlan() {
-  const k = UI.cls, sc = schedule(k), Y = cal(), today = todayIso();
-  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = D.classes[k].sol;
+  const k = curG(), sc = schedule(k), Y = cal(), today = todayIso();
+  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = D.classes[ck(k)].sol;
   let rows = "";
   if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
     const notes = new Set(); let school = 0;
     for (let i = 0; i < 5; i++) { const di = sc.dayInfo[addDays(m, i)]; if (!di) continue; if (di.school) school++; else notes.add(di.note); }
-    (S.cls[k].tt || []).forEach(v => { if (v.frm && v.frm > Y.start && monday(v.frm) === m) notes.add("neuer Stundenplan ab " + fmt(v.frm)); });
+    (grp(k).tt || []).forEach(v => { if (v.frm && v.frm > Y.start && monday(v.frm) === m) notes.add("neuer Stundenplan ab " + fmt(v.frm)); });
     const ws = sc.slots.filter(s => monday(s.date) === m);
     const cells = trs.map(tr => {
       const ls = ws.filter(s => s.track === tr);
       const groups = []; ls.forEach(s => {
         if (s.cancelled) { const g = groups.find(g => g.code === "×"); if (g) g.n++; else groups.push({ code: "×", n: 1 }); return; }
         if (!s.lesson) return; const code = s.lesson.row.code; const g = groups.find(g => g.code === code);
-        if (g) { g.n++; if (S.cls[k].done[s.key]) g.done++; } else groups.push({ code, n: 1, done: S.cls[k].done[s.key] ? 1 : 0 });
+        if (g) { g.n++; if (grp(k).done[s.key]) g.done++; } else groups.push({ code, n: 1, done: grp(k).done[s.key] ? 1 : 0 });
       });
       return `<td>${groups.map(g => g.code === "×" ? `<span class="xchip">${g.n}× ausgefallen</span>` : `${unitLink(k, g.code)}<span class="hrs mono">${g.n} Std.${g.done ? ` · ${g.done}✓` : ""}</span>`).join("<br>")}</td>`;
     }).join("");
@@ -660,7 +691,7 @@ function viewPlan() {
 
 /* ---------------- views: Sequenz ---------------- */
 function viewSeq() {
-  const k = UI.cls, C = S.cls[k], sc = schedule(k), c = D.classes[k];
+  const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
   const used = new Set(C.seq.map(r => r.code));
   const avail = c.unitOrder.filter(code => !used.has(code) || code === "P" || code === "JA");
   const lbh = lbHours(k);
@@ -669,10 +700,10 @@ function viewSeq() {
     return `<tr style="${sty(lbOf(k, r.code))}">
       <td class="mono muted">${i + 1}</td>
       <td><span class="chip"><b>${esc(r.code)}</b></span></td>
-      <td class="ttl">${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${k}-${c.unitOrder.indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
+      <td class="ttl">${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${c.unitOrder.indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
       <td><select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select></td>
-      <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.hours}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
-        ${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.hours !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
+      <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
+        ${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
       <td class="mono small nowrap">${when}</td>
       <td class="nowrap"><div class="rowacts"><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="-1" aria-label="Nach oben" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="1" aria-label="Nach unten" ${i === sc.rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" class="mini" data-act="addp" data-i="${i}" title="Puffer darunter einfügen">+P</button><button type="button" class="mini del" data-act="del" data-i="${i}" aria-label="Zeile löschen">×</button></div></td>
     </tr>`;
@@ -685,6 +716,7 @@ function viewSeq() {
   return `<section><div class="vhead"><h1>Sequenz</h1>${clsTabs()}</div>
     <div class="seqtop">
       <div class="modebox"><div class="lbl">Modus</div><div class="seg small">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-v="${v}">${l}</button>`).join("")}</div>
+      ${multi ? `<p class="small">Die Sequenz gilt für alle Parallelklassen. Zeiträume und Kapazität unten gelten für <b>${esc(groupName(k))}</b>; „Einheit braucht 1 Std. mehr“ und Ausfälle wirken nur dort und erscheinen als Abweichung neben den Stunden.</p>` : ""}
       <p class="small muted">${sc.seqMode ? "Alle Stunden laufen in einem Strang, genau in der Reihenfolge unten." : "Jede Zeile läuft in ihrem Strang; innerhalb eines Strangs gilt die Reihenfolge unten."}</p></div>
       ${capCards(k)}
     </div>
@@ -698,13 +730,13 @@ function viewSeq() {
     <div class="grid2">
       <div class="card"><h3>Stunden je Lernbereich</h3><p class="small muted">geplant / Zeitrichtwert des Lehrplans</p>${lbRows}</div>
       <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier können Sie Puffer (P) auch von Hand verschieben oder kürzen.</p>
-      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Ihre Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${k}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
+      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Ihre Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
     </div></section>`;
 }
 
 /* ---------------- views: Einheiten ---------------- */
 function viewUnits() {
-  const k = UI.cls, c = D.classes[k], sc = schedule(k);
+  const k = curG(), c = D.classes[ck(k)], sc = schedule(k);
   const rowOf = {}; sc.rows.forEach(r => { if (!rowOf[r.code]) rowOf[r.code] = r; });
   const groups = {};
   c.unitOrder.filter(code => code !== "P" && code !== "JA").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
@@ -713,12 +745,13 @@ function viewUnits() {
     ${order.filter(lb => groups[lb]).map(lb => `<h2 class="lbh" style="${sty(lb)}">${esc(c.lbnames[lb] || lb)}</h2>
     <div class="ugrid">${groups[lb].map(code => {
       const u = unitOf(k, code), r = rowOf[code], i = c.unitOrder.indexOf(code);
-      return `<a class="ucard" href="#u-${k}-${i}" style="${sty(lb)}"><span class="chip"><b>${esc(code)}</b></span><span class="ut">${esc(u.title)}</span>
+      return `<a class="ucard" href="#u-${ck(k)}-${i}" style="${sty(lb)}"><span class="chip"><b>${esc(code)}</b></span><span class="ut">${esc(u.title)}</span>
         <span class="um small muted mono">${r ? `${r.hours} Std.${r.start ? " · " + fmt(r.start) + "–" + fmt(r.end) : ""}` : "nicht in der Sequenz"} · ${atomsOf(k, code).length} Atome</span></a>`;
     }).join("")}</div>`).join("")}</section>`;
 }
-function viewUnit(k, idx) {
-  const c = D.classes[k], code = c.unitOrder[idx], u = unitOf(k, code);
+function viewUnit(kc, idx) {
+  const k = curG() && ck(curG()) === kc ? curG() : gkey(kc, S.cls[kc].groups[0].id);
+  const c = D.classes[ck(k)], code = c.unitOrder[idx], u = unitOf(k, code);
   if (!u) return `<p>Einheit nicht gefunden.</p>`;
   const sc = schedule(k), r = sc.rows.find(x => x.code === code), E = S.eng[k];
   const atoms = atomsOf(k, code), nL = Math.max(u.stunden.length, r ? r.hours : 0, ...atoms.map(a => a.l), 1);
@@ -728,13 +761,13 @@ function viewUnit(k, idx) {
     const slot = r && r.slots[n - 1];
     const title = u.stunden[n - 1] || (r && n <= r.hours ? "Übung und Vertiefung" : "(über die geplanten Stunden hinaus)");
     const la = atoms.filter(a => a.l === n);
-    lessons += `<div class="lesson"><div class="lhead"><span class="mono muted">Stunde ${n}</span><span class="ltitle">${esc(title)}</span><span class="mono small muted">${slot ? fmt(slot.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + (S.cls[k].done[slot.key] ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : ""}</span></div>
+    lessons += `<div class="lesson"><div class="lhead"><span class="mono muted">Stunde ${n}</span><span class="ltitle">${esc(title)}</span><span class="mono small muted">${slot ? fmt(slot.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + (grp(k).done[slot.key] ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : ""}</span></div>
       <ul class="alist">${la.map(a => atomRow(k, code, a, E.cards[a.id])).join("")}</ul>
       ${UI.editAtom && UI.editAtom.code === code && UI.editAtom.id === "new" && UI.editAtom.l === n ? atomForm(k, code, { l: n, t: "", q: "", a: "" }, "new") : `<button type="button" class="linkbtn small" data-act="atomnew" data-code="${esc(code)}" data-l="${n}">+ Atom</button>`}
     </div>`;
   }
   return `<section class="unitv" style="${sty(u.lb)}">
-    <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${k}-${idx - 1}">‹ ${esc(c.unitOrder[idx - 1])}</a>` : ""}${idx < c.unitOrder.length - 1 ? `<a class="btn ghost" href="#u-${k}-${idx + 1}">${esc(c.unitOrder[idx + 1])} ›</a>` : ""}</div>
+    <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx - 1}">‹ ${esc(c.unitOrder[idx - 1])}</a>` : ""}${idx < c.unitOrder.length - 1 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx + 1}">${esc(c.unitOrder[idx + 1])} ›</a>` : ""}</div>
     <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(c.lbnames[u.lb] || "")}</div></div>
       <div class="umeta mono">${r ? `${r.hours} Std. geplant${u.stunden.length ? ` (Soll ${u.stunden.length})` : ""}<br>${r.start ? fmt(r.start) + " – " + fmt(r.end) : ""}${r.overflow ? `<br><span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : ""}` : "nicht in der Sequenz"}</div></header>
     <div class="grid2">
@@ -742,7 +775,7 @@ function viewUnit(k, idx) {
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
     <h2>Stunden und Atome</h2>
-    <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde plant die Learning Engine ihre Wiederholung. ${S.cls[k].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
+    <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde plant die Learning Engine ihre Wiederholung. ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
     <div class="lessons-list">${lessons}</div></section>`;
 }
 function atomRow(k, code, a, card) {
@@ -762,7 +795,7 @@ function atomForm(k, code, a, id) {
 
 /* ---------------- views: Learning Engine ---------------- */
 function viewEngine() {
-  const k = UI.cls, d = UI.date, es = engineState(k, d), E = S.eng[k];
+  const k = curG(), d = UI.date, es = engineState(k, d), E = S.eng[k];
   const intro = es.list;
   const avgR = intro.filter(x => x.R !== null);
   const meanR = avgR.length ? avgR.reduce((s, x) => s + x.R, 0) / avgR.length : null;
@@ -772,7 +805,7 @@ function viewEngine() {
   const am = atomMap(k), sc = schedule(k);
   const rowsSrc = showAll ? Object.values(am).map(a => intro.find(x => x.a.id === a.id) || { a, code: a.code, intro: sc.intro[a.id] ? sc.intro[a.id].date : null, card: null, isNew: false, R: null, future: true }) : intro;
   rowsSrc.forEach(x => (byUnit[x.code] || (byUnit[x.code] = [])).push(x));
-  const unitsSorted = Object.keys(byUnit).sort((a, b) => D.classes[k].unitOrder.indexOf(a) - D.classes[k].unitOrder.indexOf(b));
+  const unitsSorted = Object.keys(byUnit).sort((a, b) => D.classes[ck(k)].unitOrder.indexOf(a) - D.classes[ck(k)].unitOrder.indexOf(b));
   const tbl = unitsSorted.map(code => `<tr class="ugroup"><td colspan="5">${unitLink(k, code)}</td></tr>` + byUnit[code].map(x => {
     const c = x.card;
     const R = x.R !== null && x.R !== undefined ? x.R : null;
@@ -814,8 +847,17 @@ function yearOptions() {
   for (let y = y0 - 1; y <= y0 + 4; y++) { const id = `${y}-${String(y + 1).slice(2)}`; if (!have.has(id)) out.push(id); }
   return out;
 }
+function groupsCard(k) {
+  const C = S.cls[k], c = D.classes[k];
+  const rows = C.groups.map(G => `<tr><td><input data-act="gname" data-g="${gkey(k, G.id)}" value="${esc(G.name)}" placeholder="${esc(c.short + G.id)}" aria-label="Name der Parallelklasse"></td>
+    <td>${G.id !== "a" ? (UI.confirm === "gdel-" + k ? `<span class="confirm small">Parallelklasse mit Stundenplan und Lernstand entfernen?<button type="button" class="btn danger sm" data-act="gdel" data-k="${k}">Entfernen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>` : `<button type="button" class="mini del" data-act="confirm" data-v="gdel-${k}" aria-label="Parallelklasse entfernen">×</button>`) : ""}</td></tr>`).join("");
+  return `<div class="card"><h3>Parallelklassen ${esc(c.label)}</h3>
+    <div class="tscroll"><table class="form"><thead><tr><th>Name</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${C.groups.length < GIDS.length ? `<button type="button" class="linkbtn" data-act="gadd" data-k="${k}">+ Parallelklasse hinzufügen</button>` : ""}
+    <p class="small muted">Sequenz, Modus und Atome planen Sie einmal für alle Parallelklassen. Jede Parallelklasse hat ihren eigenen Stundenplan, eigene Ausfälle, Häkchen und Lernstand; „Einheit braucht 1 Std. mehr“ gilt nur für die Klasse, in der Sie es drücken.</p></div>`;
+}
 function ttCard(k) {
-  const C = S.cls[k], vs = sortTT(C.tt), Y = cal();
+  const C = grp(k), vs = sortTT(C.tt), Y = cal();
   const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B", "SOL"].map(x => `<option ${l.track === x ? "selected" : ""}>${x}</option>`).join("")}</select>`;
   const blocks = vs.map((v, vi) => {
     const next = vs[vi + 1], until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : "Schuljahresende";
@@ -828,12 +870,13 @@ function ttCard(k) {
     return `<div class="ttv ${current ? "cur" : ""}">
       <div class="ttvh"><label>Gültig ab <input type="date" data-act="ttfrm" data-v="${v.id}" value="${esc(v.frm)}"></label><span class="small muted">bis ${esc(until)}${current ? " · gilt am gewählten Tag" : ""}</span>
       ${vs.length > 1 ? `<button type="button" class="linkbtn small" data-act="ttdelv" data-v="${v.id}">Zeitraum löschen</button>` : ""}</div>
-      ${v.lessons.length ? `<table class="form"><thead><tr><th>Tag</th><th>Std.</th><th>Spur</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="small muted">In diesem Zeitraum hat ${esc(D.classes[k].label)} keinen Unterricht.</p>`}
+      ${v.lessons.length ? `<table class="form"><thead><tr><th>Tag</th><th>Std.</th><th>Spur</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="small muted">In diesem Zeitraum hat ${esc(groupName(k))} keinen Unterricht.</p>`}
       <button type="button" class="linkbtn small" data-act="tladd" data-v="${v.id}">+ Stunde</button></div>`;
   }).join("");
   const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
   const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   return `<div class="card"><h3>Stundenplan ${esc(fullLabel(k))} · ${esc(yearLabel(Y.id))}</h3>
+    ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählen Sie oben in der Leiste.</p>` : ""}
     <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen), SOL = selbstorganisiertes Lernen.</p>
     ${blocks}
     <div class="addrow"><label>Neuer Stundenplan ab <input type="date" id="ttnewfrm" value="${esc(sug)}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label><button type="button" class="btn ghost sm" data-act="ttnew">Zeitraum anlegen</button></div>
@@ -843,7 +886,7 @@ function ttCard(k) {
     <button type="button" class="linkbtn" data-act="offadd">+ Zeitraum ohne Unterricht</button></div>`;
 }
 function viewSettings() {
-  const Y = cal(), k = UI.cls;
+  const Y = cal(), k = curG();
   const hol = (Y.holidays || []).map((h, i) => `<tr><td><input data-act="hol" data-i="${i}" data-f="name" value="${esc(h.name)}" aria-label="Name"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="frm" value="${esc(h.frm)}" aria-label="von"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="to" value="${esc(h.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="holdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   const fr = (Y.free || []).map((f, i) => `<tr><td><input type="date" data-act="free" data-i="${i}" data-f="date" value="${esc(f.date)}" aria-label="Datum"></td><td><input data-act="free" data-i="${i}" data-f="name" value="${esc(f.name)}" aria-label="Anlass"></td><td><button type="button" class="mini del" data-act="freedel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   const years = S.settings.years.map(y => `<tr class="${y.id === Y.id ? "cur" : ""}"><td class="mono">${esc(yearLabel(y.id))}</td><td class="mono small nowrap">${y.start ? fmt(y.start, { day: "2-digit", month: "2-digit", year: "numeric" }) + " – " + fmt(y.end, { day: "2-digit", month: "2-digit", year: "numeric" }) : ""}</td>
@@ -872,7 +915,7 @@ function viewSettings() {
         <h3>Freie Einzeltage</h3><div class="tscroll"><table class="form"><thead><tr><th>Datum</th><th>Anlass</th><th></th></tr></thead><tbody>${fr}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
-      ${curClass() ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
+      ${k ? groupsCard(ck(k)) + ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
@@ -945,7 +988,7 @@ window.addEventListener("hashchange", () => {
 });
 
 /* ---------------- events ---------------- */
-const ttVersion = (k, id) => (S.cls[k].tt || []).find(v => v.id === id);
+const ttVersion = (g, id) => (grp(g).tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act]"); if (!b) return;
@@ -968,6 +1011,22 @@ document.addEventListener("click", ev => {
     }
     case "todaycls": UI.todayAll = b.dataset.v === "all"; try { localStorage.setItem("mp-today", UI.todayAll ? "all" : "one"); } catch (e) {} render(); break;
     case "year": switchYear(b.dataset.v, true); break;
+    case "grp": { const g = b.dataset.g; UI.gid[ck(g)] = gidOf(g); try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {} UI.reveal = {}; UI.confirm = null; render(); break; }
+    case "gadd": {
+      const C = S.cls[k]; if (C.groups.length >= GIDS.length) break;
+      const id = GIDS.find(x => !C.groups.some(G => G.id === x)), base = C.groups[0];
+      const snap = snapshotFor(k);
+      C.groups.push(newGroup(id, "", base.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))));
+      S.eng[gkey(k, id)] = defaultEngine();
+      UI.gid[k] = id; try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {}
+      undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse angelegt. Der Stundenplan ist kopiert, bitte anpassen.", true); break;
+    }
+    case "gdel": {
+      const C = S.cls[k]; if (C.groups.length < 2) break;
+      const snap = snapshotFor(k), gone = C.groups.pop();
+      S.eng[gkey(k, gone.id)] = defaultEngine(); delete UI.gid[k]; UI.confirm = null;
+      undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse entfernt.", true); break;
+    }
     case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
     case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
     case "ferien": importFerien(); break;
@@ -993,8 +1052,8 @@ document.addEventListener("click", ev => {
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
-    case "reset": S.cls[k] = Object.assign(defaultClass(k), { tt: S.cls[k].tt, off: S.cls[k].off, cancelled: S.cls[k].cancelled, atoms: S.cls[k].atoms, done: S.cls[k].done }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
-    case "resetall": { CLASSES.forEach(c => { S.cls[c] = defaultClass(c); S.eng[c] = defaultEngine(); save(c); save(engDoc(c)); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
+    case "reset": S.cls[k] = Object.assign(defaultClass(k), { atoms: S.cls[k].atoms, groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {} })) }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "resetall": { resetYearState(); CLASSES.forEach(c => { save(c); GIDS.forEach(gid => save(engDoc(gkey(c, gid)))); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
     case "atomedit": UI.editAtom = { code: b.dataset.code, id: b.dataset.id }; render(); break;
@@ -1005,20 +1064,20 @@ document.addEventListener("click", ev => {
     case "holdel": cal().holidays.splice(i, 1); commit(null, { settings: true }); break;
     case "freeadd": cal().free.push({ date: "", name: "" }); commit(null, { settings: true }); break;
     case "freedel": cal().free.splice(i, 1); commit(null, { settings: true }); break;
-    case "tladd": { const v = ttVersion(k, b.dataset.v); if (v) { v.lessons.push({ id: uid(), day: 1, period: 1, track: "A" }); commit(k); } break; }
-    case "tldel": { const v = ttVersion(k, b.dataset.v); if (v) { v.lessons.splice(i, 1); commit(k); } break; }
+    case "tladd": { const v = ttVersion(curG(), b.dataset.v); if (v) { v.lessons.push({ id: uid(), day: 1, period: 1, track: "A" }); commit(k); } break; }
+    case "tldel": { const v = ttVersion(curG(), b.dataset.v); if (v) { v.lessons.splice(i, 1); commit(k); } break; }
     case "ttnew": {
-      const frm = document.getElementById("ttnewfrm").value, C = S.cls[k];
+      const frm = document.getElementById("ttnewfrm").value, C = grp(curG());
       if (!frm) { toast("Bitte zuerst das Datum wählen, ab dem der neue Stundenplan gilt."); break; }
       if (C.tt.some(v => v.frm === frm)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); break; }
       const base = sortTT(C.tt.slice()).filter(v => v.frm <= frm).pop() || C.tt[C.tt.length - 1];
       const snap = snapshotFor(k); C.tt.push({ id: uid(), frm, lessons: base ? cloneLessons(base.lessons) : [] }); sortTT(C.tt);
       undoStack = snap; commit(k); toast(`Neuer Stundenplan ab ${fmt(frm)} angelegt. Jetzt die Stunden anpassen.`, true); break;
     }
-    case "ttdelv": { const C = S.cls[k]; if (C.tt.length < 2) break; const snap = snapshotFor(k); C.tt = C.tt.filter(v => v.id !== b.dataset.v); undoStack = snap; commit(k); toast("Stundenplan-Zeitraum gelöscht.", true); break; }
-    case "offadd": S.cls[k].off.push({ id: uid(), name: "", frm: "", to: "" }); commit(k); break;
-    case "offdel": S.cls[k].off.splice(i, 1); commit(k); break;
-    case "engreset": { const snap = snapshotFor(UI.cls); CLASSES.forEach(c => { S.eng[c] = defaultEngine(); S.cls[c].done = {}; S.cls[c].cancelled = {}; save(engDoc(c)); save(c); }); cal().engineStart = cal().start; save("settings"); undoStack = snap; touch(); render(); toast(`Lernstand, Ausfälle und Häkchen ${yearLabel(cal().id)} geleert.`, true); break; }
+    case "ttdelv": { const C = grp(curG()); if (C.tt.length < 2) break; const snap = snapshotFor(k); C.tt = C.tt.filter(v => v.id !== b.dataset.v); undoStack = snap; commit(k); toast("Stundenplan-Zeitraum gelöscht.", true); break; }
+    case "offadd": grp(curG()).off.push({ id: uid(), name: "", frm: "", to: "" }); commit(k); break;
+    case "offdel": grp(curG()).off.splice(i, 1); commit(k); break;
+    case "engreset": { const snap = snapshotFor(UI.cls); CLASSES.forEach(c => { S.cls[c].groups.forEach(G => { G.done = {}; G.cancelled = {}; G.adj = {}; }); GIDS.forEach(gid => { S.eng[gkey(c, gid)] = defaultEngine(); save(engDoc(gkey(c, gid))); }); save(c); }); cal().engineStart = cal().start; save("settings"); undoStack = snap; touch(); render(); toast(`Lernstand, Ausfälle und Häkchen ${yearLabel(cal().id)} geleert.`, true); break; }
     case "export": {
       const txt = JSON.stringify({ app: "matheplaner", v: 2, year: UI.year, settings: S.settings, cls: S.cls, eng: S.eng });
       const box = document.getElementById("importbox");
@@ -1043,7 +1102,11 @@ document.addEventListener("click", ev => {
         }
         const target = o.year && S.settings.years.some(y => y.id === o.year) ? o.year : S.settings.years.some(y => y.id === UI.year) ? UI.year : pickYear();
         switchYear(target, true);
-        CLASSES.forEach(c => { if (o.cls && o.cls[c]) applyDoc(c, o.cls[c]); if (o.eng && o.eng[c]) applyDoc(engDoc(c), o.eng[c]); save(c); save(engDoc(c)); });
+        CLASSES.forEach(c => {
+          if (o.cls && o.cls[c]) applyDoc(c, o.cls[c]);
+          GIDS.forEach(gid => { const g = gkey(c, gid), e = o.eng && (o.eng[g] || (gid === "a" ? o.eng[c] : null)); if (e) applyDoc(engDoc(g), e); save(engDoc(g)); });
+          save(c);
+        });
         save("settings"); touch(); render(); toast("Sicherung eingespielt.");
       } catch (e) { toast("Das ist keine gültige Sicherung dieser App."); }
       break;
@@ -1066,9 +1129,10 @@ document.addEventListener("change", ev => {
     case "engstart": if (t.value) { cal().engineStart = t.value; commit(null, { settings: true }); } break;
     case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
-    case "tl": { const v = ttVersion(k, t.dataset.v), row = v && v.lessons[i]; if (!row) break; row[f] = f === "track" ? t.value : Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
-    case "ttfrm": { const v = ttVersion(k, t.dataset.v); if (!v || !t.value) break; if (S.cls[k].tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(S.cls[k].tt); commit(k); break; }
-    case "off": { const o = S.cls[k].off[i]; if (!o) break; o[f] = t.value; commit(k); break; }
+    case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; row[f] = f === "track" ? t.value : Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
+    case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
+    case "gname": { const G = grp(t.dataset.g); G.name = t.value.trim(); commit(ck(t.dataset.g)); break; }
+    case "off": { const o = grp(curG()).off[i]; if (!o) break; o[f] = t.value; commit(k); break; }
   }
 });
 document.addEventListener("submit", ev => {

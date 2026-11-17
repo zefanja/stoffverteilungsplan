@@ -36,6 +36,10 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 - **Schulart (GYM/OS), Klassenstufe und Schuljahr** werden oben in der Leiste gewählt. Stufen ohne hinterlegten Lehrplan sind
   ausgegraut; Jahresplan, Sequenz, Einheiten, Learning Engine,
   Stundenplan und Heute-Ansicht folgen dieser Auswahl („Alle meine Klassen“ zeigt auf der Heute-Seite alle Klassen mit Stunden im Stundenplan).
+- **Parallelklassen** (höchstens 2 je Stufe, z. B. 8a/8b; Einstellungen → Parallelklassen): Sequenz, Modus und Atome
+  werden einmal für alle geplant. Jede Parallelklasse hat eigenen Stundenplan, Zeiträume ohne Unterricht, Ausfälle,
+  Häkchen und Lernstand. „Einheit braucht 1 Std. mehr“ und automatische Pufferkürzung werden als Abweichung nur dieser
+  Klasse gespeichert und in der Sequenz neben den Stunden angezeigt (z. B. „8b: +1“). Gewechselt wird oben in der Leiste.
 - **Heute**: heutige Stunden je Klasse aus Kalender × Stundenplan × Sequenz, neue Atome der Stunde,
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, SOL-Formatvorschläge für Klasse 8.
@@ -73,5 +77,6 @@ Die App kennt alle Klassen aus `dist/data.js` (`classes`) und die Schularten aus
 2. Atome in `src/atoms.py` unter derselben ID.
 3. Einträge in `src/build_data.py`: `META[id]` mit `type` (`gym`/`os`), `grade`, `label`, Strangnamen; `TT[id]` mit dem Stundenplan.
 
-Gespeichert wird je Schuljahr unter `jahr-<jahr>/<id>` und `jahr-<jahr>/engine-<id>`. Nur `kl6` und `kl8` behalten im Jahr 2026/27
+Gespeichert wird je Schuljahr unter `jahr-<jahr>/<id>` (Sequenz, Atome und die Parallelklassen in `groups`) und
+`jahr-<jahr>/engine-<id>` bzw. `engine-<id>-b` für die zweite Parallelklasse. Nur `kl6` und `kl8` behalten im Jahr 2026/27
 ihre alten Pfade; diese beiden IDs daher nicht umbenennen.

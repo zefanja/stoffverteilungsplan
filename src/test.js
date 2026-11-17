@@ -51,7 +51,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.fill('#ttnewfrm', '2027-02-22'); await p.click('[data-act="ttnew"]'); await p.waitForTimeout(100);
   ok((await p.$$('.ttv')).length === 3, 'Neuer Zeitraum ab 22.02.2027 angelegt');
   // im neuen Zeitraum eine Stunde löschen -> weniger Kapazität
-  const vid = await p.evaluate(() => window.__mp.S.cls.kl8.tt.find(v => v.frm === '2027-02-22').id);
+  const vid = await p.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.find(v => v.frm === '2027-02-22').id);
   await p.click(`[data-act="tldel"][data-v="${vid}"][data-i="0"]`); await p.waitForTimeout(100);
   const capAfter = await p.evaluate(() => window.__mp.schedule('kl8').cap.A);
   ok(capAfter < capBefore, `Kapazität sinkt nach Stundenplanwechsel (${capBefore} -> ${capAfter})`);
@@ -84,7 +84,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   // Neues Schuljahr anlegen
   await p.selectOption('#newyear', '2027-28'); await p.click('[data-act="yearadd"]'); await p.waitForTimeout(300);
   const ny = await p.evaluate(() => { const m = window.__mp; const Y = m.cal(); const sc = m.schedule('kl8');
-    return { id: Y.id, start: Y.start, end: Y.end, hol: Y.holidays.length, tt: m.S.cls.kl8.tt.map(v => v.frm + ':' + v.lessons.length), off: m.S.cls.kl8.off.length, cap: sc.cap, planned: sc.planned, years: m.S.settings.years.map(y => y.id) }; });
+    return { id: Y.id, start: Y.start, end: Y.end, hol: Y.holidays.length, tt: m.S.cls.kl8.groups[0].tt.map(v => v.frm + ':' + v.lessons.length), off: m.S.cls.kl8.groups[0].off.length, cap: sc.cap, planned: sc.planned, years: m.S.settings.years.map(y => y.id) }; });
   console.log('     ', JSON.stringify(ny));
   ok(ny.id === '2027-28' && ny.start === '2027-08-23' && ny.end === '2028-07-21', 'Schuljahr 2027/28 mit Ferien Sachsen angelegt');
   ok(ny.tt.length === 1 && ny.tt[0] === '2027-08-23:3' && ny.off === 0, 'Letzter Stundenplan übernommen, ab Schuljahresbeginn');
@@ -101,22 +101,64 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
 
   for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'engine', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h}.png`) }); }
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(200);
-  const before = await p.evaluate(() => window.__mp.S.cls.kl8.seq.map(r => r.hours).join(','));
+  const before = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj));
   const btn = await p.$('[data-act="addhour"]'); if (btn) { await btn.click(); await p.waitForTimeout(100); }
-  const after = await p.evaluate(() => window.__mp.S.cls.kl8.seq.map(r => r.hours).join(','));
+  const after = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj));
   ok(!btn || before !== after, 'Einheit braucht 1 Std. mehr');
   await p.setViewportSize({ width: 400, height: 800 }); await p.waitForTimeout(200);
   const sw = await p.evaluate(() => document.documentElement.scrollWidth);
   ok(sw <= 400, 'Keine horizontale Scrollbar bei 400 px (' + sw + ')');
   await p.screenshot({ path: path.join(OUT, 's_mobile.png') });
+  // Parallelklassen: gemeinsame Sequenz, eigener Stundenplan, eigene Abweichungen und eigener Lernstand
+  await p.setViewportSize({ width: 1280, height: 900 });
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.click('[data-act="gadd"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.S.cls.kl8.groups.length === 2), 'Parallelklasse 8b angelegt');
+  await p.fill('[data-act="gname"][data-g="kl8.a"]', '8a'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.a"]', 'change');
+  await p.fill('[data-act="gname"][data-g="kl8.b"]', '8b'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.b"]', 'change'); await p.waitForTimeout(100);
+  ok((await p.innerText('#ctx')).includes('8a') && (await p.innerText('#ctx')).includes('8b'), 'Leiste zeigt 8a | 8b');
+  ok(await p.evaluate(() => window.__mp.UI.gid.kl8 === 'b'), 'Neue Parallelklasse ist gewählt');
+  await p.screenshot({ path: path.join(OUT, 's_parallel.png'), fullPage: true });
+  // Stundenplan nur für 8b ändern: erste Stunde des letzten Zeitraums löschen
+  const vb = await p.evaluate(() => { const g = window.__mp.S.cls.kl8.groups[1]; return g.tt[g.tt.length - 1].id; });
+  await p.click(`[data-act="tldel"][data-v="${vb}"][data-i="0"]`); await p.waitForTimeout(100);
+  const caps = await p.evaluate(() => [window.__mp.schedule('kl8.a').cap.A, window.__mp.schedule('kl8.b').cap.A, window.__mp.S.cls.kl8.groups[0].tt.map(v => v.lessons.length).join()]);
+  ok(caps[1] < caps[0], `Eigener Stundenplan: 8b hat weniger Stunden (${caps[0]} / ${caps[1]}), 8a unverändert (${caps[2]})`);
+  // Sequenz einmal ändern -> beide folgen
+  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(150);
+  const pl0 = await p.evaluate(() => [window.__mp.schedule('kl8.a').planned.A, window.__mp.schedule('kl8.b').planned.A]);
+  await p.click('[data-act="hrs"][data-i="1"][data-n="1"]'); await p.waitForTimeout(100);
+  const pl1 = await p.evaluate(() => [window.__mp.schedule('kl8.a').planned.A, window.__mp.schedule('kl8.b').planned.A]);
+  ok(pl1[0] === pl0[0] + 1 && pl1[1] === pl0[1] + 1, 'Gemeinsame Sequenz: +1 Std. wirkt in 8a und 8b');
+  // Mehrbedarf nur in 8b
+  await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const hb = await p.$('[data-act="addhour"]');
+  if (hb) { await hb.click(); await p.waitForTimeout(100); }
+  const adj = await p.evaluate(() => [JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj), Object.keys(window.__mp.S.cls.kl8.groups[1].adj).length]);
+  ok(!hb || adj[1] > 0, 'Mehrbedarf in 8b wird als Abweichung von 8b gespeichert');
+  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(150);
+  ok(!hb || (await p.innerText('main')).includes('8b: +1'), 'Sequenz zeigt die Abweichung „8b: +1“');
+  // Lernstand je Parallelklasse
+  await p.evaluate(() => { const m = window.__mp; m.UI.date = '2027-01-20'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const rv = await p.$('[data-act="reveal"]');
+  if (rv) { await rv.click(); await p.waitForTimeout(80); await p.click('[data-act="rate"][data-g="3"]'); await p.waitForTimeout(80); }
+  const eng = await p.evaluate(() => [Object.keys(window.__mp.S.eng['kl8.a'].cards).length, Object.keys(window.__mp.S.eng['kl8.b'].cards).length]);
+  ok(!rv || eng[1] > eng[0], `Bewertung landet nur im Lernstand von 8b (${eng[0]} / ${eng[1]})`);
+  await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
+  ok((await p.$$('.tcard')).length === 3, 'Alle meine Klassen: Klasse 6, 8a, 8b');
+  await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
+  await p.click('#ctx [data-act="grp"][data-g="kl8.a"]'); await p.waitForTimeout(100);
+  ok((await p.innerText('.tcard h2')) === '8a', 'Umschalten auf 8a');
+  await p.waitForTimeout(900);
+
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
   const p2 = await p.context().newPage(); p2.on('pageerror', e => errs.push(e.message));
   await p2.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#einstellungen'); await p2.waitForTimeout(400);
-  const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.tt.length, m.S.cls.kl8.off.length, document.getElementById('banner').dataset.kind]; });
-  ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local', 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
+  const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.groups[0].tt.length, m.S.cls.kl8.groups[0].off.length, document.getElementById('banner').dataset.kind, m.S.cls.kl8.groups.length]; });
+  ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local' && kept[4] === 2, 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
   await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
-  ok(await p2.evaluate(() => window.__mp.S.cls.kl8.tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
+  ok(await p2.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
   ok(errs.length === 0, 'Keine Fehler in der Konsole ' + JSON.stringify(errs));
   await b.close();
 })();
