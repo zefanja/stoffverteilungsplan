@@ -72,6 +72,11 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Kontrollen, Hausaufgabenkontrollen und sonstige Bewertungen hängen an einer Stunde einer Einheit („+ Kontrolle“) und kosten
   keine Unterrichtszeit; sie erscheinen in der Einheit und auf der Heute-Seite. Die Übersicht listet alle Termine der gewählten
   (Parallel-)Klasse. Gespeichert in `S.cls[k].ln` und `S.cls[k].checks`; ein neues Schuljahr übernimmt sie mit der Sequenz.
+  Termin ändern: in der Übersicht oder in der Einheit nur ein Datum eingeben. Die Arbeitsstunde liegt dann fest an diesem Tag
+  (ohne Mathestunde: in der nächsten), Wiederholung direkt davor, Rückgabe danach; alle anderen Stunden laufen in der
+  Reihenfolge der Sequenz darum herum, eine Einheit auch über den Termin hinweg. Die Zeile wandert in der Sequenz an die
+  zeitlich passende Stelle. Feste Termine gelten je Parallelklasse (`groups[].pin`, Zeilen-ID → Datum); „lösen“ gibt den
+  Termin frei. Kontrollen in einer Stunde wandern per Datum in die erste Stunde dieses Tages.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar. Fallen zwei Stunden einer
   Einheit laut Stundenplan in eine Doppelstunde, stehen sie als ein Block („Stunde 2–3 · Doppelstunde“) mit Termin und
   Schulstunden; eine Doppelstunde, die zwei Einheiten teilt, ist als „Doppelstunde, 1./2. Teil“ markiert. Atome lassen
