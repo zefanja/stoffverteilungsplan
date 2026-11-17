@@ -278,6 +278,13 @@ function serve(dir) {
   await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(200);
   ok((await p.innerText('main')).includes('Zeitrichtwert'), 'Sequenz OS 7 HS mit Zeitrichtwerten');
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  // Doppelstunde: ein Eintrag mit Dauer 2 belegt zwei aufeinanderfolgende Stunden
+  const slotsWeek = () => p.evaluate(() => window.__mp.schedule('os7hs.a').slots.filter(s => s.date >= '2026-11-16' && s.date <= '2026-11-20').map(s => s.date.slice(8) + '/' + s.period).join(','));
+  const dsBefore = await slotsWeek();
+  await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '2'); await p.waitForTimeout(150);
+  const dsAfter = await slotsWeek();
+  ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('16/2') && dsAfter.includes('16/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
+  await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '1'); await p.waitForTimeout(150);
   await p.uncheck('[data-act="mine"][data-k="os7hs"]'); await p.uncheck('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => window.__mp.UI.type === 'gym' && ['kl6', 'kl8'].includes(window.__mp.UI.cls)), 'Nach dem Abwählen zurück zu einer eigenen GYM-Klasse');
   await p.waitForTimeout(900);
