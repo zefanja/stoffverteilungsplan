@@ -352,6 +352,16 @@ function serve(dir) {
   const dhr = await p.evaluate(k => k.split(',').every(x => !window.__mp.S.cls.kl6.groups[0].cancelled[x]), dhb.keys);
   ok(!!dhb.keys && dhb.keys.split(',').length === 2 && /Stunde \d+–\d+ von/.test(dhb.title) && dhd && dhc && dhr, 'Heute: Doppelstunde als ein Block, gehalten, Ausfall und Rücknahme für beide Schulstunden ' + JSON.stringify([dhb, dhd, dhc, dhr]));
   await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
+  // Seitenwechsel über die Navigation beginnt oben, auch beim erneuten Klick auf die offene Seite
+  await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
+  await p.evaluate(() => window.scrollTo(0, 1500)); await p.waitForTimeout(50);
+  const sy0 = await p.evaluate(() => window.scrollY);
+  await p.click('#nav a[href="#sequenz"]'); await p.waitForTimeout(200);
+  const sy1 = await p.evaluate(() => window.scrollY);
+  await p.evaluate(() => window.scrollTo(0, 800)); await p.waitForTimeout(50);
+  await p.click('#nav a[href="#sequenz"]'); await p.waitForTimeout(150);
+  const sy2 = await p.evaluate(() => window.scrollY);
+  ok(sy0 > 0 && sy1 === 0 && sy2 === 0, 'Navigation: neue Seite beginnt oben, Klick auf die offene Seite scrollt nach oben ' + JSON.stringify([sy0, sy1, sy2]));
 
   // Leistungsnachweise: Test mit eigener Stunde in die Sequenz einfügen, Kurzkontrolle in einer Stunde, Übersicht, Löschen
   await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.type = 'gym'; M.UI.gid.kl8 = 'a'; M.UI.date = '2026-11-02'; location.hash = 'sequenz'; }); await p.waitForTimeout(250);

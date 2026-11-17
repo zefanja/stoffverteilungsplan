@@ -1674,7 +1674,8 @@ function renderNow() {
   const sy = window.scrollY;
   main.innerHTML = html;
   typesetMath(main);
-  if (render.keepScroll) window.scrollTo(0, sy);
+  // Beim Seitenwechsel nach oben, sonst (Klick, Eingabe) die Scrollposition halten
+  window.scrollTo(0, render.keepScroll ? sy : 0);
   render.keepScroll = true;
   renderOverlay();
   const dl = document.getElementById("dlbtn"); if (dl && downloads) dl.hidden = false;
@@ -1717,6 +1718,8 @@ function closeOverlay() { leaveQuizFullscreen(); UI.quiz = null; UI.solOpen = fa
 const ttVersion = (g, id) => (grp(g).tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
+  // Klick auf die gerade offene Seite in der Navigation: nach oben (es gibt kein hashchange)
+  const nl = ev.target.closest("#nav a"); if (nl && nl.getAttribute("href") === location.hash) { window.scrollTo(0, 0); return; }
   const b = ev.target.closest("[data-act]"); if (!b) return;
   const a = b.dataset.act, k = b.dataset.k || UI.cls, i = +b.dataset.i;
   if (b.tagName === "SELECT" || (b.tagName === "INPUT" && b.type !== "checkbox" && b.type !== "button")) return;
