@@ -161,7 +161,19 @@ function serve(dir) {
   await p.waitForTimeout(150);
   await p.click('[data-act="confirm"][data-v="ferien"]'); await p.waitForTimeout(50);
   await p.click('[data-act="ferien"]'); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 3), 'Ferien Sachsen importieren füllt Ferien und freie Tage');
+  ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 5), 'Ferien Sachsen importieren füllt Ferien und freie Tage (mit zwei HA-Tagen)');
+  // HA-Tage: die zwei Schultage nach dem Buß- und Bettag, in jedem Schuljahr; einmalig auch in gespeicherten Jahren
+  const ha = await p.evaluate(() => { const M = window.__mp, src = window.PLAN_DATA.ferienSN, out = {};
+    for (const y0 of [2025, 2026, 2027, 2028, 2029]) { const Y = M.sachsenYear(y0, src); if (!Y) continue;
+      const bb = Y.free.find(f => /Buß/.test(f.name)), h = Y.free.filter(f => f.name === 'HA-Tag').map(f => f.date);
+      out[y0] = bb && h.length === 2 && h[0] > bb.date && new Date(h[0]).getDay() !== 0 ? h.join('+') : 'FEHLT'; }
+    const keep = JSON.parse(JSON.stringify(M.S.settings)), old = JSON.parse(JSON.stringify(keep));
+    old.years.forEach(y => { delete y.haDays; y.free = y.free.filter(f => f.name !== 'HA-Tag'); });
+    M.applyDoc('settings', old); const mig = M.S.settings.years.find(y => y.id === '2026-27').free.filter(f => f.name === 'HA-Tag').map(f => f.date).join('+');
+    const del = { free: [{ date: '2026-11-18', name: 'Buß- und Bettag' }], holidays: [], haDays: true }; M.addHaDays(del);
+    M.S.settings = keep; M.touch();
+    return { out, mig, keepDeleted: del.free.length === 1 }; });
+  ok(Object.values(ha.out).length === 5 && !Object.values(ha.out).includes('FEHLT') && ha.out[2026] === '2026-11-19+2026-11-20' && ha.mig === '2026-11-19+2026-11-20' && ha.keepDeleted, 'HA-Tage nach dem Buß- und Bettag in allen Schuljahren, gespeicherte Jahre einmal ergänzt ' + JSON.stringify(ha));
 
   for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'lernuebersicht', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h === 'lernuebersicht' ? 'engine' : h}.png`) }); }
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(200);
@@ -394,11 +406,11 @@ function serve(dir) {
   ok((await p.innerText('main')).includes('Zeitrichtwert'), 'Sequenz OS 7 HS mit Zeitrichtwerten');
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   // Doppelstunde: ein Eintrag mit Dauer 2 belegt zwei aufeinanderfolgende Stunden
-  const slotsWeek = () => p.evaluate(() => window.__mp.schedule('os7hs.a').slots.filter(s => s.date >= '2026-11-16' && s.date <= '2026-11-20').map(s => s.date.slice(8) + '/' + s.period).join(','));
+  const slotsWeek = () => p.evaluate(() => window.__mp.schedule('os7hs.a').slots.filter(s => s.date >= '2026-11-23' && s.date <= '2026-11-27').map(s => s.date.slice(8) + '/' + s.period).join(','));
   const dsBefore = await slotsWeek();
   await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '2'); await p.waitForTimeout(150);
   const dsAfter = await slotsWeek();
-  ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('16/2') && dsAfter.includes('16/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
+  ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('23/2') && dsAfter.includes('23/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
   await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '1'); await p.waitForTimeout(150);
   // letzter Unterrichtstag: eigener Wert kürzt den Plan, zurücksetzen auf Schuljahresende
   await p.fill('input[data-act="lastday"]', '2027-06-30'); await p.dispatchEvent('input[data-act="lastday"]', 'change'); await p.waitForTimeout(150);

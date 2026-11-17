@@ -89,6 +89,8 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
   - „Ferien Sachsen importieren“ ersetzt Beginn, Ende, Ferien und freie Tage des angezeigten Jahres
     (eingebaut 2025/26–2029/30, spätere Jahre live von openholidaysapi.org).
+  - HA-Tage: In jedem Schuljahr sind die zwei Schultage nach dem Buß- und Bettag unterrichtsfrei („HA-Tag“, freie Einzeltage).
+    Neue und importierte Jahre bekommen sie automatisch, gespeicherte Jahre einmalig; ein gelöschter HA-Tag kommt nicht wieder.
   - Stundenplan je Klasse in Zeiträumen („gültig ab“): je Eintrag Tag, „ab Stunde“ (Lage im Stundenplan), Dauer
     (Einzel- oder Doppelstunde, zählt als 2 Stunden) und Spur; dazu Zeiträume ohne Unterricht (Praktikum, Klassenfahrt).
   - Sicherung als Text oder Datei.

@@ -195,7 +195,26 @@ const yearLabel = id => String(id).replace("-", "/");
 const yearStart = id => +String(id).slice(0, 4);
 function defaultYear() {
   const c = clone(D.calendar);
-  return { id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays, free: c.free, engineStart: null, legacyDocs: true };
+  return addHaDays({ id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays, free: c.free, engineStart: null, legacyDocs: true });
+}
+/* HA-Tage: die zwei Schultage nach dem Buß- und Bettag sind unterrichtsfrei. Fügt sie einmal je Schuljahr ein (Merker haDays),
+   damit ein von Hand gelöschter HA-Tag nicht wiederkommt. Schon eingetragene Tage, Wochenenden und Ferien werden übersprungen. */
+const HA_NAME = "HA-Tag";
+function addHaDays(Y) {
+  if (!Y || Y.haDays) return Y;
+  Y.free = Y.free || []; Y.haDays = true;
+  const bb = Y.free.find(f => f.date && /bu(ß|ss)- und bettag/i.test(f.name || ""));
+  if (!bb) return Y;
+  const inHol = d => (Y.holidays || []).some(h => h.frm && h.to && h.frm <= d && d <= h.to);
+  let d = bb.date, n = 0;
+  for (let guard = 0; n < 2 && guard < 14; guard++) {
+    d = addDays(d, 1);
+    if (dow(d) > 5 || inHol(d) || (Y.end && d > Y.end)) continue;
+    if (!Y.free.some(f => f.date === d)) Y.free.push({ date: d, name: HA_NAME });
+    n++;
+  }
+  Y.free.sort((a, b) => (a.date || "9") < (b.date || "9") ? -1 : 1);
+  return Y;
 }
 function defaultSettings() { return { years: [defaultYear()], retention: 0.9, perLesson: 5, autoBuffer: true }; }
 const sortYears = ys => ys.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -574,7 +593,7 @@ function applyDoc(name, data) {
       o.years = [{ id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays || [], free: c.free || [], engineStart: data.engineStart || null, legacyDocs: true }];
     }
     delete o.calendar; delete o.engineStart;
-    o.years = sortYears(o.years.filter(y => y && y.id).map(y => Object.assign({ holidays: [], free: [], engineStart: null }, y)));
+    o.years = sortYears(o.years.filter(y => y && y.id).map(y => addHaDays(Object.assign({ holidays: [], free: [], engineStart: null }, y))));
     S.settings = o;
   } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
@@ -790,8 +809,9 @@ function sachsenYear(y0, src) {
   });
   const inHol = d => holidays.some(h => h.frm <= d && d <= h.to);
   src.public.forEach(([d, n]) => { if (d >= start && d <= end && dow(d) <= 5 && !inHol(d) && !free.some(f => f.date === d)) free.push({ date: d, name: n }); });
-  holidays.sort((a, b) => a.frm < b.frm ? -1 : 1); free.sort((a, b) => a.date < b.date ? -1 : 1);
-  return { start, end, holidays, free };
+  holidays.sort((a, b) => a.frm < b.frm ? -1 : 1);
+  const Y = addHaDays({ start, end, holidays, free });
+  return { start, end, holidays, free: Y.free };
 }
 async function fetchSachsen(y0) {
   const q = (kind, a, b) => `https://openholidaysapi.org/${kind}?countryIsoCode=DE&subdivisionCode=DE-SN&languageIsoCode=DE&validFrom=${a}&validTo=${b}`;
@@ -812,7 +832,7 @@ async function importFerien() {
   try {
     const r = await loadSachsen(yearStart(Y.id));
     const snap = snapshotFor(UI.cls);
-    Object.assign(Y, { start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source });
+    Object.assign(Y, { start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source, haDays: true });
     undoStack = snap; UI.busy = false; commit(null, { settings: true });
     toast(`Ferien Sachsen ${yearLabel(Y.id)} übernommen: ${r.holidays.length} Ferienabschnitte, ${r.free.length} freie Tage.`, true);
   } catch (e) { UI.busy = false; render(); toast(`Import fehlgeschlagen: ${e && e.message ? e.message : e}. Ferien bitte von Hand eintragen.`); }
@@ -823,7 +843,7 @@ async function createYear(id, copySeq, copyTT) {
   let r = null, err = "";
   try { r = await loadSachsen(yearStart(id)); } catch (e) { err = e && e.message ? e.message : String(e); }
   const y0 = yearStart(id);
-  const Y = r ? { id, start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source }
+  const Y = r ? { id, start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source, haDays: true }
     : { id, start: `${y0}-08-15`, end: `${y0 + 1}-07-15`, holidays: [], free: [] };
   Y.engineStart = Y.start;
   if (Array.isArray(cal().classes)) Y.classes = cal().classes.slice();
@@ -1725,7 +1745,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
