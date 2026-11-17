@@ -252,6 +252,53 @@ function serve(dir) {
   });
   ok(JSON.stringify(lv.map(x => x && x.l)) === JSON.stringify([1, 2, 3, 1]), 'Stufe nach Stabilität: neu 1, 10 Tage 2, 40 Tage 3, nach „Nochmal“ 1 ' + JSON.stringify(lv.map(x => x && x.q)));
 
+  // Aufgabengeneratoren aus Anemo: Atome mit Feld g bekommen erzeugte Aufgaben statt fester Fragen
+  const gen = await p.evaluate(() => { const M = window.__mp, A = window.ANEMO, C = window.PLAN_DATA.classes;
+    if (!A) return { err: 'generators.js nicht geladen' };
+    const withG = Object.values(C).flatMap(c => Object.values(c.units).flatMap(u => u.atoms)).filter(a => a.g);
+    const g = 'kl8.a', d = '2027-01-20', x = M.engineState(g, d).list.find(y => y.a.g);
+    if (!x) return { err: 'kein Atom mit Generator in kl8' };
+    const t1 = M.shownTask(g, x.a, 1), t1b = M.shownTask(g, x.a, 1), sk = g + '|' + x.a.id;
+    let fresh = false; for (let i = 0; i < 5 && !fresh; i++) { M.genSeq[sk] = (M.genSeq[sk] || 0) + 1; fresh = M.shownTask(g, x.a, 1).g !== t1.g; }
+    return { ids: A.ids.length, withG: withG.length, missing: withG.flatMap(a => [].concat(a.g)).filter(id => !A.hasGenerator(id)).length,
+      stable: t1.g === t1b.g, fresh, levels: [1, 2, 3].map(l => { const t = M.shownTask(g, x.a, l); return t.l === l && !!t.g && !!t.g.prompt; }) }; });
+  ok(gen.ids === 194 && gen.withG > 300 && gen.missing === 0 && gen.stable && gen.fresh && gen.levels.every(Boolean), 'Generatoren: 194 geladen, über 300 Atome zugeordnet, Aufgabe bleibt stehen, „Neue Aufgabe“ erzeugt eine andere, alle drei Stufen ' + JSON.stringify(gen));
+  // Quiz zeigt erzeugte Aufgabe, N erzeugt eine neue, Lösung mit Antwort
+  const qd = await p.evaluate(() => { const M = window.__mp, g = 'kl8.a';
+    // ein Tag, an dem die heutige Wiederholung ein Atom mit Generator enthält
+    for (let t = Date.parse('2026-10-01'); t < Date.parse('2027-06-30'); t += 864e5) { const d = new Date(t).toISOString().slice(0, 10);
+      if (M.engineState(g, d).pick.some(x => M.hasGen(x.a))) { M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; M.UI.date = d; location.hash = 'lernuebersicht'; return d; } }
+    return null; });
+  await p.waitForTimeout(200);
+  const qb3 = await p.$('[data-act="quiz"]');
+  if (qb3) {
+    await qb3.click(); await p.waitForTimeout(300);
+    let found = false;
+    for (let i = 0; i < 20 && !found; i++) {
+      if (await p.$('.ov-card.quiz h2')) break;
+      if (await p.$('.qq.gen')) { found = true; break; }
+      await p.keyboard.press('Space'); await p.waitForTimeout(60); await p.keyboard.press('3'); await p.waitForTimeout(120);
+    }
+    if (found) {
+      const q1 = await p.innerText('.qq.gen'); let q2 = q1;
+      for (let i = 0; i < 5 && q2 === q1; i++) { await p.keyboard.press('n'); await p.waitForTimeout(120); q2 = await p.innerText('.qq.gen'); }
+      await p.keyboard.press('Space'); await p.waitForTimeout(150);
+      const ans = await p.$('.qa.gen .gans'), mathOk = await p.evaluate(() => !document.querySelector('.qq.gen span.m:not(.mj)') || !window.MathJax || !window.MathJax.tex2svg);
+      ok(q1 !== q2 && !!ans && mathOk, 'Quiz: erzeugte Aufgabe, N tauscht sie aus, Lösung wird angezeigt, Formeln gesetzt ' + JSON.stringify([q1.slice(0, 60), q2.slice(0, 60)]));
+      await p.screenshot({ path: path.join(OUT, 's_quiz_generator.png') });
+    } else ok(false, 'Quiz enthält keine erzeugte Aufgabe');
+    await p.click('#overlay [data-act="ovclose"]'); await p.waitForTimeout(200);
+  } else ok(false, 'Quiz-Knopf fehlt (Lernübersicht)');
+  // Atom-Editor: Generator wählbar; „feste Fragen“ schaltet ihn ab, Zurücksetzen holt die Vorlage zurück
+  await p.evaluate(() => { window.__mp.UI.cls = 'kl8'; location.hash = 'u-kl8-' + window.PLAN_DATA.classes.kl8.unitOrder.indexOf('T2'); }); await p.waitForTimeout(200);
+  await p.click('[data-act="atomedit"][data-id="T2.2"]'); await p.waitForTimeout(150);
+  const selV = await p.$eval('.aform select[name="g"]', s => s.value);
+  await p.selectOption('.aform select[name="g"]', ''); await p.click('.aform button[type="submit"]'); await p.waitForTimeout(200);
+  const offG = await p.evaluate(() => { const a = window.__mp.atomsOf('kl8', 'T2').find(a => a.id === 'T2.2'); return [a.g, window.__mp.hasGen(a)]; });
+  await p.click('[data-act="atomreset"][data-code="T2"]'); await p.waitForTimeout(200);
+  const backG = await p.evaluate(() => window.__mp.hasGen(window.__mp.atomsOf('kl8', 'T2').find(a => a.id === 'T2.2')));
+  ok(selV === 'algebra__ausmultiplizieren_distributiv' && offG[0] === '' && offG[1] === false && backG, 'Atom-Editor: Generator auswählen und abschalten, Zurücksetzen stellt ihn wieder her ' + JSON.stringify([selV, offG, backG]));
+
   // Lehrpläne Sachsen: alle Klassen GYM 5–12 und OS 5–10, OS ab 7 mit HS/RS, GYM 11/12 mit GK/LK
   const lp = await p.evaluate(() => { const C = window.PLAN_DATA.classes, k = Object.keys(C);
     const sum = id => C[id].seq.reduce((a, r) => a + (r[0] === 'P' ? 0 : r[2]), 0);
