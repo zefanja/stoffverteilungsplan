@@ -327,6 +327,10 @@ details.ziele p{margin:0;font-size:14px}
 .obcell{width:38px;height:28px;border:1px solid var(--line);border-radius:5px;background:var(--sheet);cursor:pointer;font-size:12px;font-weight:600;color:var(--accent-ink);padding:0}
 .obcell:hover{border-color:var(--accent)}
 .obcell.on{background:var(--accent);border-color:var(--accent)}
+.obcell{position:relative}
+.obcell.dtop{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.obcell.dbot{border-top-left-radius:0;border-top-right-radius:0}
+.obcell.dtop::after{content:"";position:absolute;left:-1px;right:-1px;top:100%;height:8px;background:var(--accent)}
 .quiz{min-height:min(520px,90vh);align-content:center}
 .quiz header{align-self:start}
 .qq{font-family:var(--f-display);font-size:clamp(26px,5vw,48px);font-weight:600;text-align:center;line-height:1.2;padding:20px 0}

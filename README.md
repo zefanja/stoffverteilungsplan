@@ -84,6 +84,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Quiz-Ansicht zum Projizieren (öffnet im Vollbild, am Ende oder beim Schließen zurück in den vorherigen Modus; Leertaste zeigt die Lösung, 1–4 bewertet), Altbestand für Atome vor dem Startdatum.
 - **Einrichtungsassistent**: öffnet sich, solange im Schuljahr keine Klassen festgelegt sind (oder über Einstellungen → Schuljahre).
   Fragt in wenigen Schritten Schulart, Klassen (mit HS/RS bzw. GK/LK und Parallelklassen) und die Unterrichtsstunden je Wochentag ab.
+  Zwei direkt aufeinanderfolgende Stunden am selben Tag in derselben Spur gelten als Doppelstunde (bei drei Stunden die ersten beiden).
 - **Einstellungen**:
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
   - „Ferien Sachsen importieren“ ersetzt Beginn, Ende, Ferien und freie Tage des angezeigten Jahres

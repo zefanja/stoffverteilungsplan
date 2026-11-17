@@ -1374,17 +1374,31 @@ function obGrid(g) {
   return `<div class="obgrid card"><div class="obh"><b>${esc(fullLabel(g))}</b><span class="small muted">${n} Stunde${n === 1 ? "" : "n"} pro Woche${sortTT(grp(g).tt.slice()).length > 1 ? ` · gilt ab ${esc(fmt(v.frm, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}</span></div>
     <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
     ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
-      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track === "SOL" ? "FIL" : l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
-    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).map(t => t === "SOL" ? "FIL" : t).join(" → ")} → frei).</p>` : ""}</div>`;
+      const part = l && lessonLen(l) === 2 ? (p === +l.period ? " dtop" : " dbot") : "";
+      return `<td><button type="button" class="obcell ${l ? "on" : ""}${part}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde${part ? ", Doppelstunde" : ""}">${l ? (multi ? esc(l.track === "SOL" ? "FIL" : l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
+    </tbody></table><p class="small muted">${multi ? `Mehrfach klicken wechselt die Spur (${obTracks(k).map(t => t === "SOL" ? "FIL" : t).join(" → ")} → frei). ` : ""}Zwei Stunden direkt nacheinander${multi ? " in derselben Spur" : ""} gelten als Doppelstunde.</p></div>`;
+}
+/* Doppelstunden im Assistenten: zwei direkt aufeinanderfolgende Stunden am selben Tag mit derselben Spur werden zu einem
+   Eintrag mit Dauer 2 (bei drei Stunden hintereinander die ersten beiden). Erst alles in Einzelstunden zerlegen, dann paaren. */
+function obSingles(lessons) {
+  return lessons.flatMap(l => lessonLen(l) === 2 ? [0, 1].map(n => { const x = Object.assign({}, l, { id: n ? uid() : l.id, period: +l.period + n }); delete x.len; return x; }) : [l]);
+}
+function obPairDoubles(lessons) {
+  const ls = obSingles(lessons).sort((a, b) => a.day - b.day || a.period - b.period), out = [];
+  for (let i = 0; i < ls.length; i++) {
+    const a = ls[i], b = ls[i + 1];
+    if (b && +b.day === +a.day && +b.period === +a.period + 1 && b.track === a.track) { out.push(Object.assign({}, a, { len: 2 })); i++; }
+    else out.push(a);
+  }
+  return out;
 }
 function obToggle(g, d, p) {
   const v = obVersion(g), k = ck(g); if (!v) return;
-  const dbl = v.lessons.find(l => +l.day === d && lessonLen(l) === 2 && +l.period <= p && p <= +l.period + 1);
-  if (dbl) { const ls = [0, 1].map(n => Object.assign({}, dbl, { id: uid(), period: +dbl.period + n })); ls.forEach(l => delete l.len); v.lessons.splice(v.lessons.indexOf(dbl), 1, ...ls); }
-  const i = v.lessons.findIndex(l => +l.day === d && +l.period === p), tracks = obTracks(k);
-  if (i < 0) v.lessons.push({ id: uid(), day: d, period: p, track: "A" });
-  else { const n = tracks.indexOf(v.lessons[i].track) + 1; if (n > 0 && n < tracks.length) v.lessons[i].track = tracks[n]; else v.lessons.splice(i, 1); }
-  v.lessons.sort((a, b) => a.day - b.day || a.period - b.period);
+  const ls = obSingles(v.lessons);
+  const i = ls.findIndex(l => +l.day === d && +l.period === p), tracks = obTracks(k);
+  if (i < 0) ls.push({ id: uid(), day: d, period: p, track: "A" });
+  else { const n = tracks.indexOf(ls[i].track) + 1; if (n > 0 && n < tracks.length) ls[i].track = tracks[n]; else ls.splice(i, 1); }
+  v.lessons = obPairDoubles(ls);
   touch(); save(k); renderOverlay();
 }
 function obOpen(step) { UI.ob = { step: step || 0 }; renderOverlay(); }

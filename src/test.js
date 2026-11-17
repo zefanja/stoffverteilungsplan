@@ -46,6 +46,17 @@ function serve(dir) {
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   ok(await p.evaluate(n => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length === n, ttBefore), 'Weitere Klicks wechseln die Spur und entfernen die Stunde wieder');
+  // Zwei Stunden direkt nacheinander in derselben Spur werden zur Doppelstunde
+  const cell = (d, pp) => p.click(`#overlay [data-act="obcell"][data-g="kl6.a"][data-d="${d}"][data-p="${pp}"]`).then(() => p.waitForTimeout(50));
+  const di = () => p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.filter(l => +l.day === 2).map(l => `${l.period}${l.track}${l.len === 2 ? '×2' : ''}`).join(','));
+  await cell(2, 6); await cell(2, 7); const ob1 = await di();
+  const ob1ui = await p.evaluate(() => [!!document.querySelector('#overlay [data-p="6"][data-d="2"].dtop'), !!document.querySelector('#overlay [data-p="7"][data-d="2"].dbot')]);
+  await cell(2, 7); const ob2 = await di();          // 7. Std. wechselt nach B: keine Doppelstunde mehr
+  await cell(2, 7); const ob3 = await di();          // 7. Std. frei
+  await cell(2, 8); await cell(2, 7); const ob4 = await di();   // drei Stunden A hintereinander: 6+7 Doppel, 8 einzeln
+  for (const pp of [8, 7, 6]) { await cell(2, pp); await cell(2, pp); }
+  const ob5 = await di();
+  ok(ob1 === '6A×2' && ob1ui.every(Boolean) && ob2 === '6A,7B' && ob3 === '6A' && ob4 === '6A×2,8A' && ob5 === '', 'Assistent: zwei Stunden nacheinander in derselben Spur werden zur Doppelstunde ' + JSON.stringify([ob1, ob1ui, ob2, ob3, ob4, ob5]));
   await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(80);
   await p.click('#overlay [data-act="obdone"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => document.getElementById('overlay').hidden && window.__mp.S.settings.onboarded && JSON.stringify(window.__mp.cal().classes) === '["kl6","kl8"]'), 'Assistent beendet: Klassen festgelegt');
