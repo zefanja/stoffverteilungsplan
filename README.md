@@ -37,7 +37,10 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 - **Schulart (GYM/OS), Klassenstufe und Schuljahr** werden oben in der Leiste gewählt. Stufen ohne hinterlegten Lehrplan sind
   ausgegraut; Jahresplan, Sequenz, Einheiten, Lernübersicht,
   Stundenplan und Heute-Ansicht folgen dieser Auswahl („Alle meine Klassen“ zeigt auf der Heute-Seite alle Klassen mit Stunden im Stundenplan).
-- **Parallelklassen** (höchstens 2 je Stufe, z. B. 8a/8b; Einstellungen → Parallelklassen): Sequenz, Modus und Atome
+- **Meine Klassen** (Einstellungen, je Schuljahr): welche Klassenstufen Sie unterrichten, ob mit einer oder zwei
+  Parallelklassen und wie diese heißen. Nur diese Klassen sind oben wählbar und erscheinen unter „Alle meine Klassen“;
+  ein neues Schuljahr übernimmt die Auswahl. Ohne Festlegung gelten alle Klassen mit hinterlegtem Lehrplan.
+- **Parallelklassen** (höchstens 2 je Stufe, z. B. 8a/8b; Einstellungen → Meine Klassen): Sequenz, Modus und Atome
   werden einmal für alle geplant. Jede Parallelklasse hat eigenen Stundenplan, Zeiträume ohne Unterricht, Ausfälle,
   Häkchen und Lernstand. „Einheit braucht 1 Std. mehr“ und automatische Pufferkürzung werden als Abweichung nur dieser
   Klasse gespeichert und in der Sequenz neben den Stunden angezeigt (z. B. „8b: +1“). Gewechselt wird oben in der Leiste.
@@ -61,7 +64,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
   - Stundenplan je Klasse in Zeiträumen („gültig ab“); dazu Zeiträume ohne Unterricht (Praktikum, Klassenfahrt).
   - Sicherung als Text oder Datei.
 
-Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre, Einstellungen der Wiederholung) und je Schuljahr
+Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre mit „Meine Klassen“ in `years[].classes`, Einstellungen der Wiederholung) und je Schuljahr
 `jahr-<id>/kl6`, `jahr-<id>/kl8`, `jahr-<id>/engine-kl6`, `jahr-<id>/engine-kl8`. Das aus der Zeit vor den Schuljahren übernommene
 Jahr 2026/27 nutzt weiter `planner/kl6`, `planner/kl8`, `engine/kl6`, `engine/kl8`; alte Stundenpläne werden beim Laden in Zeiträume umgewandelt.
 

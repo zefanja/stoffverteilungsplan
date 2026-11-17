@@ -92,13 +92,22 @@ UI.year = pickYear();
 const resetYearState = () => CLASSES.forEach(k => { S.cls[k] = defaultClass(k); GIDS.forEach(gid => { S.eng[gkey(k, gid)] = defaultEngine(); }); });
 resetYearState();
 /* Gewählte Klasse, sofern sie zur gewählten Schulart gehört; sonst null (z. B. Oberschule ohne Lehrplan). */
-const curClass = () => D.classes[UI.cls] && D.classes[UI.cls].type === UI.type ? UI.cls : null;
+const mineList = () => { const l = cal().classes; return Array.isArray(l) ? CLASSES.filter(k => l.includes(k)) : CLASSES.slice(); };
+const isMine = k => mineList().includes(k);
+/* Gewählte Klasse, sofern sie zur gewählten Schulart gehört und zu „Meine Klassen“; sonst null. */
+const curClass = () => D.classes[UI.cls] && D.classes[UI.cls].type === UI.type && isMine(UI.cls) ? UI.cls : null;
+/* Nach Änderungen an „Meine Klassen“ oder Schuljahr eine gültige Auswahl herstellen. */
+function fixSelection() {
+  if (curClass()) return;
+  const m = mineList(), k = m.find(c => D.classes[c].type === UI.type) || m[0];
+  if (k) { UI.cls = k; UI.type = D.classes[k].type; }
+}
 UI.gid = {};
 try { UI.gid = JSON.parse(localStorage.getItem("mp-gid") || "{}") || {}; } catch (e) {}
 /* Gewählte Parallelklasse als Schlüssel "kl8.a"; null, wenn keine Klasse gewählt ist. */
 function curG() { const k = curClass(); if (!k) return null; const id = UI.gid[k]; return gkey(k, S.cls[k].groups.some(x => x.id === id) ? id : S.cls[k].groups[0].id); }
 const hasLessons = g => (grp(g).tt || []).some(v => v.lessons && v.lessons.length);
-const myGroups = () => CLASSES.flatMap(groupsOf).filter(hasLessons);
+const myGroups = () => mineList().flatMap(groupsOf);
 const groupName = g => { const G = grp(g), C = S.cls[ck(g)]; return G.name || (C.groups.length > 1 ? `${D.classes[ck(g)].label} ${G.id}` : D.classes[ck(g)].label); };
 const fullLabel = g => `${(TYPES[D.classes[ck(g)].type] || {}).short || ""} · ${groupName(g.includes(".") ? g : gkey(g, "a"))}`;
 
@@ -349,7 +358,7 @@ function switchYear(id, remember) {
   for (const n of YEAR_DOCS) dirty[n] = false;
   UI.year = id; UI.confirm = null; UI.reveal = {}; undoStack = null;
   resetYearState();
-  touch(); subscribeYear(); render();
+  fixSelection(); touch(); subscribeYear(); render();
 }
 async function initDb() {
   try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
@@ -494,6 +503,7 @@ async function createYear(id, copySeq, copyTT) {
   const Y = r ? { id, start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source }
     : { id, start: `${y0}-08-15`, end: `${y0 + 1}-07-15`, holidays: [], free: [] };
   Y.engineStart = Y.start;
+  if (Array.isArray(cal().classes)) Y.classes = cal().classes.slice();
   const prev = { cls: clone(S.cls) };
   S.settings.years.push(Y); sortYears(S.settings.years); save("settings");
   UI.busy = false;
@@ -545,17 +555,23 @@ function unitLink(k, code, label) {
 }
 /* Kontext-Hinweis in den Überschriften; umgeschaltet wird oben in der Leiste. */
 function clsTabs() { const k = curG(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
+function noClassMsg() {
+  const T = TYPES[UI.type] || {}, has = CLASSES.some(k => D.classes[k].type === UI.type);
+  if (!mineList().length) return `Sie haben für ${esc(yearLabel(cal().id))} noch keine Klassen festgelegt. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  if (has) return `Sie unterrichten ${esc(yearLabel(cal().id))} keine Klasse der Schulart ${esc(T.label || "")}. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  return `Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wählen Sie oben eine andere Schulart.`;
+}
 function noClassView(title) {
   const T = TYPES[UI.type] || {};
   return `<section><div class="vhead"><h1>${esc(title)}</h1>${clsTabs()}</div>
-    <div class="card"><p>Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wählen Sie oben eine andere Schulart oder Klasse.</p></div></section>`;
+    <div class="card"><p>${noClassMsg()}</p></div></section>`;
 }
 function renderCtx() {
   const el = document.getElementById("ctx"); if (!el) return;
   const T = TYPES[UI.type] || { grades: [] }, cur = curClass();
   el.innerHTML = `<span class="ctxl">Schulart</span><div class="seg small" role="group" aria-label="Schulart">${Object.entries(TYPES).map(([t, x]) => `<button type="button" aria-pressed="${UI.type === t}" data-act="type" data-v="${t}" title="${esc(x.label)}">${esc(x.short)}</button>`).join("")}</div>
     <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => { const k = classFor(UI.type, g);
-      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k ? `data-act="cls" data-k="${k}" title="${esc(D.classes[k].label)}"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k && isMine(k) ? `data-act="cls" data-k="${k}" title="${esc(D.classes[k].label)}"` : k ? `disabled title="Klasse ${g} gehört nicht zu Ihren Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
     ${cur && S.cls[cur].groups.length > 1 ? `<div class="seg small" role="group" aria-label="Parallelklasse">${groupsOf(cur).map(g => `<button type="button" aria-pressed="${g === curG()}" data-act="grp" data-g="${g}">${esc(groupName(g))}</button>`).join("")}</div>` : ""}
     <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
@@ -612,7 +628,7 @@ function viewToday() {
       <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
     ${show.length === 1 ? todayTiles(show[0], d) : ""}
-    ${show.length ? `<div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>` : `<div class="card"><p>Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
+    ${show.length ? `<div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>` : `<div class="card"><p>${noClassMsg()}</p></div>`}
   </section>`;
 }
 /* Kennzahlen der gewählten Klasse: aktuelle Einheit, heute fällig, ø Abruf, Reserve im Schuljahr. */
@@ -891,14 +907,21 @@ function yearOptions() {
   for (let y = y0 - 1; y <= y0 + 4; y++) { const id = `${y}-${String(y + 1).slice(2)}`; if (!have.has(id)) out.push(id); }
   return out;
 }
-function groupsCard(k) {
-  const C = S.cls[k], c = D.classes[k];
-  const rows = C.groups.map(G => `<tr><td><input data-act="gname" data-g="${gkey(k, G.id)}" value="${esc(G.name)}" placeholder="${esc(c.short + G.id)}" aria-label="Name der Parallelklasse"></td>
-    <td>${G.id !== "a" ? (UI.confirm === "gdel-" + k ? `<span class="confirm small">Parallelklasse mit Stundenplan und Lernstand entfernen?<button type="button" class="btn danger sm" data-act="gdel" data-k="${k}">Entfernen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>` : `<button type="button" class="mini del" data-act="confirm" data-v="gdel-${k}" aria-label="Parallelklasse entfernen">×</button>`) : ""}</td></tr>`).join("");
-  return `<div class="card"><h3>Parallelklassen ${esc(c.label)}</h3>
-    <div class="tscroll"><table class="form"><thead><tr><th>Name</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${C.groups.length < GIDS.length ? `<button type="button" class="linkbtn" data-act="gadd" data-k="${k}">+ Parallelklasse hinzufügen</button>` : ""}
-    <p class="small muted">Sequenz, Modus und Atome planen Sie einmal für alle Parallelklassen. Jede Parallelklasse hat ihren eigenen Stundenplan, eigene Ausfälle, Häkchen und Lernstand; „Einheit braucht 1 Std. mehr“ gilt nur für die Klasse, in der Sie es drücken.</p></div>`;
+function myClassesCard() {
+  const Y = cal(), mine = mineList();
+  const rows = Object.entries(TYPES).map(([t, T]) => `<tr class="mtype"><td colspan="3">${esc(T.label)}</td></tr>` + T.grades.map(g => {
+    const k = classFor(t, g);
+    if (!k) return `<tr class="mna"><td><label class="chk"><input type="checkbox" disabled> Klasse ${g}</label></td><td colspan="2" class="small muted">Lehrplan noch nicht hinterlegt</td></tr>`;
+    const on = mine.includes(k), C = S.cls[k], n = C.groups.length;
+    const names = on ? C.groups.map(G => `<input data-act="gname" data-g="${gkey(k, G.id)}" value="${esc(G.name)}" placeholder="${esc(n > 1 ? D.classes[k].short + G.id : "optional")}" aria-label="Name der Parallelklasse ${esc(G.id)}">`).join("") : "";
+    const confirm = UI.confirm === "gdel-" + k ? `<span class="confirm small">${esc(groupName(gkey(k, C.groups[1].id)))} mit Stundenplan und Lernstand entfernen?<button type="button" class="btn danger sm" data-act="gdel" data-k="${k}">Entfernen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>` : "";
+    return `<tr class="${on ? "on" : ""}"><td><label class="chk"><input type="checkbox" data-act="mine" data-k="${k}" ${on ? "checked" : ""}> ${esc(D.classes[k].label)}</label></td>
+      <td>${on ? `<select data-act="gcount" data-k="${k}" aria-label="Anzahl Parallelklassen"><option value="1" ${n === 1 ? "selected" : ""}>1 Klasse</option><option value="2" ${n === 2 ? "selected" : ""}>2 Parallelklassen</option></select>` : ""}</td>
+      <td><div class="gnames">${names}</div>${confirm}</td></tr>`;
+  }).join("")).join("");
+  return `<div class="card myclasses"><h3>Meine Klassen ${esc(yearLabel(Y.id))}</h3>
+    <p class="small muted">Haken Sie an, welche Klassen Sie in diesem Schuljahr unterrichten. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
+    <div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Parallelklassen</th><th>Namen</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 function ttCard(k) {
   const C = grp(k), vs = sortTT(C.tt), Y = cal();
@@ -959,7 +982,8 @@ function viewSettings() {
         <h3>Freie Einzeltage</h3><div class="tscroll"><table class="form"><thead><tr><th>Datum</th><th>Anlass</th><th></th></tr></thead><tbody>${fr}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
-      ${k ? groupsCard(ck(k)) + ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
+      ${myClassesCard()}
+      ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
@@ -1032,6 +1056,21 @@ window.addEventListener("hashchange", () => {
 });
 
 /* ---------------- events ---------------- */
+function addGroup(k) {
+  const C = S.cls[k]; if (C.groups.length >= GIDS.length) return;
+  const id = GIDS.find(x => !C.groups.some(G => G.id === x)), base = C.groups[0];
+  const snap = snapshotFor(k);
+  C.groups.push(newGroup(id, "", base.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))));
+  S.eng[gkey(k, id)] = defaultEngine();
+  UI.gid[k] = id; try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {}
+  undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse angelegt. Der Stundenplan ist kopiert, bitte anpassen.", true);
+}
+function removeGroup(k) {
+  const C = S.cls[k]; if (C.groups.length < 2) return;
+  const snap = snapshotFor(k), gone = C.groups.pop();
+  S.eng[gkey(k, gone.id)] = defaultEngine(); delete UI.gid[k]; UI.confirm = null;
+  undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse entfernt.", true);
+}
 const ttVersion = (g, id) => (grp(g).tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
@@ -1048,7 +1087,7 @@ document.addEventListener("click", ev => {
     case "type": {
       const t = b.dataset.v; if (!TYPES[t]) break;
       UI.type = t; UI.editAtom = null; UI.confirm = null;
-      if (D.classes[UI.cls].type !== t) { const g = D.classes[UI.cls].grade; const k = classFor(t, g) || CLASSES.find(c => D.classes[c].type === t); if (k) UI.cls = k; }
+      if (D.classes[UI.cls].type !== t || !isMine(UI.cls)) { const g = D.classes[UI.cls].grade, k2 = classFor(t, g); const k = k2 && isMine(k2) ? k2 : mineList().find(c => D.classes[c].type === t); if (k) UI.cls = k; }
       try { localStorage.setItem("mp-type", UI.type); localStorage.setItem("mp-cls", UI.cls); } catch (e) {}
       if (/^u-/.test(route())) { location.hash = "#einheiten"; break; }
       render(); break;
@@ -1056,21 +1095,8 @@ document.addEventListener("click", ev => {
     case "todaycls": UI.todayAll = b.dataset.v === "all"; try { localStorage.setItem("mp-today", UI.todayAll ? "all" : "one"); } catch (e) {} render(); break;
     case "year": switchYear(b.dataset.v, true); break;
     case "grp": { const g = b.dataset.g; UI.gid[ck(g)] = gidOf(g); try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {} UI.reveal = {}; UI.confirm = null; render(); break; }
-    case "gadd": {
-      const C = S.cls[k]; if (C.groups.length >= GIDS.length) break;
-      const id = GIDS.find(x => !C.groups.some(G => G.id === x)), base = C.groups[0];
-      const snap = snapshotFor(k);
-      C.groups.push(newGroup(id, "", base.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))));
-      S.eng[gkey(k, id)] = defaultEngine();
-      UI.gid[k] = id; try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {}
-      undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse angelegt. Der Stundenplan ist kopiert, bitte anpassen.", true); break;
-    }
-    case "gdel": {
-      const C = S.cls[k]; if (C.groups.length < 2) break;
-      const snap = snapshotFor(k), gone = C.groups.pop();
-      S.eng[gkey(k, gone.id)] = defaultEngine(); delete UI.gid[k]; UI.confirm = null;
-      undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse entfernt.", true); break;
-    }
+    case "gadd": addGroup(k); break;
+    case "gdel": removeGroup(k); break;
     case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
     case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
     case "ferien": importFerien(); break;
@@ -1175,6 +1201,19 @@ document.addEventListener("change", ev => {
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
     case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; row[f] = f === "track" ? t.value : Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
+    case "mine": {
+      const Y = cal(), l = mineList(), kk = t.dataset.k;
+      Y.classes = t.checked ? CLASSES.filter(c => c === kk || l.includes(c)) : l.filter(c => c !== kk);
+      if (t.checked) { UI.cls = kk; UI.type = D.classes[kk].type; }
+      fixSelection(); try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {}
+      commit(null, { settings: true }); break;
+    }
+    case "gcount": {
+      const kk = t.dataset.k, n = +t.value, C = S.cls[kk];
+      if (n === 2 && C.groups.length < 2) addGroup(kk);
+      else if (n === 1 && C.groups.length > 1) { UI.confirm = "gdel-" + kk; render(); }
+      break;
+    }
     case "gname": { const G = grp(t.dataset.g); G.name = t.value.trim(); commit(ck(t.dataset.g)); break; }
     case "off": { const o = grp(curG()).off[i]; if (!o) break; o[f] = t.value; commit(k); break; }
   }

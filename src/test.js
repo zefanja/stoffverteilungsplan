@@ -117,7 +117,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   // Parallelklassen: gemeinsame Sequenz, eigener Stundenplan, eigene Abweichungen und eigener Lernstand
   await p.setViewportSize({ width: 1280, height: 900 });
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
-  await p.click('[data-act="gadd"]'); await p.waitForTimeout(150);
+  await p.selectOption('[data-act="gcount"][data-k="kl8"]', '2'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => window.__mp.S.cls.kl8.groups.length === 2), 'Parallelklasse 8b angelegt');
   await p.fill('[data-act="gname"][data-g="kl8.a"]', '8a'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.a"]', 'change');
   await p.fill('[data-act="gname"][data-g="kl8.b"]', '8b'); await p.dispatchEvent('[data-act="gname"][data-g="kl8.b"]', 'change'); await p.waitForTimeout(100);
@@ -154,6 +154,23 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
   await p.click('#ctx [data-act="grp"][data-g="kl8.a"]'); await p.waitForTimeout(100);
   ok((await p.innerText('.tcard h2')) === '8a', 'Umschalten auf 8a');
+  // Meine Klassen: Klasse 6 abwählen
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.uncheck('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => JSON.stringify(window.__mp.cal().classes) === '["kl8"]'), 'Meine Klassen 2026/27: nur Klasse 8');
+  ok(await p.$eval('#ctx [title*="nicht zu Ihren Klassen"]', e => e.disabled && e.textContent === '6'), 'Leiste: Klasse 6 ausgegraut');
+  await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(150);
+  await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
+  ok(JSON.stringify(await p.$$eval('.tcard h2', hs => hs.map(h => h.textContent))) === JSON.stringify(['GYM · 8a', 'GYM · 8b']), 'Alle meine Klassen: nur 8a und 8b');
+  await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
+  await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
+  await p.selectOption('[data-act="gcount"][data-k="kl8"]', '1'); await p.waitForTimeout(100);
+  ok(await p.$('[data-act="gdel"][data-k="kl8"]') !== null, 'Zurück auf 1 Klasse fragt nach');
+  await p.click('[data-act="confirm"][data-v=""]'); await p.waitForTimeout(100);
+  await p.check('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => window.__mp.S.cls.kl8.groups.length === 2 && window.__mp.cal().classes.length === 2), 'Klasse 6 wieder dabei, 8b bleibt erhalten');
+  await p.screenshot({ path: path.join(OUT, 's_meineklassen.png'), fullPage: true });
+
   await p.waitForTimeout(900);
 
   // Schwierigkeitsstufen nach Stabilität
