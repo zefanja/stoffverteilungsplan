@@ -33,8 +33,9 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 
 ## Funktionen
 
-- **Klasse und Schuljahr** werden oben in der Leiste gewählt; Jahresplan, Sequenz, Einheiten, Learning Engine,
-  Stundenplan und Heute-Ansicht folgen dieser Auswahl („Alle Klassen“ zeigt auf der Heute-Seite beide).
+- **Schulart (GYM/OS), Klassenstufe und Schuljahr** werden oben in der Leiste gewählt. Stufen ohne hinterlegten Lehrplan sind
+  ausgegraut; Jahresplan, Sequenz, Einheiten, Learning Engine,
+  Stundenplan und Heute-Ansicht folgen dieser Auswahl („Alle meine Klassen“ zeigt auf der Heute-Seite alle Klassen mit Stunden im Stundenplan).
 - **Heute**: heutige Stunden je Klasse aus Kalender × Stundenplan × Sequenz, neue Atome der Stunde,
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, SOL-Formatvorschläge für Klasse 8.
@@ -61,3 +62,16 @@ mit Präfix `mp-doc:`). Diese Daten gelten nur für diesen Browser; zum Übertra
 Einmalig im Repository unter Settings → Pages bei „Build and deployment“ als Quelle **GitHub Actions** wählen.
 Danach veröffentlicht der Workflow `GitHub Pages` den Ordner `dist/` bei jedem Push auf `main`, der `dist/` ändert,
 oder von Hand unter Actions → GitHub Pages → Run workflow.
+
+## Weitere Klassen und Schularten hinterlegen
+
+Die App kennt alle Klassen aus `dist/data.js` (`classes`) und die Schularten aus `schoolTypes`
+(Gymnasium 5–12, Oberschule 5–10). Eine neue Klasse braucht:
+
+1. Einheiten und Standard-Sequenz in `src/plan.json` unter einer neuen ID, z. B. `gym7` oder `os5`
+   (Felder wie bei `kl6`: `units`, `seq`, `mode`, `lbnames`, `zrw`).
+2. Atome in `src/atoms.py` unter derselben ID.
+3. Einträge in `src/build_data.py`: `META[id]` mit `type` (`gym`/`os`), `grade`, `label`, Strangnamen; `TT[id]` mit dem Stundenplan.
+
+Gespeichert wird je Schuljahr unter `jahr-<jahr>/<id>` und `jahr-<jahr>/engine-<id>`. Nur `kl6` und `kl8` behalten im Jahr 2026/27
+ihre alten Pfade; diese beiden IDs daher nicht umbenennen.
