@@ -642,8 +642,8 @@ function todayTiles(g, d) {
   const r = res.some(x => x < 0) ? Math.min(...res) : res.reduce((a, x) => a + x, 0);
   return `<div class="tiles">
     ${code && idx >= 0 ? `<a class="tile t1" href="#u-${k}-${idx}" title="${esc(titleOf(k, code))}"><b>${esc(code)}</b><span>${esc(titleOf(k, code))}</span></a>` : `<div class="tile t1"><b>—</b><span>aktuelle Einheit</span></div>`}
-    <a class="tile t2" href="#engine"><b>${es.dueCount}</b><span>heute fällig${es.backCount ? ` · ${es.backCount} Altbestand` : ""}</span></a>
-    <a class="tile t3" href="#engine"><b>${meanR === null ? "—" : meanR + " %"}</b><span>ø Abruf</span></a>
+    <a class="tile t2" href="#lernuebersicht"><b>${es.dueCount}</b><span>heute fällig${es.backCount ? ` · ${es.backCount} Altbestand` : ""}</span></a>
+    <a class="tile t3" href="#lernuebersicht"><b>${meanR === null ? "—" : meanR + " %"}</b><span>ø Abruf</span></a>
     <a class="tile t4 ${r < 0 ? "neg" : ""}" href="#sequenz"><b>${r > 0 ? "+" : ""}${r}</b><span>${r < 0 ? "Std. fehlen im Schuljahr" : "Std. Reserve im Schuljahr"}</span></a>
   </div>`;
 }
@@ -1020,7 +1020,7 @@ function renderOverlay() {
 }
 
 /* ---------------- router & render ---------------- */
-const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["engine", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
+const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["lernuebersicht", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
 function route() { const h = (location.hash || "#heute").slice(1); return h || "heute"; }
 /* Ein Feld, das beim Neuaufbau den Fokus verliert, kann ein change-Ereignis auslösen; dann nach dem Durchlauf erneut zeichnen. */
 let rendering = false;
@@ -1033,8 +1033,8 @@ function render() {
 function renderNow() {
   const r = route(); let html;
   const m = /^u-(.+)-(\d+)$/.exec(r), mk = m && D.classes[m[1]] ? m[1] : null;
-  const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, engine: viewEngine, einstellungen: viewSettings };
-  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", engine: "Lernübersicht" };
+  const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, lernuebersicht: viewEngine, einstellungen: viewSettings };
+  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", lernuebersicht: "Lernübersicht" };
   if (mk) { if (UI.cls !== mk || UI.type !== D.classes[mk].type) { UI.cls = mk; UI.type = D.classes[mk].type; try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {} } html = viewUnit(mk, +m[2]); }
   else if (TITLES[r] && !curClass()) html = noClassView(TITLES[r]);
   else html = (VIEWS[r] || viewToday)();
@@ -1071,6 +1071,19 @@ function removeGroup(k) {
   S.eng[gkey(k, gone.id)] = defaultEngine(); delete UI.gid[k]; UI.confirm = null;
   undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse entfernt.", true);
 }
+/* Quiz im Vollbild: das Overlay wird zum Vollbild-Element. Am Ende oder beim Schließen wird es verlassen;
+   war vorher schon etwas im Vollbild, stellt der Browser diesen Zustand selbst wieder her. */
+function quizFullscreen() {
+  const el = document.getElementById("overlay");
+  if (!el.requestFullscreen || document.fullscreenElement === el) return;
+  try { const r = el.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+}
+function leaveQuizFullscreen() {
+  const el = document.getElementById("overlay");
+  if (document.fullscreenElement === el && document.exitFullscreen) { try { const r = document.exitFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+}
+function quizNext() { const q = UI.quiz; q.i++; q.show = false; if (q.i >= q.items.length) leaveQuizFullscreen(); renderOverlay(); }
+function closeOverlay() { leaveQuizFullscreen(); UI.quiz = null; UI.solOpen = false; renderOverlay(); render(); }
 const ttVersion = (g, id) => (grp(g).tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
@@ -1107,11 +1120,11 @@ document.addEventListener("click", ev => {
     case "done": toggleDone(b.dataset.k, b.dataset.key); break;
     case "addhour": addHour(b.dataset.k, +b.dataset.row); break;
     case "cancel": cancelSlot(b.dataset.k, b.dataset.key); break;
-    case "quiz": { const es = engineState(b.dataset.k, UI.date); UI.quiz = { k: b.dataset.k, items: es.pick.slice(), i: 0, show: false }; renderOverlay(); break; }
+    case "quiz": { const es = engineState(b.dataset.k, UI.date); UI.quiz = { k: b.dataset.k, items: es.pick.slice(), i: 0, show: false }; renderOverlay(); quizFullscreen(); break; }
     case "qshow": UI.quiz.show = true; renderOverlay(); break;
-    case "qrate": { const q = UI.quiz, x = q.items[q.i]; rate(q.k, x.a.id, +b.dataset.g); q.i++; q.show = false; renderOverlay(); break; }
+    case "qrate": { const q = UI.quiz, x = q.items[q.i]; rate(q.k, x.a.id, +b.dataset.g); quizNext(); break; }
     case "solinfo": UI.solOpen = true; renderOverlay(); break;
-    case "ovclose": UI.quiz = null; UI.solOpen = false; renderOverlay(); render(); break;
+    case "ovclose": closeOverlay(); break;
     case "mode": S.cls[k].mode = b.dataset.v; commit(k); break;
     case "hrs": setSeq(k, s => { s[i].hours = Math.max(0, s[i].hours + +b.dataset.n); }); break;
     case "mv": setSeq(k, s => { const j = i + +b.dataset.n; if (j < 0 || j >= s.length) return; [s[i], s[j]] = [s[j], s[i]]; }); break;
@@ -1231,10 +1244,10 @@ document.addEventListener("submit", ev => {
 });
 document.addEventListener("keydown", ev => {
   if (!UI.quiz && !UI.solOpen) return;
-  if (ev.key === "Escape") { UI.quiz = null; UI.solOpen = false; renderOverlay(); render(); return; }
+  if (ev.key === "Escape") { closeOverlay(); return; }
   if (!UI.quiz) return;
   if (ev.key === " " && !UI.quiz.show) { ev.preventDefault(); UI.quiz.show = true; renderOverlay(); }
-  else if (UI.quiz.show && /^[1-4]$/.test(ev.key)) { const q = UI.quiz, x = q.items[q.i]; if (!x) return; rate(q.k, x.a.id, +ev.key); q.i++; q.show = false; renderOverlay(); }
+  else if (UI.quiz.show && /^[1-4]$/.test(ev.key)) { const q = UI.quiz, x = q.items[q.i]; if (!x) return; rate(q.k, x.a.id, +ev.key); quizNext(); }
 });
 
 /* ---------------- boot ---------------- */

@@ -56,7 +56,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
   Die Heute-Seite und das Quiz wählen nach FSRS-Stabilität: unter 7 Tagen „Abrufen“, ab 7 Tagen „Anwenden“, ab 30 Tagen
   „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
 - **Lernübersicht** (früher „Learning Engine“): FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
-  Quiz-Ansicht zum Projizieren, Altbestand für Atome vor dem Startdatum.
+  Quiz-Ansicht zum Projizieren (öffnet im Vollbild, am Ende oder beim Schließen zurück in den vorherigen Modus; Leertaste zeigt die Lösung, 1–4 bewertet), Altbestand für Atome vor dem Startdatum.
 - **Einstellungen**:
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
   - „Ferien Sachsen importieren“ ersetzt Beginn, Ende, Ferien und freie Tage des angezeigten Jahres

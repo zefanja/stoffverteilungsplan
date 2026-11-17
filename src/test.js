@@ -28,7 +28,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   ok((await p.$$('.tcard')).length === 1, 'Heute zeigt nur die gewählte Klasse');
   await p.click('#ctx [data-k="kl8"]'); await p.waitForTimeout(100);
   ok((await p.innerText('.tcard h2')) === 'Klasse 8', 'Umschalter: Heute zeigt Klasse 8');
-  for (const h of ['plan', 'sequenz', 'einheiten', 'engine', 'einstellungen']) {
+  for (const h of ['plan', 'sequenz', 'einheiten', 'lernuebersicht', 'einstellungen']) {
     await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(150);
     ok((await p.innerText('main')).includes('Klasse 8'), `${h} folgt der gewählten Klasse`);
   }
@@ -104,7 +104,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.click('[data-act="ferien"]'); await p.waitForTimeout(200);
   ok(await p.evaluate(() => window.__mp.cal().holidays.length === 5 && window.__mp.cal().free.length === 3), 'Ferien Sachsen importieren füllt Ferien und freie Tage');
 
-  for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'engine', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h}.png`) }); }
+  for (const h of ['heute', 'plan', 'sequenz', 'einheiten', 'lernuebersicht', 'u-kl8-3']) { await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(200); await p.screenshot({ path: path.join(OUT, `s_${h === 'heute' ? 'today' : h === 'lernuebersicht' ? 'engine' : h}.png`) }); }
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(200);
   const before = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.groups[0].adj));
   const btn = await p.$('[data-act="addhour"]'); if (btn) { await btn.click(); await p.waitForTimeout(100); }
@@ -172,6 +172,25 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.screenshot({ path: path.join(OUT, 's_meineklassen.png'), fullPage: true });
 
   await p.waitForTimeout(900);
+
+  // Quiz im Vollbild, am Ende zurück
+  await p.evaluate(() => { window.__mp.UI.date = '2027-01-20'; location.hash = 'heute'; }); await p.waitForTimeout(150);
+  const qb = await p.$('[data-act="quiz"]');
+  if (qb) {
+    await qb.click(); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.fullscreenElement && document.fullscreenElement.id === 'overlay'), 'Quiz öffnet im Vollbild');
+    for (let i = 0; i < 20; i++) {
+      if (await p.$('.ov-card.quiz h2')) break;
+      await p.keyboard.press('Space'); await p.waitForTimeout(60); await p.keyboard.press('3'); await p.waitForTimeout(120);
+    }
+    await p.waitForTimeout(300);
+    ok(await p.evaluate(() => !document.fullscreenElement) && (await p.innerText('#overlay')).includes('Fertig'), 'Am Ende des Quiz zurück im normalen Modus');
+    await p.click('#overlay [data-act="ovclose"]'); await p.waitForTimeout(100);
+    // Abbrechen mitten im Quiz verlässt das Vollbild ebenfalls
+    const qb2 = await p.$('[data-act="quiz"]');
+    if (qb2) { await qb2.click(); await p.waitForTimeout(300); await p.click('#overlay [data-act="ovclose"]'); await p.waitForTimeout(300);
+      ok(await p.evaluate(() => !document.fullscreenElement && document.getElementById('overlay').hidden), 'Quiz schließen verlässt das Vollbild'); }
+  } else ok(false, 'Quiz-Knopf fehlt');
 
   // Schwierigkeitsstufen nach Stabilität
   const lv = await p.evaluate(() => {
