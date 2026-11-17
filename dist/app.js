@@ -493,6 +493,12 @@ function checkLoaded() {
   if (!loaded.settings || ![...subscribed].every(n => loaded[n])) return;
   clearTimeout(initDb.timer); setDbState("ok");
   if (!cal().engineStart) { cal().engineStart = todayIso(); save("settings"); touch(); render(); }
+  maybeOnboard();
+}
+/* Assistent von selbst öffnen, solange im Schuljahr keine Klassen festgelegt sind (nicht während eines Quiz). */
+function maybeOnboard() {
+  if (UI.ob || UI.obDismissed || UI.quiz || S.settings.onboarded || Array.isArray(cal().classes)) return;
+  obOpen(0);
 }
 /* Abonniert werden nur die Dokumente der eigenen Klassen und der gerade gewählten Klasse (bei 19 Klassen sonst 57 Dokumente). */
 let subscribed = new Set();
@@ -541,7 +547,7 @@ async function initDb() {
     }
     setDbState(local ? "local" : "off");
     if (!cal().engineStart) { cal().engineStart = todayIso(); if (local) save("settings"); }
-    touch(); render(); return;
+    touch(); render(); maybeOnboard(); return;
   }
   initDb.timer = setTimeout(() => { if (dbState === "loading") setDbState("slow"); }, 10000);
   let first = true;
@@ -1145,6 +1151,7 @@ function viewSettings() {
   return `<section><div class="vhead"><h1>Einstellungen</h1>${clsTabs()}</div>
     <div class="grid2">
       <div class="card"><h3>Schuljahre</h3>
+        <div class="acts"><button type="button" class="btn ghost sm" data-act="obopen">Einrichtungsassistent starten</button></div>
         <div class="tscroll"><table class="form"><thead><tr><th>Schuljahr</th><th>Zeitraum</th><th></th><th></th></tr></thead><tbody>${years}</tbody></table></div>
         ${opts.length ? `<div class="addrow" id="newyearbox"><label>Neues Schuljahr <select id="newyear">${opts.map(id => `<option value="${id}" ${id === defNY ? "selected" : ""}>${yearLabel(id)}</option>`).join("")}</select></label>
           <label class="chk"><input type="checkbox" id="ny-seq" checked> Sequenzen und Atome übernehmen</label>
@@ -1174,9 +1181,72 @@ function viewSettings() {
   </section>`;
 }
 
+/* ---------------- Einrichtungsassistent ----------------
+   Schritte: 0 Willkommen/Schuljahr · 1 Meine Klassen · 2 Unterrichtszeiten · 3 Fertig.
+   Startet von selbst, solange im Schuljahr keine Klassen festgelegt sind und der Assistent nicht beendet wurde. */
+const OB_STEPS = ["Schuljahr", "Klassen", "Unterrichtszeiten", "Fertig"];
+const OB_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+function obVersion(g) {
+  const vs = sortTT(grp(g).tt);
+  return vs.filter(v => v.frm <= UI.date).pop() || vs[0];
+}
+function obTracks(k) { const c = D.classes[k]; return ["A"].concat(c.mode === "Stränge" || (S.cls[k] && S.cls[k].mode === "Stränge") ? ["B"] : [], c.sol ? ["SOL"] : []); }
+function obGrid(g) {
+  const k = ck(g), v = obVersion(g);
+  if (!v) return "";
+  const at = (d, p) => v.lessons.find(l => +l.day === d && +l.period === p);
+  const n = v.lessons.length, multi = obTracks(k).length > 1;
+  return `<div class="obgrid card"><div class="obh"><b>${esc(fullLabel(g))}</b><span class="small muted">${n} Stunde${n === 1 ? "" : "n"} pro Woche${sortTT(grp(g).tt.slice()).length > 1 ? ` · gilt ab ${esc(fmt(v.frm, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}</span></div>
+    <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
+    ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
+      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
+    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).join(" → ")} → frei).</p>` : ""}</div>`;
+}
+function obToggle(g, d, p) {
+  const v = obVersion(g), k = ck(g); if (!v) return;
+  const i = v.lessons.findIndex(l => +l.day === d && +l.period === p), tracks = obTracks(k);
+  if (i < 0) v.lessons.push({ id: uid(), day: d, period: p, track: "A" });
+  else { const n = tracks.indexOf(v.lessons[i].track) + 1; if (n > 0 && n < tracks.length) v.lessons[i].track = tracks[n]; else v.lessons.splice(i, 1); }
+  v.lessons.sort((a, b) => a.day - b.day || a.period - b.period);
+  touch(); save(k); renderOverlay();
+}
+function obOpen(step) { UI.ob = { step: step || 0 }; renderOverlay(); }
+function obFinish() {
+  if (!Array.isArray(cal().classes)) cal().classes = mineList();
+  S.settings.onboarded = true; UI.ob = null;
+  fixSelection(); commit(null, { settings: true }); renderOverlay();
+  if (route() !== "heute") location.hash = "#heute";
+  toast("Eingerichtet. Änderungen jederzeit unter Einstellungen.");
+}
+function viewOnboarding() {
+  const st = UI.ob.step, Y = cal(), mine = mineList();
+  const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
+  let body = "";
+  if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
+    <p>In drei kurzen Schritten richten Sie das Schuljahr ein: welche Klassen Sie unterrichten und wann. Danach zeigt die Heute-Seite Ihre Stunden, und die App plant Stoff und Wiederholungen.</p>
+    <div class="card"><b>Schuljahr ${esc(yearLabel(Y.id))}</b><span class="small muted">${esc(fmt(Y.start, { day: "2-digit", month: "2-digit", year: "numeric" }))} – ${esc(fmt(Y.end, { day: "2-digit", month: "2-digit", year: "numeric" }))} · ${Y.holidays.length} Ferienabschnitte · ${Y.free.length} freie Tage</span>
+    ${Y.holidays.length ? `<span class="small muted">Ferien und Feiertage für Sachsen sind eingetragen.</span>` : `<button type="button" class="btn ghost sm" data-act="ferien">Ferien Sachsen importieren</button>`}</div>`;
+  else if (st === 1) body = `<h2>Welche Klassen unterrichten Sie?</h2>
+    <p class="small">Haken Sie Ihre Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wählen Sie „2 Parallelklassen“: Sie planen dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
+    ${Object.entries(TYPES).map(([t, T]) => `<h3 class="obtype">${esc(T.label)}</h3><table class="form obclasses"><tbody>${T.grades.flatMap(g => classesFor(t, g)).map(k => myClassRow(k, mine)).join("")}</tbody></table>`).join("")}`;
+  else if (st === 2) body = `<h2>Wann haben Sie Unterricht?</h2>
+    <p class="small">Klicken Sie für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), legen Sie das später unter Einstellungen → Stundenplan an.</p>
+    ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Sie haben noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
+  else body = `<h2>Fertig</h2>
+    <p>Ihr Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
+    <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? obVersion(g).lessons.length : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
+    <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passen Sie unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten starten Sie dort erneut.</p>`;
+  return `<div class="ov-card onboard" role="dialog" aria-label="Einrichtung">
+    <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
+    ${dots}<div class="obbody">${body}</div>
+    <footer class="acts">${st > 0 ? `<button type="button" class="btn ghost" data-act="obstep" data-v="${st - 1}">Zurück</button>` : `<button type="button" class="btn ghost" data-act="obskip">Später</button>`}
+      <span class="sp"></span>${st < OB_STEPS.length - 1 ? `<button type="button" class="btn" data-act="obstep" data-v="${st + 1}" ${st === 1 && !mine.length ? "disabled" : ""}>Weiter</button>` : `<button type="button" class="btn" data-act="obdone">Los geht's</button>`}</footer></div>`;
+}
+
 /* ---------------- quiz & SOL overlay ---------------- */
 function renderOverlay() {
   const el = document.getElementById("overlay");
+  if (UI.ob) { el.hidden = false; el.innerHTML = viewOnboarding(); return; }
   if (UI.solOpen) {
     el.hidden = false;
     el.innerHTML = `<div class="ov-card" role="dialog" aria-label="SOL-Formate"><header><h2>SOL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
@@ -1308,6 +1378,11 @@ document.addEventListener("click", ev => {
     case "qrate": { const q = UI.quiz, x = q.items[q.i]; rate(q.k, x.a.id, +b.dataset.g); quizNext(); break; }
     case "solinfo": UI.solOpen = true; renderOverlay(); break;
     case "ovclose": closeOverlay(); break;
+    case "obopen": obOpen(0); break;
+    case "obstep": UI.ob = { step: Math.max(0, Math.min(OB_STEPS.length - 1, +b.dataset.v)) }; renderOverlay(); break;
+    case "obskip": UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); break;
+    case "obdone": obFinish(); break;
+    case "obcell": obToggle(b.dataset.g, +b.dataset.d, +b.dataset.p); break;
     case "mode": S.cls[k].mode = b.dataset.v; commit(k); break;
     case "hrs": setSeq(k, s => { s[i].hours = Math.max(0, s[i].hours + +b.dataset.n); }); break;
     case "mv": setSeq(k, s => { const j = i + +b.dataset.n; if (j < 0 || j >= s.length) return; [s[i], s[j]] = [s[j], s[i]]; }); break;
@@ -1426,6 +1501,7 @@ document.addEventListener("submit", ev => {
   S.cls[k].atoms[code] = list; UI.editAtom = null; commit(k); toast("Atom gespeichert.");
 });
 document.addEventListener("keydown", ev => {
+  if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
   if (!UI.quiz && !UI.solOpen) return;
   if (ev.key === "Escape") { closeOverlay(); return; }
   if (!UI.quiz) return;
