@@ -206,7 +206,7 @@ function serve(dir) {
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   await p.uncheck('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => JSON.stringify(window.__mp.cal().classes) === '["kl8"]'), 'Meine Klassen 2026/27: nur Klasse 8');
-  ok(await p.$$eval('#ctx .grades button', bs => bs.some(e => e.textContent === '6' && e.disabled && /nicht zu Ihren Klassen/.test(e.title))), 'Leiste: Klasse 6 ausgegraut');
+  ok(await p.$$eval('#ctx .grades button', bs => bs.some(e => e.textContent === '6' && e.disabled && /nicht zu deinen Klassen/.test(e.title))), 'Leiste: Klasse 6 ausgegraut');
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(150);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
   ok(JSON.stringify(await p.$$eval('.tcard h2', hs => hs.map(h => h.textContent))) === JSON.stringify(['GYM · 8a', 'GYM · 8b']), 'Alle meine Klassen: nur 8a und 8b');

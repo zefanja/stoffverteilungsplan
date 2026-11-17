@@ -744,12 +744,12 @@ function renderBanner() {
   const el = document.getElementById("banner");
   const m = {
     loading: "Gespeicherte Daten werden geladen …",
-    slow: "Der Speicher antwortet noch nicht. Sie sehen gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
+    slow: "Der Speicher antwortet noch nicht. Du siehst gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
     local: "Gespeichert wird in diesem Browser. Für ein anderes Gerät oder eine zusätzliche Sicherung: Einstellungen → Sicherung.",
-    off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffnen Sie die App angemeldet auf claude.ai.",
+    off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffne die App angemeldet auf claude.ai.",
     err: "Speichern ist gerade fehlgeschlagen. Die App versucht es bei der nächsten Änderung erneut.",
-    ro: "Sie können diesen Plan ansehen, aber nicht ändern.",
-    quota: "Der Speicher ist voll. Löschen Sie alte Daten über Einstellungen → Sicherung.",
+    ro: "Du kannst diesen Plan ansehen, aber nicht ändern.",
+    quota: "Der Speicher ist voll. Lösche alte Daten über Einstellungen → Sicherung.",
   }[dbState];
   el.textContent = m || ""; el.hidden = !m; el.dataset.kind = dbState;
 }
@@ -768,9 +768,9 @@ function unitLink(k, code, label) {
 function clsTabs() { const k = curG(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
 function noClassMsg() {
   const T = TYPES[UI.type] || {}, has = CLASSES.some(k => D.classes[k].type === UI.type);
-  if (!mineList().length) return `Sie haben für ${esc(yearLabel(cal().id))} noch keine Klassen festgelegt. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
-  if (has) return `Sie unterrichten ${esc(yearLabel(cal().id))} keine Klasse der Schulart ${esc(T.label || "")}. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
-  return `Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wählen Sie oben eine andere Schulart.`;
+  if (!mineList().length) return `Du hast für ${esc(yearLabel(cal().id))} noch keine Klassen festgelegt. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  if (has) return `Du unterrichtest ${esc(yearLabel(cal().id))} keine Klasse der Schulart ${esc(T.label || "")}. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  return `Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wähle oben eine andere Schulart.`;
 }
 function noClassView(title) {
   const T = TYPES[UI.type] || {};
@@ -784,7 +784,7 @@ function renderCtx() {
     <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => {
       const all = classesFor(UI.type, g), mine = all.filter(isMine), curV = cur && D.classes[cur].variant;
       const k = mine.find(c => D.classes[c].variant === curV) || mine[0];
-      return `<button type="button" aria-pressed="${!!cur && all.includes(cur)}" ${k ? `data-act="cls" data-k="${k}" title="${esc(mine.map(c => D.classes[c].label).join(", "))}"` : all.length ? `disabled title="Klasse ${g} gehört nicht zu Ihren Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+      return `<button type="button" aria-pressed="${!!cur && all.includes(cur)}" ${k ? `data-act="cls" data-k="${k}" title="${esc(mine.map(c => D.classes[c].label).join(", "))}"` : all.length ? `disabled title="Klasse ${g} gehört nicht zu deinen Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
     ${cur && classesFor(UI.type, D.classes[cur].grade).filter(isMine).length > 1 ? `<div class="seg small" role="group" aria-label="Bildungsgang bzw. Kursart">${classesFor(UI.type, D.classes[cur].grade).filter(isMine).map(c => `<button type="button" aria-pressed="${c === cur}" data-act="cls" data-k="${c}" title="${esc(D.classes[c].variantLabel)}">${esc(D.classes[c].variant || "")}</button>`).join("")}</div>` : ""}
     ${cur && S.cls[cur].groups.length > 1 ? `<div class="seg small" role="group" aria-label="Parallelklasse">${groupsOf(cur).map(g => `<button type="button" aria-pressed="${g === curG()}" data-act="grp" data-g="${g}">${esc(groupName(g))}</button>`).join("")}</div>` : ""}
     <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
@@ -998,8 +998,8 @@ function viewSeq() {
     </div>
     <div class="grid2">
       <div class="card"><h3>Stunden je Lernbereich</h3><p class="small muted">geplant / Zeitrichtwert des Lehrplans</p>${lbRows}</div>
-      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier können Sie Puffer (P) auch von Hand verschieben oder kürzen.</p>
-      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Ihre Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
+      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier kannst du Puffer (P) auch von Hand verschieben oder kürzen.</p>
+      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Deine Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
     </div></section>`;
 }
 
@@ -1098,7 +1098,7 @@ function viewEngine() {
     </div>
     <div class="grid2">
       <div class="card"><h3>So funktioniert es</h3>
-        <p class="small">Jedes Atom ist einer Stunde zugeordnet. Ab der Stunde danach erscheint es auf der Heute-Seite zur Wiederholung, z. B. als Einstiegsaufgabe. Sie bewerten, wie gut die Klasse es abrufen konnte:</p>
+        <p class="small">Jedes Atom ist einer Stunde zugeordnet. Ab der Stunde danach erscheint es auf der Heute-Seite zur Wiederholung, z. B. als Einstiegsaufgabe. Du bewertest, wie gut die Klasse es abrufen konnte:</p>
         <ul class="small rlist">${RATES.map(([g, l, h]) => `<li><b class="r${g}t">${l}</b> ${h} der Klasse richtig</li>`).join("")}</ul>
         <p class="small">Daraus berechnet FSRS für jedes Atom Stabilität und Schwierigkeit und legt die nächste Wiederholung so, dass die Klasse es dann noch mit der gewählten Wahrscheinlichkeit abrufen kann. Gut sitzende Atome kommen immer seltener, wackelige öfter.</p>
         <p class="small">Je stabiler ein Atom sitzt, desto anspruchsvoller wird die Aufgabe: ${levelPill(1)} bis ${LV_S2} Tage Stabilität, ${levelPill(2)} ab ${LV_S2} Tagen, ${levelPill(3)} ab ${LV_S3} Tagen. Nach „Nochmal“ oder bei geringem Abruf geht es eine Stufe zurück.</p>
@@ -1130,7 +1130,7 @@ function myClassesCard() {
     return ks.map(k => myClassRow(k, mine)).join("");
   }).join("")).join("");
   return `<div class="card myclasses"><h3>Meine Klassen ${esc(yearLabel(Y.id))}</h3>
-    <p class="small muted">Haken Sie an, welche Klassen Sie in diesem Schuljahr unterrichten. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. In der Oberschule gibt es ab Klasse 7 eigene Pläne für den Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 für Grund- (GK) und Leistungskurs (LK). Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
+    <p class="small muted">Hake an, welche Klassen du in diesem Schuljahr unterrichtest. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. In der Oberschule gibt es ab Klasse 7 eigene Pläne für den Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 für Grund- (GK) und Leistungskurs (LK). Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
     <div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Parallelklassen</th><th>Namen</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="small muted">Lehrpläne: Lehrplandatenbank Sachsen${D.lehrplanQuelle ? `, abgerufen am ${esc(fmt(D.lehrplanQuelle.abgerufen, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}. Klasse 6 und 8 (Gymnasium) mit ausgearbeiteter Stoffverteilung und Atomen.</p></div>`;
 }
@@ -1173,7 +1173,7 @@ function ttCard(k) {
   const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
   const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   return `<div class="card"><h3>Stundenplan ${esc(fullLabel(k))} · ${esc(yearLabel(Y.id))}</h3>
-    ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählen Sie oben in der Leiste.</p>` : ""}
+    ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählst du oben in der Leiste.</p>` : ""}
     <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen)${fil ? ", FIL = zusätzliche FIL-Stunde (nur Klasse 7–9)" : ""}.</p>
     ${blocks}
     ${lastDayRow(k)}
@@ -1218,7 +1218,7 @@ function viewSettings() {
       ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">${noClassMsg()}</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
-      <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
+      <p class="small">Deine Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
       <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" hidden>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand ${esc(yearLabel(Y.id))} leeren</button></div>
       <textarea id="importbox" rows="3" placeholder="Sicherung hier einfügen …" aria-label="Sicherung einfügen"></textarea>
       <div class="acts"><button type="button" class="btn ghost" data-act="import">Sicherung einspielen</button>
@@ -1270,19 +1270,19 @@ function viewOnboarding() {
   const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
   let body = "";
   if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
-    <p>In drei kurzen Schritten richten Sie das Schuljahr ein: welche Klassen Sie unterrichten und wann. Danach zeigt die Heute-Seite Ihre Stunden, und die App plant Stoff und Wiederholungen.</p>
+    <p>In drei kurzen Schritten richtest du das Schuljahr ein: welche Klassen du unterrichtest und wann. Danach zeigt die Heute-Seite deine Stunden, und die App plant Stoff und Wiederholungen.</p>
     <div class="card"><b>Schuljahr ${esc(yearLabel(Y.id))}</b><span class="small muted">${esc(fmt(Y.start, { day: "2-digit", month: "2-digit", year: "numeric" }))} – ${esc(fmt(Y.end, { day: "2-digit", month: "2-digit", year: "numeric" }))} · ${Y.holidays.length} Ferienabschnitte · ${Y.free.length} freie Tage</span>
     ${Y.holidays.length ? `<span class="small muted">Ferien und Feiertage für Sachsen sind eingetragen.</span>` : `<button type="button" class="btn ghost sm" data-act="ferien">Ferien Sachsen importieren</button>`}</div>`;
-  else if (st === 1) body = `<h2>Welche Klassen unterrichten Sie?</h2>
-    <p class="small">Haken Sie Ihre Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wählen Sie „2 Parallelklassen“: Sie planen dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
+  else if (st === 1) body = `<h2>Welche Klassen unterrichtest du?</h2>
+    <p class="small">Hake deine Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wähle „2 Parallelklassen“: Du planst dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
     ${Object.entries(TYPES).map(([t, T]) => `<h3 class="obtype">${esc(T.label)}</h3><table class="form obclasses"><tbody>${T.grades.flatMap(g => classesFor(t, g)).map(k => myClassRow(k, mine)).join("")}</tbody></table>`).join("")}`;
-  else if (st === 2) body = `<h2>Wann haben Sie Unterricht?</h2>
-    <p class="small">Klicken Sie für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), legen Sie das später unter Einstellungen → Stundenplan an.</p>
-    ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Sie haben noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
+  else if (st === 2) body = `<h2>Wann hast du Unterricht?</h2>
+    <p class="small">Klicke für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), lege das später unter Einstellungen → Stundenplan an.</p>
+    ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else body = `<h2>Fertig</h2>
-    <p>Ihr Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
+    <p>Dein Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
     <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? weekHours(obVersion(g).lessons) : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
-    <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passen Sie unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten starten Sie dort erneut.</p>`;
+    <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passt du unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten startest du dort erneut.</p>`;
   return `<div class="ov-card onboard" role="dialog" aria-label="Einrichtung">
     <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
     ${dots}<div class="obbody">${body}</div>
