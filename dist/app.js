@@ -28,20 +28,54 @@ const LBVAR = { LB1: "lb1", LB2: "lb2", LB3: "lb3", LB4: "lb4", LB5: "lb5", WB: 
 const sty = lb => `--c:var(--${LBVAR[lb] || "buf"});--bg:var(--${LBVAR[lb] || "buf"}-bg)`;
 
 /* ---------------- state ---------------- */
-function defaultSettings() { return { calendar: clone(D.calendar), retention: 0.9, perLesson: 5, autoBuffer: true, engineStart: null }; }
-function defaultClass(k) {
-  const c = D.classes[k];
+/* Schuljahre: id "2026-27"; jedes Jahr hat eigenen Kalender und eigene Klassen- und Engine-Dokumente. */
+const yearIdOf = s => { const [y, m] = s.split("-").map(Number); const a = m >= 8 ? y : y - 1; return `${a}-${String(a + 1).slice(2)}`; };
+const yearLabel = id => String(id).replace("-", "/");
+const yearStart = id => +String(id).slice(0, 4);
+function defaultYear() {
+  const c = clone(D.calendar);
+  return { id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays, free: c.free, engineStart: null, legacyDocs: true };
+}
+function defaultSettings() { return { years: [defaultYear()], retention: 0.9, perLesson: 5, autoBuffer: true }; }
+const sortYears = ys => ys.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const sortTT = tt => tt.sort((a, b) => (a.frm || "") < (b.frm || "") ? -1 : (a.frm || "") > (b.frm || "") ? 1 : 0);
+const cloneLessons = ls => ls.map(l => ({ id: uid(), day: +l.day, period: +l.period, track: l.track }));
+function defaultClass(k, y) {
+  const c = D.classes[k]; y = y || cal();
+  const tt = y.start === D.calendar.start
+    ? c.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))
+    : [{ id: uid(), frm: y.start, lessons: cloneLessons(c.tt[c.tt.length - 1].lessons) }];
   return { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })),
-    timetable: c.timetable.map(t => Object.assign({ id: uid() }, t)), cancelled: {}, done: {}, atoms: {} };
+    tt, off: [], cancelled: {}, done: {}, atoms: {} };
+}
+/* Alte Stundenpläne (Zeilen mit eigenem ab/bis) in Versionen „gültig ab“ umwandeln. */
+function ttFromLegacy(rows, start) {
+  const pts = new Set([start]);
+  rows.forEach(r => { if (r.frm) pts.add(r.frm); if (r.to) pts.add(addDays(r.to, 1)); });
+  const sig = ls => ls.map(l => `${l.day}|${l.period}|${l.track}`).join(",");
+  const out = [];
+  [...pts].filter(Boolean).sort().forEach(p => {
+    const ls = rows.filter(r => (!r.frm || r.frm <= p) && (!r.to || r.to >= p)).map(r => ({ id: r.id || uid(), day: +r.day, period: +r.period, track: r.track }));
+    const prev = out[out.length - 1];
+    if (prev && sig(prev.lessons) === sig(ls)) return;
+    out.push({ id: uid(), frm: p, lessons: ls });
+  });
+  return out;
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
-const S = {
-  settings: defaultSettings(),
-  cls: { kl6: defaultClass("kl6"), kl8: defaultClass("kl8") },
-  eng: { kl6: defaultEngine(), kl8: defaultEngine() },
-};
-const UI = { date: todayIso(), cls: "kl6", todayCls: "all", reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro" };
-try { const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v; const t = localStorage.getItem("mp-today"); if (t) UI.todayCls = t; } catch (e) {}
+const S = { settings: defaultSettings(), cls: {}, eng: { kl6: defaultEngine(), kl8: defaultEngine() } };
+const UI = { date: todayIso(), cls: "kl6", year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false };
+try { const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v; UI.todayAll = localStorage.getItem("mp-today") === "all"; } catch (e) {}
+function pickYear() {
+  const ys = S.settings.years; let id = null;
+  try { id = localStorage.getItem("mp-year"); } catch (e) {}
+  if (ys.some(y => y.id === id)) return id;
+  const t = yearIdOf(todayIso()); if (ys.some(y => y.id === t)) return t;
+  return ys[ys.length - 1].id;
+}
+function cal() { return S.settings.years.find(y => y.id === UI.year) || S.settings.years[0]; }
+UI.year = pickYear();
+CLASSES.forEach(k => { S.cls[k] = defaultClass(k); });
 
 let ver = 0; const cache = {};
 const touch = () => { ver++; };
@@ -61,18 +95,22 @@ const titleOf = (k, code) => code === "P" ? "Puffer · Wiederholung" : code === 
 /* ---------------- scheduling ---------------- */
 function schedule(k) {
   if (cache[k] && cache[k].ver === ver) return cache[k];
-  const cal = S.settings.calendar, C = S.cls[k], seqMode = C.mode === "nacheinander";
-  const free = {}; (cal.free || []).forEach(f => { if (f.date) free[f.date] = f.name || "unterrichtsfrei"; });
-  const holidayOf = d => { for (const h of cal.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; return null; };
+  const Y = cal(), C = S.cls[k], seqMode = C.mode === "nacheinander";
+  const free = {}; (Y.free || []).forEach(f => { if (f.date) free[f.date] = f.name || "unterrichtsfrei"; });
+  const holidayOf = d => { for (const h of Y.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; return null; };
+  const offOf = d => { for (const o of C.off || []) if (o.frm && o.to && o.frm <= d && d <= o.to) return o.name || "Kein Unterricht in dieser Klasse"; return null; };
+  const tts = sortTT((C.tt || []).filter(v => v.frm).slice());
+  const lessonsOn = d => { let cur = null; for (const v of tts) { if (v.frm <= d) cur = v; else break; } return cur ? cur.lessons : []; };
   const slots = [], dayInfo = {};
-  if (cal.start && cal.end && cal.start <= cal.end) {
-    for (let d = cal.start; d <= cal.end; d = addDays(d, 1)) {
+  if (Y.start && Y.end && Y.start <= Y.end) {
+    for (let d = Y.start; d <= Y.end; d = addDays(d, 1)) {
       const w = dow(d); if (w > 5) continue;
-      const h = holidayOf(d), f = free[d];
+      const h = holidayOf(d), f = free[d], o = h || f ? null : offOf(d);
       if (h || f) { dayInfo[d] = { school: false, note: h || f }; continue; }
+      if (o) { dayInfo[d] = { school: false, note: o, off: true }; continue; }
       dayInfo[d] = { school: true };
-      for (const t of C.timetable) {
-        if (+t.day !== w) continue; if (t.frm && d < t.frm) continue; if (t.to && d > t.to) continue;
+      for (const t of lessonsOn(d)) {
+        if (+t.day !== w) continue;
         const track = t.track === "SOL" ? "SOL" : (seqMode ? "A" : (t.track === "B" ? "B" : "A"));
         const key = d + "|" + t.period;
         slots.push({ date: d, period: +t.period, track, key, cancelled: !!C.cancelled[key], lesson: null });
@@ -139,7 +177,7 @@ function fsrsReview(card, g, date, r) {
 }
 function engineState(k, date) {
   const sc = schedule(k), E = S.eng[k], am = atomMap(k), list = [];
-  const start = S.settings.engineStart || S.settings.calendar.start || "0000-00-00";
+  const start = cal().engineStart || cal().start || "0000-00-00";
   for (const id in sc.intro) {
     const a = am[id]; if (!a) continue;
     const info = sc.intro[id], c = E.cards[id];
@@ -163,49 +201,124 @@ function engineState(k, date) {
 }
 
 /* ---------------- persistence ---------------- */
-const DOCS = { settings: "planner/settings", kl6: "planner/kl6", kl8: "planner/kl8", e6: "engine/kl6", e8: "engine/kl8" };
+/* Dokumente: planner/settings ist global. Klassen und Lernstand liegen je Schuljahr in jahr-<id>/…;
+   das erste (aus der Zeit vor den Schuljahren übernommene) Jahr behält die alten Pfade planner/kl6 usw. */
+const YEAR_DOCS = ["kl6", "kl8", "e6", "e8"];
 const engDoc = k => k === "kl6" ? "e6" : "e8";
-let db = null, dbState = "loading";
-const dirty = {}, saving = {}, timers = {};
+function pathOf(name, y) {
+  if (name === "settings") return "planner/settings";
+  y = y || cal();
+  if (name === "kl6" || name === "kl8") return y.legacyDocs ? "planner/" + name : `jahr-${y.id}/${name}`;
+  const k = name === "e6" ? "kl6" : "kl8";
+  return y.legacyDocs ? "engine/" + k : `jahr-${y.id}/engine-${k}`;
+}
+let db = null, dbState = "loading", yearGen = 0, yearUnsubs = [], local = false;
+/* Ohne Claude-Datenbank (z. B. auf GitHub Pages) wird im Browser gespeichert. */
+const LS = "mp-doc:";
+function lsGet(path) { try { const v = localStorage.getItem(LS + path); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsOk() { try { localStorage.setItem(LS + "probe", "1"); localStorage.removeItem(LS + "probe"); return true; } catch (e) { return false; } }
+const dirty = {}, saving = {}, timers = {}, loaded = {};
 function docBody(name) { return name === "settings" ? S.settings : name === "kl6" || name === "kl8" ? S.cls[name] : S.eng[name === "e6" ? "kl6" : "kl8"]; }
-function save(name) { dirty[name] = true; clearTimeout(timers[name]); timers[name] = setTimeout(() => flush(name), 700); }
+function save(name) { dirty[name] = true; clearTimeout(timers[name]); const g = yearGen; timers[name] = setTimeout(() => { if (g === yearGen || name === "settings") flush(name); }, 700); }
 async function flush(name) {
+  if (!db && local) {
+    const body = clone(docBody(name)); if (body.log && body.log.length > 600) body.log = body.log.slice(-600);
+    try { localStorage.setItem(LS + pathOf(name), JSON.stringify(body)); dirty[name] = false; }
+    catch (e) { setDbState("quota"); }
+    return;
+  }
   if (!db) return;
-  if (saving[name]) { timers[name] = setTimeout(() => flush(name), 500); return; }
+  const g = yearGen, again = ms => { timers[name] = setTimeout(() => { if (g === yearGen || name === "settings") flush(name); }, ms); };
+  if (saving[name]) { again(500); return; }
   saving[name] = true;
-  const body = clone(docBody(name));
+  const path = pathOf(name), body = clone(docBody(name));
   if (body.log && body.log.length > 600) body.log = body.log.slice(-600);
-  try { await db.doc(DOCS[name]).set(body); dirty[name] = false; if (dbState === "err") setDbState("ok"); }
+  try { await db.doc(path).set(body); if (g === yearGen || name === "settings") dirty[name] = false; if (dbState === "err") setDbState("ok"); }
   catch (e) {
-    if (e && e.code === "unavailable") { setTimeout(() => flush(name), 1500 + Math.random() * 1000); }
+    if (e && e.code === "unavailable") again(1500 + Math.random() * 1000);
     else setDbState(e && e.code === "invalid_argument" ? "ro" : e && e.code === "quota_exceeded" ? "quota" : "err");
   } finally { saving[name] = false; }
 }
 function applyDoc(name, data) {
   if (!data || typeof data !== "object") return;
   if (name === "settings") {
-    const d = defaultSettings();
-    S.settings = Object.assign(d, data, { calendar: Object.assign(d.calendar, data.calendar || {}) });
+    const o = Object.assign(defaultSettings(), data);
+    if (!Array.isArray(data.years) || !data.years.length) {
+      const c = Object.assign(clone(D.calendar), data.calendar || {});
+      o.years = [{ id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays || [], free: c.free || [], engineStart: data.engineStart || null, legacyDocs: true }];
+    }
+    delete o.calendar; delete o.engineStart;
+    o.years = sortYears(o.years.filter(y => y && y.id).map(y => Object.assign({ holidays: [], free: [], engineStart: null }, y)));
+    S.settings = o;
   } else if (name === "kl6" || name === "kl8") {
-    if (!Array.isArray(data.seq) || !Array.isArray(data.timetable)) return;
-    S.cls[name] = Object.assign(defaultClass(name), data);
+    if (!Array.isArray(data.seq)) return;
+    const c = Object.assign(defaultClass(name), data);
+    if (!Array.isArray(data.tt)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : c.tt;
+    delete c.timetable;
+    if (!Array.isArray(c.off)) c.off = [];
+    sortTT(c.tt);
+    S.cls[name] = c;
   } else {
     S.eng[name === "e6" ? "kl6" : "kl8"] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
   }
 }
 function setDbState(s) { dbState = s; renderBanner(); }
+function checkLoaded() {
+  if (dbState !== "loading" && dbState !== "slow") return;
+  if (!loaded.settings || !YEAR_DOCS.every(n => loaded[n])) return;
+  clearTimeout(initDb.timer); setDbState("ok");
+  if (!cal().engineStart) { cal().engineStart = todayIso(); save("settings"); touch(); render(); }
+}
+function subscribeYear() {
+  yearUnsubs.forEach(u => { try { u(); } catch (e) {} }); yearUnsubs = [];
+  YEAR_DOCS.forEach(n => { loaded[n] = false; });
+  if (!db && local) { for (const name of YEAR_DOCS) { const d = lsGet(pathOf(name)); if (d) applyDoc(name, d); } touch(); return; }
+  if (!db) return;
+  const g = yearGen;
+  for (const name of YEAR_DOCS) {
+    let first = true;
+    yearUnsubs.push(db.doc(pathOf(name)).onSnapshot(snap => {
+      if (g !== yearGen) return;
+      if (!snap.metadata.hasPendingWrites && !dirty[name] && !saving[name] && snap.exists) { applyDoc(name, snap.data()); touch(); render(); }
+      if (first && !snap.metadata.fromCache) { first = false; loaded[name] = true; checkLoaded(); }
+    }, () => { if (g === yearGen) setDbState("err"); }));
+  }
+}
+/* Wechselt das angezeigte Schuljahr: offene Änderungen des alten Jahres sichern, neue Dokumente abonnieren. */
+function switchYear(id, remember) {
+  if (remember) { try { localStorage.setItem("mp-year", id); } catch (e) {} }
+  if (id === UI.year) return;
+  for (const n of YEAR_DOCS) { clearTimeout(timers[n]); if (dirty[n]) flush(n); }
+  yearGen++;
+  for (const n of YEAR_DOCS) dirty[n] = false;
+  UI.year = id; UI.confirm = null; UI.reveal = {}; undoStack = null;
+  CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); });
+  touch(); subscribeYear(); render();
+}
 async function initDb() {
   try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
-  if (!db) { setDbState("off"); if (!S.settings.engineStart) { S.settings.engineStart = todayIso(); touch(); render(); } return; }
-  const timer = setTimeout(() => { if (dbState === "loading") setDbState("slow"); }, 10000);
-  let pending = Object.keys(DOCS).length;
-  for (const [name, path] of Object.entries(DOCS)) {
-    let first = true;
-    db.doc(path).onSnapshot(snap => {
-      if (!snap.metadata.hasPendingWrites && !dirty[name] && !saving[name] && snap.exists) { applyDoc(name, snap.data()); touch(); render(); }
-      if (first && !snap.metadata.fromCache) { first = false; if (--pending === 0) { clearTimeout(timer); setDbState("ok"); if (!S.settings.engineStart) { S.settings.engineStart = todayIso(); save("settings"); touch(); render(); } } }
-    }, () => { clearTimeout(timer); setDbState("err"); });
+  if (!db) {
+    local = lsOk();
+    if (local) {
+      const st = lsGet(pathOf("settings")); if (st) applyDoc("settings", st);
+      const p = pickYear(); if (p !== UI.year) { yearGen++; UI.year = p; CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); }); }
+      subscribeYear();
+    }
+    setDbState(local ? "local" : "off");
+    if (!cal().engineStart) { cal().engineStart = todayIso(); if (local) save("settings"); }
+    touch(); render(); return;
   }
+  initDb.timer = setTimeout(() => { if (dbState === "loading") setDbState("slow"); }, 10000);
+  let first = true;
+  db.doc(pathOf("settings")).onSnapshot(snap => {
+    if (!snap.metadata.hasPendingWrites && !dirty.settings && !saving.settings && snap.exists) {
+      applyDoc("settings", snap.data());
+      if (first || !S.settings.years.some(y => y.id === UI.year)) { const p = pickYear(); if (p !== UI.year) switchYear(p); }
+      touch(); render();
+    }
+    if (first && !snap.metadata.fromCache) { first = false; loaded.settings = true; checkLoaded(); }
+  }, () => { clearTimeout(initDb.timer); setDbState("err"); });
+  subscribeYear();
 }
 
 /* ---------------- actions ---------------- */
@@ -269,6 +382,71 @@ function rate(k, id, g) {
   toast(`Gespeichert. Nächste Wiederholung ab ${fmt(c.due)} (in ${diffDays(date, c.due)} Tagen).`, true);
 }
 
+/* ---------------- Ferien Sachsen & Schuljahre ---------------- */
+/* Aus Ferien- und Feiertagslisten ein Schuljahr bauen: Beginn = erster Werktag nach den Sommerferien,
+   Ende = letzter Werktag vor den nächsten Sommerferien; eintägige Ferien und Feiertage an Schultagen werden freie Tage. */
+function sachsenYear(y0, src) {
+  const summer = src.school.filter(x => /sommer/i.test(x[2]));
+  const s1 = summer.find(x => +x[1].slice(0, 4) === y0), s2 = summer.find(x => +x[0].slice(0, 4) === y0 + 1);
+  if (!s1 || !s2) return null;
+  let start = addDays(s1[1], 1); while (dow(start) > 5) start = addDays(start, 1);
+  let end = addDays(s2[0], -1); while (dow(end) > 5) end = addDays(end, -1);
+  const holidays = [], free = [];
+  src.school.filter(x => x[0] > s1[1] && x[1] < s2[0] && !/sommer/i.test(x[2])).forEach(([a, b, n]) => {
+    if (a === b) free.push({ date: a, name: n }); else holidays.push({ name: n, frm: a, to: b });
+  });
+  const inHol = d => holidays.some(h => h.frm <= d && d <= h.to);
+  src.public.forEach(([d, n]) => { if (d >= start && d <= end && dow(d) <= 5 && !inHol(d) && !free.some(f => f.date === d)) free.push({ date: d, name: n }); });
+  holidays.sort((a, b) => a.frm < b.frm ? -1 : 1); free.sort((a, b) => a.date < b.date ? -1 : 1);
+  return { start, end, holidays, free };
+}
+async function fetchSachsen(y0) {
+  const q = (kind, a, b) => `https://openholidaysapi.org/${kind}?countryIsoCode=DE&subdivisionCode=DE-SN&languageIsoCode=DE&validFrom=${a}&validTo=${b}`;
+  const get = async u => { const r = await fetch(u, { headers: { accept: "application/json" } }); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); };
+  const nm = x => ((x.name || []).find(n => n.language === "DE") || (x.name || [])[0] || {}).text || "Ferien";
+  const [sch, pub] = await Promise.all([get(q("SchoolHolidays", `${y0}-06-01`, `${y0 + 1}-09-30`)), get(q("PublicHolidays", `${y0}-08-01`, `${y0 + 1}-08-31`))]);
+  return { school: sch.map(x => [x.startDate, x.endDate, nm(x)]), public: pub.map(x => [x.startDate, nm(x)]) };
+}
+async function loadSachsen(y0) {
+  const r = sachsenYear(y0, D.ferienSN);
+  if (r) return Object.assign(r, { source: "eingebaute Termine (openholidaysapi.org)" });
+  const live = sachsenYear(y0, await fetchSachsen(y0));
+  if (live) return Object.assign(live, { source: "openholidaysapi.org, abgerufen am " + fmt(todayIso(), { day: "2-digit", month: "2-digit", year: "numeric" }) });
+  throw new Error("Für dieses Schuljahr sind noch keine Ferien veröffentlicht.");
+}
+async function importFerien() {
+  const Y = cal(); UI.busy = true; UI.confirm = null; render();
+  try {
+    const r = await loadSachsen(yearStart(Y.id));
+    const snap = snapshotFor(UI.cls);
+    Object.assign(Y, { start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source });
+    undoStack = snap; UI.busy = false; commit(null, { settings: true });
+    toast(`Ferien Sachsen ${yearLabel(Y.id)} übernommen: ${r.holidays.length} Ferienabschnitte, ${r.free.length} freie Tage.`, true);
+  } catch (e) { UI.busy = false; render(); toast(`Import fehlgeschlagen: ${e && e.message ? e.message : e}. Ferien bitte von Hand eintragen.`); }
+}
+async function createYear(id, copySeq, copyTT) {
+  if (S.settings.years.some(y => y.id === id)) { switchYear(id, true); return; }
+  UI.busy = true; render();
+  let r = null, err = "";
+  try { r = await loadSachsen(yearStart(id)); } catch (e) { err = e && e.message ? e.message : String(e); }
+  const y0 = yearStart(id);
+  const Y = r ? { id, start: r.start, end: r.end, holidays: r.holidays, free: r.free, source: r.source }
+    : { id, start: `${y0}-08-15`, end: `${y0 + 1}-07-15`, holidays: [], free: [] };
+  Y.engineStart = Y.start;
+  const prev = { cls: clone(S.cls) };
+  S.settings.years.push(Y); sortYears(S.settings.years); save("settings");
+  UI.busy = false;
+  switchYear(id, true);
+  CLASSES.forEach(k => {
+    const P = prev.cls[k], C = S.cls[k];
+    if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); }
+    if (copyTT && P.tt && P.tt.length) { const last = sortTT(P.tt.slice())[P.tt.length - 1]; C.tt = [{ id: uid(), frm: Y.start, lessons: cloneLessons(last.lessons) }]; }
+    save(k); save(engDoc(k));
+  });
+  touch(); render();
+  toast(r ? `Schuljahr ${yearLabel(id)} angelegt, Ferien Sachsen übernommen.` : `Schuljahr ${yearLabel(id)} angelegt. Ferien konnten nicht geladen werden (${err}); bitte unter Einstellungen eintragen.`);
+}
+
 /* ---------------- toast & banner ---------------- */
 let toastTimer;
 function toast(msg, undo) {
@@ -281,6 +459,7 @@ function renderBanner() {
   const m = {
     loading: "Gespeicherte Daten werden geladen …",
     slow: "Der Speicher antwortet noch nicht. Sie sehen gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
+    local: "Gespeichert wird in diesem Browser. Für ein anderes Gerät oder eine zusätzliche Sicherung: Einstellungen → Sicherung.",
     off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffnen Sie die App angemeldet auf claude.ai.",
     err: "Speichern ist gerade fehlgeschlagen. Die App versucht es bei der nächsten Änderung erneut.",
     ro: "Sie können diesen Plan ansehen, aber nicht ändern.",
@@ -299,8 +478,12 @@ function unitLink(k, code, label) {
   if (i < 0 || code === "P" || code === "JA") return `<span class="ulink plain" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</span>`;
   return `<a class="ulink" href="#u-${k}-${i}" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</a>`;
 }
-function clsTabs(view) {
-  return `<div class="seg" role="tablist">${CLASSES.map(k => `<button type="button" role="tab" aria-selected="${UI.cls === k}" data-act="cls" data-k="${k}">${esc(D.classes[k].label)}</button>`).join("")}</div>`;
+/* Kontext-Hinweis in den Überschriften; umgeschaltet wird oben in der Leiste. */
+function clsTabs() { return `<span class="badge">${esc(D.classes[UI.cls].label)} · ${esc(yearLabel(cal().id))}</span>`; }
+function renderCtx() {
+  const el = document.getElementById("ctx"); if (!el) return;
+  el.innerHTML = `<div class="seg small" role="group" aria-label="Klasse">${CLASSES.map(k => `<button type="button" aria-pressed="${UI.cls === k}" aria-selected="${UI.cls === k}" data-act="cls" data-k="${k}">${esc(D.classes[k].label)}</button>`).join("")}</div>
+    <select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
 function trackName(k, tr) {
   const c = D.classes[k], sc = schedule(k);
@@ -343,7 +526,7 @@ function currentUnit(k, date) {
 /* ---------------- views: Heute ---------------- */
 function viewToday() {
   const d = UI.date, isToday = d === todayIso();
-  const show = UI.todayCls === "all" ? CLASSES : [UI.todayCls];
+  const show = UI.todayAll ? CLASSES : [UI.cls];
   return `<section class="today">
     <div class="datebar">
       <button type="button" class="iconbtn" data-act="day" data-n="-1" aria-label="Vorheriger Tag">‹</button>
@@ -351,7 +534,7 @@ function viewToday() {
       <button type="button" class="iconbtn" data-act="day" data-n="1" aria-label="Nächster Tag">›</button>
       ${isToday ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
       <input type="date" id="pickdate" value="${d}" aria-label="Datum wählen">
-      <div class="seg small">${[["all", "Beide"], ["kl6", "Kl. 6"], ["kl8", "Kl. 8"]].map(([v, l]) => `<button type="button" aria-selected="${UI.todayCls === v}" data-act="todaycls" data-v="${v}">${l}</button>`).join("")}</div>
+      <div class="seg small">${[["one", D.classes[UI.cls].label], ["all", "Alle Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
     <div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>
   </section>`;
@@ -360,7 +543,12 @@ function todayCard(k, d) {
   const c = D.classes[k], sc = schedule(k), info = sc.dayInfo[d];
   const slots = sc.byDate[d] || [];
   let body = "";
-  if (!info) body = `<p class="muted">Dieser Tag liegt außerhalb des Schuljahres.</p>`;
+  if (!info) {
+    const other = S.settings.years.find(y => y.id !== cal().id && y.start && y.end && y.start <= d && d <= y.end);
+    body = `<p class="muted">Dieser Tag liegt außerhalb des Schuljahres ${esc(yearLabel(cal().id))}.</p>` + (other
+      ? `<button type="button" class="btn ghost sm" data-act="year" data-v="${esc(other.id)}">Zum Schuljahr ${esc(yearLabel(other.id))} wechseln</button>`
+      : `<a class="btn ghost sm" href="#einstellungen">Schuljahr ${esc(yearLabel(yearIdOf(d)))} anlegen →</a>`);
+  }
   else if (!info.school) body = `<p class="free">${esc(info.note || "Wochenende")}: kein Unterricht.</p>`;
   else if (!slots.length) body = `<p class="muted">Heute hat ${esc(c.label)} laut Stundenplan keine Mathestunde.</p>`;
   body += slots.map(s => slotBlock(k, s)).join("");
@@ -422,12 +610,13 @@ function rateButtons(k, id) {
 
 /* ---------------- views: Jahresplan ---------------- */
 function viewPlan() {
-  const k = UI.cls, sc = schedule(k), cal = S.settings.calendar, today = todayIso();
+  const k = UI.cls, sc = schedule(k), Y = cal(), today = todayIso();
   const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = D.classes[k].sol;
   let rows = "";
-  if (cal.start && cal.end) for (let m = monday(cal.start); m <= cal.end; m = addDays(m, 7)) {
+  if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
     const notes = new Set(); let school = 0;
     for (let i = 0; i < 5; i++) { const di = sc.dayInfo[addDays(m, i)]; if (!di) continue; if (di.school) school++; else notes.add(di.note); }
+    (S.cls[k].tt || []).forEach(v => { if (v.frm && v.frm > Y.start && monday(v.frm) === m) notes.add("neuer Stundenplan ab " + fmt(v.frm)); });
     const ws = sc.slots.filter(s => monday(s.date) === m);
     const cells = trs.map(tr => {
       const ls = ws.filter(s => s.track === tr);
@@ -589,7 +778,7 @@ function viewEngine() {
         <p class="small muted">Höher = häufigere Wiederholungen. 85–90 % passt für die meisten Klassen.</p>
         <label class="row">Wiederholungen pro Stunde <input type="number" min="1" max="15" class="num" value="${S.settings.perLesson}" data-act="perlesson"></label>
         <p class="small muted">So viele Atome schlägt die Heute-Seite höchstens vor, etwa die Hälfte davon neu eingeführte.</p>
-        <label class="row">Start der Learning Engine <input type="date" data-act="engstart" value="${esc(S.settings.engineStart || S.settings.calendar.start)}"></label>
+        <label class="row">Start der Learning Engine <input type="date" data-act="engstart" value="${esc(cal().engineStart || cal().start)}"></label>
         <p class="small muted">Atome, die vor diesem Tag eingeführt wurden, sind Altbestand: Sie kommen nicht alle auf einmal, sondern je Stunde wird mindestens eines eingestreut, bis alle einmal wiederholt sind.</p></div>
     </div>
     <div class="vhead sub"><h2>Atome</h2><div class="seg small">${[["intro", "Eingeführt"], ["all", "Alle"]].map(([v, l]) => `<button type="button" aria-selected="${UI.engFilter === v}" data-act="engfilter" data-v="${v}">${l}</button>`).join("")}</div></div>
@@ -598,43 +787,77 @@ function viewEngine() {
 }
 
 /* ---------------- views: Einstellungen ---------------- */
-function viewSettings() {
-  const cal = S.settings.calendar;
-  const hol = (cal.holidays || []).map((h, i) => `<tr><td><input data-act="hol" data-i="${i}" data-f="name" value="${esc(h.name)}" aria-label="Name"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="frm" value="${esc(h.frm)}" aria-label="von"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="to" value="${esc(h.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="holdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
-  const fr = (cal.free || []).map((f, i) => `<tr><td><input type="date" data-act="free" data-i="${i}" data-f="date" value="${esc(f.date)}" aria-label="Datum"></td><td><input data-act="free" data-i="${i}" data-f="name" value="${esc(f.name)}" aria-label="Anlass"></td><td><button type="button" class="mini del" data-act="freedel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
-  const tt = CLASSES.map(k => {
-    const rows = S.cls[k].timetable.map((t, i) => `<tr>
-      <td><select data-act="tt" data-k="${k}" data-i="${i}" data-f="day" aria-label="Tag">${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${+t.day === d ? "selected" : ""}>${DAYS[d]}</option>`).join("")}</select></td>
-      <td><input class="num" type="number" min="1" max="10" data-act="tt" data-k="${k}" data-i="${i}" data-f="period" value="${t.period}" aria-label="Stunde"></td>
-      <td><select data-act="tt" data-k="${k}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B", "SOL"].map(v => `<option ${t.track === v ? "selected" : ""}>${v}</option>`).join("")}</select></td>
-      <td><input type="date" data-act="tt" data-k="${k}" data-i="${i}" data-f="frm" value="${esc(t.frm || "")}" aria-label="ab"></td>
-      <td><input type="date" data-act="tt" data-k="${k}" data-i="${i}" data-f="to" value="${esc(t.to || "")}" aria-label="bis"></td>
-      <td><button type="button" class="mini del" data-act="ttdel" data-k="${k}" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
-    return `<div class="card"><h3>Stundenplan ${esc(D.classes[k].label)}</h3>
-      <div class="tscroll"><table class="form"><thead><tr><th>Tag</th><th>Std.</th><th>Spur</th><th>ab</th><th>bis</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-      <button type="button" class="linkbtn" data-act="ttadd" data-k="${k}">+ Stunde hinzufügen</button>
-      <p class="small muted">Spur A und B sind die beiden Stränge; im Modus „nacheinander“ zählen beide zusammen. SOL = selbstorganisiertes Lernen. „ab“/„bis“ leer = ganzes Schuljahr.</p></div>`;
+function yearOptions() {
+  const have = new Set(S.settings.years.map(y => y.id)), y0 = yearStart(yearIdOf(todayIso())), out = [];
+  for (let y = y0 - 1; y <= y0 + 4; y++) { const id = `${y}-${String(y + 1).slice(2)}`; if (!have.has(id)) out.push(id); }
+  return out;
+}
+function ttCard(k) {
+  const C = S.cls[k], vs = sortTT(C.tt), Y = cal();
+  const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B", "SOL"].map(x => `<option ${l.track === x ? "selected" : ""}>${x}</option>`).join("")}</select>`;
+  const blocks = vs.map((v, vi) => {
+    const next = vs[vi + 1], until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : "Schuljahresende";
+    const current = v.frm <= UI.date && (!next || UI.date < next.frm);
+    const rows = v.lessons.map((l, i) => `<tr>
+      <td><select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="day" aria-label="Tag">${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${+l.day === d ? "selected" : ""}>${DAYS[d]}</option>`).join("")}</select></td>
+      <td><input class="num" type="number" min="1" max="10" data-act="tl" data-v="${v.id}" data-i="${i}" data-f="period" value="${l.period}" aria-label="Stunde"></td>
+      <td>${trackSel(v, l, i)}</td>
+      <td><button type="button" class="mini del" data-act="tldel" data-v="${v.id}" data-i="${i}" aria-label="Stunde löschen">×</button></td></tr>`).join("");
+    return `<div class="ttv ${current ? "cur" : ""}">
+      <div class="ttvh"><label>Gültig ab <input type="date" data-act="ttfrm" data-v="${v.id}" value="${esc(v.frm)}"></label><span class="small muted">bis ${esc(until)}${current ? " · gilt am gewählten Tag" : ""}</span>
+      ${vs.length > 1 ? `<button type="button" class="linkbtn small" data-act="ttdelv" data-v="${v.id}">Zeitraum löschen</button>` : ""}</div>
+      ${v.lessons.length ? `<table class="form"><thead><tr><th>Tag</th><th>Std.</th><th>Spur</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<p class="small muted">In diesem Zeitraum hat ${esc(D.classes[k].label)} keinen Unterricht.</p>`}
+      <button type="button" class="linkbtn small" data-act="tladd" data-v="${v.id}">+ Stunde</button></div>`;
   }).join("");
-  const confirm = UI.confirm === "resetall";
-  return `<section><div class="vhead"><h1>Einstellungen</h1></div>
+  const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
+  const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
+  return `<div class="card"><h3>Stundenplan ${esc(D.classes[k].label)} · ${esc(yearLabel(Y.id))}</h3>
+    <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen), SOL = selbstorganisiertes Lernen.</p>
+    ${blocks}
+    <div class="addrow"><label>Neuer Stundenplan ab <input type="date" id="ttnewfrm" value="${esc(sug)}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label><button type="button" class="btn ghost sm" data-act="ttnew">Zeitraum anlegen</button></div>
+    <p class="small muted">Der neue Zeitraum übernimmt die Stunden, die an diesem Tag gelten; danach anpassen.</p>
+    <h3>Kein Unterricht in dieser Klasse</h3>
+    ${off ? `<div class="tscroll"><table class="form"><thead><tr><th>Anlass</th><th>von</th><th>bis</th><th></th></tr></thead><tbody>${off}</tbody></table></div>` : `<p class="small muted">Zum Beispiel Praktikum, Klassenfahrt oder Prüfungszeit. Die Stunden in diesem Zeitraum fallen weg und der Plan rückt nach.</p>`}
+    <button type="button" class="linkbtn" data-act="offadd">+ Zeitraum ohne Unterricht</button></div>`;
+}
+function viewSettings() {
+  const Y = cal(), k = UI.cls;
+  const hol = (Y.holidays || []).map((h, i) => `<tr><td><input data-act="hol" data-i="${i}" data-f="name" value="${esc(h.name)}" aria-label="Name"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="frm" value="${esc(h.frm)}" aria-label="von"></td><td><input type="date" data-act="hol" data-i="${i}" data-f="to" value="${esc(h.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="holdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
+  const fr = (Y.free || []).map((f, i) => `<tr><td><input type="date" data-act="free" data-i="${i}" data-f="date" value="${esc(f.date)}" aria-label="Datum"></td><td><input data-act="free" data-i="${i}" data-f="name" value="${esc(f.name)}" aria-label="Anlass"></td><td><button type="button" class="mini del" data-act="freedel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
+  const years = S.settings.years.map(y => `<tr class="${y.id === Y.id ? "cur" : ""}"><td class="mono">${esc(yearLabel(y.id))}</td><td class="mono small nowrap">${y.start ? fmt(y.start, { day: "2-digit", month: "2-digit", year: "numeric" }) + " – " + fmt(y.end, { day: "2-digit", month: "2-digit", year: "numeric" }) : ""}</td>
+    <td>${y.id === Y.id ? `<span class="pill new">angezeigt</span>` : `<button type="button" class="btn ghost sm" data-act="year" data-v="${esc(y.id)}">Öffnen</button>`}</td>
+    <td>${y.id === Y.id || S.settings.years.length < 2 ? "" : UI.confirm === "ydel-" + y.id ? `<span class="confirm small">Aus der Liste entfernen?<button type="button" class="btn danger sm" data-act="ydel" data-v="${esc(y.id)}">Entfernen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>` : `<button type="button" class="mini del" data-act="confirm" data-v="ydel-${esc(y.id)}" aria-label="Schuljahr entfernen">×</button>`}</td></tr>`).join("");
+  const opts = yearOptions(), lastY = S.settings.years[S.settings.years.length - 1].id;
+  const defNY = opts.includes(UI.newYear) ? UI.newYear : opts.find(id => id > lastY) || opts[0];
+  const confirm = UI.confirm === "resetall", cf = UI.confirm === "ferien";
+  return `<section><div class="vhead"><h1>Einstellungen</h1>${clsTabs()}</div>
     <div class="grid2">
-      <div class="card"><h3>Schuljahr</h3>
-        <label class="row">Erster Schultag <input type="date" data-act="cal" data-f="start" value="${esc(cal.start)}"></label>
-        <label class="row">Letzter Schultag <input type="date" data-act="cal" data-f="end" value="${esc(cal.end)}"></label>
+      <div class="card"><h3>Schuljahre</h3>
+        <div class="tscroll"><table class="form"><thead><tr><th>Schuljahr</th><th>Zeitraum</th><th></th><th></th></tr></thead><tbody>${years}</tbody></table></div>
+        ${opts.length ? `<div class="addrow" id="newyearbox"><label>Neues Schuljahr <select id="newyear">${opts.map(id => `<option value="${id}" ${id === defNY ? "selected" : ""}>${yearLabel(id)}</option>`).join("")}</select></label>
+          <label class="chk"><input type="checkbox" id="ny-seq" checked> Sequenzen und Atome übernehmen</label>
+          <label class="chk"><input type="checkbox" id="ny-tt" checked> Stundenpläne übernehmen</label>
+          <button type="button" class="btn" data-act="yearadd" ${UI.busy ? "disabled" : ""}>${UI.busy ? "Lädt …" : "Anlegen"}</button></div>` : ""}
+        <p class="small muted">Ein neues Schuljahr bekommt die Ferien und Feiertage für Sachsen, einen leeren Lernstand und keine Ausfälle. Die übernommenen Daten stammen aus dem gerade angezeigten Jahr (${esc(yearLabel(Y.id))}). Gespeichertes aus früheren Jahren bleibt erhalten.</p></div>
+      <div class="card"><h3>Schuljahr ${esc(yearLabel(Y.id))}</h3>
+        <div class="acts">${cf ? `<span class="confirm"><span>Beginn, Ende, Ferien und freie Tage durch die Termine für Sachsen ersetzen?</span><button type="button" class="btn danger sm" data-act="ferien">Ersetzen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="ferien" ${UI.busy ? "disabled" : ""}>${UI.busy ? "Lädt …" : "Ferien Sachsen importieren"}</button>`}</div>
+        ${Y.source ? `<p class="small muted">Quelle: ${esc(Y.source)}</p>` : ""}
+        <label class="row">Erster Schultag <input type="date" data-act="cal" data-f="start" value="${esc(Y.start)}"></label>
+        <label class="row">Letzter Schultag <input type="date" data-act="cal" data-f="end" value="${esc(Y.end)}"></label>
         <label class="row chk"><input type="checkbox" data-act="autobuf" ${S.settings.autoBuffer ? "checked" : ""}> Bei Mehrbedarf oder Ausfall automatisch den nächsten Puffer kürzen</label>
         <h3>Ferien</h3><div class="tscroll"><table class="form"><thead><tr><th>Name</th><th>von</th><th>bis</th><th></th></tr></thead><tbody>${hol}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="holadd">+ Ferien hinzufügen</button>
         <h3>Freie Einzeltage</h3><div class="tscroll"><table class="form"><thead><tr><th>Datum</th><th>Anlass</th><th></th></tr></thead><tbody>${fr}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
-        <p class="small muted">Quelle für Sachsen: schule.sachsen.de → Schuljahrestermine. Im neuen Schuljahr hier nur die Daten ändern; alles andere rechnet sich neu.</p></div>
-      <div>${tt}</div>
+        <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
+      ${ttCard(k)}
     </div>
     <div class="card"><h3>Sicherung</h3>
-      <p class="small">Ihre Daten werden automatisch gespeichert. Für eine zusätzliche Sicherung oder den Umzug ins nächste Schuljahr können Sie alles als Text kopieren und später wieder einspielen.</p>
-      <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" hidden>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand im neuen Schuljahr leeren</button></div>
+      <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
+      <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" hidden>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand ${esc(yearLabel(Y.id))} leeren</button></div>
       <textarea id="importbox" rows="3" placeholder="Sicherung hier einfügen …" aria-label="Sicherung einfügen"></textarea>
       <div class="acts"><button type="button" class="btn ghost" data-act="import">Sicherung einspielen</button>
-      ${confirm ? `<span class="confirm"><span>Wirklich alles auf die Vorlage zurücksetzen?</span><button type="button" class="btn danger" data-act="resetall">Alles zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="resetall">Alles zurücksetzen</button>`}</div></div>
+      ${confirm ? `<span class="confirm"><span>Sequenzen, Stundenpläne und Lernstand von ${esc(yearLabel(Y.id))} auf die Vorlage zurücksetzen?</span><button type="button" class="btn danger" data-act="resetall">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="resetall">Schuljahr zurücksetzen</button>`}</div></div>
   </section>`;
 }
 
@@ -666,12 +889,21 @@ function renderOverlay() {
 /* ---------------- router & render ---------------- */
 const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["engine", "Learning Engine"], ["einstellungen", "Einstellungen"]];
 function route() { const h = (location.hash || "#heute").slice(1); return h || "heute"; }
+/* Ein Feld, das beim Neuaufbau den Fokus verliert, kann ein change-Ereignis auslösen; dann nach dem Durchlauf erneut zeichnen. */
+let rendering = false;
 function render() {
+  if (rendering) { render.again = true; return; }
+  rendering = true;
+  try { renderNow(); } finally { rendering = false; }
+  if (render.again) { render.again = false; render(); }
+}
+function renderNow() {
   const r = route(); let html;
   const m = /^u-(kl6|kl8)-(\d+)$/.exec(r);
-  if (m) { UI.cls = m[1]; html = viewUnit(m[1], +m[2]); }
+  if (m) { if (UI.cls !== m[1]) { UI.cls = m[1]; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {} } html = viewUnit(m[1], +m[2]); }
   else html = ({ heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, engine: viewEngine, einstellungen: viewSettings }[r] || viewToday)();
   const active = m ? "einheiten" : r;
+  renderCtx();
   document.getElementById("nav").innerHTML = NAV.map(([id, l]) => `<a href="#${id}" ${active === id ? 'aria-current="page"' : ""}>${l}</a>`).join("");
   const main = document.getElementById("main");
   const sy = window.scrollY;
@@ -688,6 +920,7 @@ window.addEventListener("hashchange", () => {
 });
 
 /* ---------------- events ---------------- */
+const ttVersion = (k, id) => (S.cls[k].tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act]"); if (!b) return;
@@ -695,8 +928,16 @@ document.addEventListener("click", ev => {
   if (b.tagName === "SELECT" || (b.tagName === "INPUT" && b.type !== "checkbox" && b.type !== "button")) return;
   switch (a) {
     case "undo": doUndo(); break;
-    case "cls": UI.cls = b.dataset.k; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {} render(); break;
-    case "todaycls": UI.todayCls = b.dataset.v; try { localStorage.setItem("mp-today", UI.todayCls); } catch (e) {} render(); break;
+    case "cls": {
+      UI.cls = b.dataset.k; UI.editAtom = null; UI.confirm = null; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {}
+      if (/^u-/.test(route())) { location.hash = "#einheiten"; break; }
+      render(); break;
+    }
+    case "todaycls": UI.todayAll = b.dataset.v === "all"; try { localStorage.setItem("mp-today", UI.todayAll ? "all" : "one"); } catch (e) {} render(); break;
+    case "year": switchYear(b.dataset.v, true); break;
+    case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
+    case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
+    case "ferien": importFerien(); break;
     case "day": UI.date = addDays(UI.date, +b.dataset.n); UI.reveal = {}; render(); break;
     case "today": UI.date = todayIso(); UI.reveal = {}; render(); break;
     case "reveal": UI.reveal[b.dataset.id] = true; render(); break;
@@ -719,29 +960,40 @@ document.addEventListener("click", ev => {
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
-    case "reset": S.cls[k] = Object.assign(defaultClass(k), { timetable: S.cls[k].timetable, atoms: S.cls[k].atoms, done: S.cls[k].done }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
-    case "resetall": CLASSES.forEach(c => { S.cls[c] = defaultClass(c); S.eng[c] = defaultEngine(); save(c); save(engDoc(c)); }); S.settings = defaultSettings(); save("settings"); UI.confirm = null; touch(); render(); toast("Alles zurückgesetzt."); break;
+    case "reset": S.cls[k] = Object.assign(defaultClass(k), { tt: S.cls[k].tt, off: S.cls[k].off, cancelled: S.cls[k].cancelled, atoms: S.cls[k].atoms, done: S.cls[k].done }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "resetall": { CLASSES.forEach(c => { S.cls[c] = defaultClass(c); S.eng[c] = defaultEngine(); save(c); save(engDoc(c)); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
     case "atomedit": UI.editAtom = { code: b.dataset.code, id: b.dataset.id }; render(); break;
     case "atomcancel": UI.editAtom = null; render(); break;
     case "atomdel": { const code = b.dataset.code; const list = atomsOf(k, code).filter(x => x.id !== b.dataset.id); const snap = snapshotFor(k); S.cls[k].atoms[code] = clone(list); undoStack = snap; commit(k); toast("Atom gelöscht.", true); break; }
     case "atomreset": { const snap = snapshotFor(k); delete S.cls[k].atoms[b.dataset.code]; undoStack = snap; commit(k); toast("Atome auf die Vorlage zurückgesetzt.", true); break; }
-    case "holadd": S.settings.calendar.holidays.push({ name: "Ferien", frm: "", to: "" }); commit(null, { settings: true }); break;
-    case "holdel": S.settings.calendar.holidays.splice(i, 1); commit(null, { settings: true }); break;
-    case "freeadd": S.settings.calendar.free.push({ date: "", name: "" }); commit(null, { settings: true }); break;
-    case "freedel": S.settings.calendar.free.splice(i, 1); commit(null, { settings: true }); break;
-    case "ttadd": S.cls[k].timetable.push({ id: uid(), day: 1, period: 1, track: "A" }); commit(k); break;
-    case "ttdel": S.cls[k].timetable.splice(i, 1); commit(k); break;
-    case "engreset": { const snap = snapshotFor(UI.cls); CLASSES.forEach(c => { S.eng[c] = defaultEngine(); S.cls[c].done = {}; S.cls[c].cancelled = {}; save(engDoc(c)); save(c); }); S.settings.engineStart = S.settings.calendar.start; save("settings"); undoStack = snap; touch(); render(); toast("Lernstand, Ausfälle und Häkchen beider Klassen geleert.", false); break; }
+    case "holadd": cal().holidays.push({ name: "Ferien", frm: "", to: "" }); commit(null, { settings: true }); break;
+    case "holdel": cal().holidays.splice(i, 1); commit(null, { settings: true }); break;
+    case "freeadd": cal().free.push({ date: "", name: "" }); commit(null, { settings: true }); break;
+    case "freedel": cal().free.splice(i, 1); commit(null, { settings: true }); break;
+    case "tladd": { const v = ttVersion(k, b.dataset.v); if (v) { v.lessons.push({ id: uid(), day: 1, period: 1, track: "A" }); commit(k); } break; }
+    case "tldel": { const v = ttVersion(k, b.dataset.v); if (v) { v.lessons.splice(i, 1); commit(k); } break; }
+    case "ttnew": {
+      const frm = document.getElementById("ttnewfrm").value, C = S.cls[k];
+      if (!frm) { toast("Bitte zuerst das Datum wählen, ab dem der neue Stundenplan gilt."); break; }
+      if (C.tt.some(v => v.frm === frm)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); break; }
+      const base = sortTT(C.tt.slice()).filter(v => v.frm <= frm).pop() || C.tt[C.tt.length - 1];
+      const snap = snapshotFor(k); C.tt.push({ id: uid(), frm, lessons: base ? cloneLessons(base.lessons) : [] }); sortTT(C.tt);
+      undoStack = snap; commit(k); toast(`Neuer Stundenplan ab ${fmt(frm)} angelegt. Jetzt die Stunden anpassen.`, true); break;
+    }
+    case "ttdelv": { const C = S.cls[k]; if (C.tt.length < 2) break; const snap = snapshotFor(k); C.tt = C.tt.filter(v => v.id !== b.dataset.v); undoStack = snap; commit(k); toast("Stundenplan-Zeitraum gelöscht.", true); break; }
+    case "offadd": S.cls[k].off.push({ id: uid(), name: "", frm: "", to: "" }); commit(k); break;
+    case "offdel": S.cls[k].off.splice(i, 1); commit(k); break;
+    case "engreset": { const snap = snapshotFor(UI.cls); CLASSES.forEach(c => { S.eng[c] = defaultEngine(); S.cls[c].done = {}; S.cls[c].cancelled = {}; save(engDoc(c)); save(c); }); cal().engineStart = cal().start; save("settings"); undoStack = snap; touch(); render(); toast(`Lernstand, Ausfälle und Häkchen ${yearLabel(cal().id)} geleert.`, true); break; }
     case "export": {
-      const txt = JSON.stringify({ app: "matheplaner", v: 1, settings: S.settings, cls: S.cls, eng: S.eng });
+      const txt = JSON.stringify({ app: "matheplaner", v: 2, year: UI.year, settings: S.settings, cls: S.cls, eng: S.eng });
       const box = document.getElementById("importbox");
       navigator.clipboard.writeText(txt).then(() => toast("Sicherung in die Zwischenablage kopiert."), () => { box.value = txt; box.select(); toast("Kopieren nicht erlaubt: Text ist markiert, bitte mit Strg+C kopieren."); });
       break;
     }
     case "download": {
-      const txt = JSON.stringify({ app: "matheplaner", v: 1, settings: S.settings, cls: S.cls, eng: S.eng }, null, 1);
+      const txt = JSON.stringify({ app: "matheplaner", v: 2, year: UI.year, settings: S.settings, cls: S.cls, eng: S.eng }, null, 1);
       downloads.save({ filename: `matheplaner-sicherung-${todayIso()}.json`, data: txt }).then(() => toast("Datei gespeichert."), () => toast("Speichern abgebrochen."));
       break;
     }
@@ -749,7 +1001,15 @@ document.addEventListener("click", ev => {
       try {
         const o = JSON.parse(document.getElementById("importbox").value);
         if (o.app !== "matheplaner") throw 0;
-        if (o.settings) applyDoc("settings", o.settings);
+        if (o.settings && Array.isArray(o.settings.years)) applyDoc("settings", o.settings);
+        else if (o.settings) {
+          const { calendar, engineStart, ...rest } = o.settings;
+          Object.assign(S.settings, rest, { years: S.settings.years });
+          if (calendar) ["start", "end", "holidays", "free"].forEach(f => { if (calendar[f]) cal()[f] = calendar[f]; });
+          if (engineStart) cal().engineStart = engineStart;
+        }
+        const target = o.year && S.settings.years.some(y => y.id === o.year) ? o.year : S.settings.years.some(y => y.id === UI.year) ? UI.year : pickYear();
+        switchYear(target, true);
         CLASSES.forEach(c => { if (o.cls && o.cls[c]) applyDoc(c, o.cls[c]); if (o.eng && o.eng[c]) applyDoc(engDoc(c), o.eng[c]); save(c); save(engDoc(c)); });
         save("settings"); touch(); render(); toast("Sicherung eingespielt.");
       } catch (e) { toast("Das ist keine gültige Sicherung dieser App."); }
@@ -758,19 +1018,24 @@ document.addEventListener("click", ev => {
   }
 });
 document.addEventListener("change", ev => {
-  const t = ev.target, a = t.dataset.act; if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
+  const t = ev.target, a = t.dataset.act;
+  if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
+  if (t.id === "newyear") { UI.newYear = t.value; return; }
+  if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
     case "hrsset": setSeq(k, s => { s[i].hours = Math.max(0, Math.min(60, Math.round(+t.value || 0))); }); break;
     case "ret": S.settings.retention = +t.value; commit(null, { settings: true }); break;
     case "perlesson": S.settings.perLesson = Math.max(1, Math.min(15, Math.round(+t.value || 5))); commit(null, { settings: true }); break;
-    case "cal": if (t.value) { S.settings.calendar[f] = t.value; commit(null, { settings: true }); } break;
+    case "cal": if (t.value) { cal()[f] = t.value; commit(null, { settings: true }); } break;
     case "autobuf": S.settings.autoBuffer = t.checked; commit(null, { settings: true }); break;
-    case "engstart": if (t.value) { S.settings.engineStart = t.value; commit(null, { settings: true }); } break;
-    case "hol": S.settings.calendar.holidays[i][f] = t.value; commit(null, { settings: true }); break;
-    case "free": S.settings.calendar.free[i][f] = t.value; commit(null, { settings: true }); break;
-    case "tt": { const row = S.cls[k].timetable[i]; if (f === "day" || f === "period") row[f] = +t.value; else if (t.value) row[f] = t.value; else delete row[f]; commit(k); break; }
+    case "engstart": if (t.value) { cal().engineStart = t.value; commit(null, { settings: true }); } break;
+    case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
+    case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
+    case "tl": { const v = ttVersion(k, t.dataset.v), row = v && v.lessons[i]; if (!row) break; row[f] = f === "track" ? t.value : Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
+    case "ttfrm": { const v = ttVersion(k, t.dataset.v); if (!v || !t.value) break; if (S.cls[k].tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(S.cls[k].tt); commit(k); break; }
+    case "off": { const o = S.cls[k].off[i]; if (!o) break; o[f] = t.value; commit(k); break; }
   }
 });
 document.addEventListener("submit", ev => {
@@ -793,7 +1058,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { S, schedule, engineState, fsrsReview, lessonInfo, UI };
+window.__mp = { S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
 render.keepScroll = false;
 renderBanner(); render();
 if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }
