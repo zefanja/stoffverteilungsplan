@@ -151,6 +151,18 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   ok((await p.innerText('.tcard h2')) === '8a', 'Umschalten auf 8a');
   await p.waitForTimeout(900);
 
+  // Schwierigkeitsstufen nach Stabilität
+  const lv = await p.evaluate(() => {
+    const m = window.__mp, g = 'kl8.a', d = '2027-01-20', es0 = m.engineState(g, d), x0 = es0.list.find(x => x.a.q2);
+    if (!x0) return ['kein Atom'];
+    const id = x0.a.id, E = m.S.eng[g], keep = E.cards[id];
+    const t = c => { if (c) E.cards[id] = c; else delete E.cards[id]; m.S.cls.kl8.atoms = Object.assign({}, m.S.cls.kl8.atoms); window.__mp.touch && 0; return null; };
+    const at = (c) => { t(c); const L = m.__lv(g, d, id); return L; };
+    const r = [at(null), at({ s: 10, d: 5, reps: 3, lapses: 0, last: '2027-01-15', due: '2027-01-25' }), at({ s: 40, d: 5, reps: 5, lapses: 0, last: '2027-01-18', due: '2027-02-28' }), at({ s: 40, d: 5, reps: 5, lapses: 1, last: '2027-01-18', due: '2027-02-28', lastG: 1 })];
+    t(keep); return r;
+  });
+  ok(JSON.stringify(lv.map(x => x && x.l)) === JSON.stringify([1, 2, 3, 1]), 'Stufe nach Stabilität: neu 1, 10 Tage 2, 40 Tage 3, nach „Nochmal“ 1 ' + JSON.stringify(lv.map(x => x && x.q)));
+
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
   const p2 = await p.context().newPage(); p2.on('pageerror', e => errs.push(e.message));

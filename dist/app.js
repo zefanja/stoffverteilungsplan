@@ -107,7 +107,12 @@ const touch = () => { ver++; };
 
 const unitOf = (k, code) => D.classes[ck(k)].units[code];
 const lbOf = (k, code) => (unitOf(k, code) || {}).lb || "P";
-const atomsOf = (k, code) => S.cls[ck(k)].atoms[code] || (unitOf(k, code) || {}).atoms || [];
+const LV_FIELDS = ["q2", "a2", "q3", "a3"];
+function atomsOf(k, code) {
+  const base = (unitOf(k, code) || {}).atoms || [], own = S.cls[ck(k)].atoms[code];
+  if (!own) return base;
+  return own.map(a => { const t = base.find(b => b.id === a.id); if (!t || a.q2 !== undefined) return a; const x = Object.assign({}, a); LV_FIELDS.forEach(f => { x[f] = t[f]; }); return x; });
+}
 function atomMap(k) {
   k = ck(k);
   const key = "am" + k;
@@ -225,6 +230,22 @@ function engineState(g, date) {
   if (pick.length < N) pick.push(...back.slice(0, N - pick.length));
   return { list, dueCount: dueNew.length + dueRev.length, backCount: back.length, pick };
 }
+
+/* Schwierigkeitsstufe der Wiederholung nach FSRS-Stabilität: unsicher -> Grundaufgabe, stabil -> anspruchsvoller.
+   Zuletzt „Nochmal“ oder geringer Abruf heute stuft eine Stufe zurück. */
+const LEVELS = { 1: ["Stufe 1", "Abrufen"], 2: ["Stufe 2", "Anwenden"], 3: ["Stufe 3", "Vernetzen"] };
+const LV_S2 = 7, LV_S3 = 30;
+function levelOf(x) {
+  const c = x.card; if (!c || !c.reps) return 1;
+  let l = c.s >= LV_S3 ? 3 : c.s >= LV_S2 ? 2 : 1;
+  if (c.lastG === 1) l = 1; else if (x.R !== null && x.R !== undefined && x.R < 0.75) l = Math.max(1, l - 1);
+  return l;
+}
+function taskOf(a, lvl) {
+  for (let l = lvl; l >= 2; l--) if (a["q" + l]) return { l, q: a["q" + l], a: a["a" + l] || "" };
+  return { l: 1, q: a.q, a: a.a };
+}
+const levelPill = l => `<span class="pill lv lv${l}" title="${esc(LEVELS[l][1])}">${esc(LEVELS[l][0])} · ${esc(LEVELS[l][1])}</span>`;
 
 /* ---------------- persistence ---------------- */
 /* Dokumente: planner/settings ist global. Klassen und Lernstand liegen je Schuljahr in jahr-<id>/…;
@@ -414,8 +435,9 @@ function toggleDone(g, key) {
 function rate(g, id, grade) {
   const date = UI.date, E = S.eng[g], prev = E.cards[id];
   withUndo(g, "", () => {
-    E.cards[id] = fsrsReview(prev, grade, date, S.settings.retention);
-    E.log.push({ d: date, id, g: grade });
+    const x = engineState(g, date).list.find(y => y.a.id === id), lvl = x ? taskOf(x.a, levelOf(x)).l : 1;
+    E.cards[id] = Object.assign(fsrsReview(prev, grade, date, S.settings.retention), { lastG: grade });
+    E.log.push({ d: date, id, g: grade, l: lvl });
   });
   const c = E.cards[id];
   toast(`Gespeichert. Nächste Wiederholung ab ${fmt(c.due)} (in ${diffDays(date, c.due)} Tagen).`, true);
@@ -648,12 +670,12 @@ function slotBlock(k, s) {
     </div></div></div>`;
 }
 function reviewItem(k, x) {
-  const id = x.a.id, open = UI.reveal[k + id];
+  const id = x.a.id, open = UI.reveal[k + id], task = taskOf(x.a, levelOf(x));
   const state = x.isNew ? `<span class="pill new">erste Wiederholung</span>` : x.backlog ? `<span class="pill">Altbestand · ${esc(fmt(x.intro))}</span>` : `<span class="pill">${Math.round(x.R * 100)} % Abruf</span>`;
   return `<div class="ritem" style="${sty(lbOf(k, x.code))}">
-    <div class="rtop"><span class="chip"><b>${esc(x.code)}</b></span>${state}</div>
-    <div class="rq">${esc(x.a.q)}</div>
-    ${open ? `<div class="ra">${esc(x.a.a)}</div><div class="rt small muted">${esc(x.a.t)}</div>${rateButtons(k, id)}` : `<button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>`}
+    <div class="rtop"><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(task.l)}${state}</div>
+    <div class="rq">${esc(task.q)}</div>
+    ${open ? `<div class="ra">${esc(task.a)}</div><div class="rt small muted">${esc(x.a.t)}</div>${rateButtons(k, id)}` : `<button type="button" class="btn ghost sm" data-act="reveal" data-id="${esc(k + id)}">Lösung zeigen</button>`}
   </div>`;
 }
 const RATES = [[1, "Nochmal", "unter 50 % richtig"], [2, "Schwer", "50–70 %"], [3, "Gut", "70–90 %"], [4, "Leicht", "über 90 %"]];
@@ -781,7 +803,7 @@ function viewUnit(kc, idx) {
 function atomRow(k, code, a, card) {
   if (UI.editAtom && UI.editAtom.id === a.id) return `<li>${atomForm(k, code, a, a.id)}</li>`;
   const st = card ? `<span class="pill">${Math.round(Rof(Math.max(0, diffDays(card.last, UI.date)), card.s) * 100)} % · ab ${fmt(card.due)}</span>` : "";
-  return `<li class="atom"><div><b>${esc(a.t)}</b> ${st}<div class="small muted">Check: ${esc(a.q)} → ${esc(a.a)}</div></div>
+  return `<li class="atom"><div><b>${esc(a.t)}</b> ${st}<div class="small muted">Check: ${esc(a.q)} → ${esc(a.a)}</div>${a.q2 ? `<div class="small muted">Stufe 2: ${esc(a.q2)} → ${esc(a.a2)}</div>` : ""}${a.q3 ? `<div class="small muted">Stufe 3: ${esc(a.q3)} → ${esc(a.a3)}</div>` : ""}</div>
     <span class="nowrap"><button type="button" class="mini" data-act="atomedit" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom bearbeiten">✎</button><button type="button" class="mini del" data-act="atomdel" data-code="${esc(code)}" data-id="${esc(a.id)}" aria-label="Atom löschen">×</button></span></li>`;
 }
 function atomForm(k, code, a, id) {
@@ -789,6 +811,10 @@ function atomForm(k, code, a, id) {
     <label>Atom <input name="t" required value="${esc(a.t)}" placeholder="z. B. Gleichnamige Brüche addieren"></label>
     <label>Prüffrage <input name="q" value="${esc(a.q)}" placeholder="z. B. 2/7 + 3/7 = ?"></label>
     <label>Lösung <input name="a" value="${esc(a.a)}" placeholder="5/7"></label>
+    <label>Stufe 2 · Anwenden <input name="q2" value="${esc(a.q2 || "")}" placeholder="z. B. 5/12 + 1/12 = ?"></label>
+    <label>Lösung Stufe 2 <input name="a2" value="${esc(a.a2 || "")}"></label>
+    <label>Stufe 3 · Vernetzen <input name="q3" value="${esc(a.q3 || "")}" placeholder="z. B. Welcher Bruch fehlt: □ + 2/9 = 1?"></label>
+    <label>Lösung Stufe 3 <input name="a3" value="${esc(a.a3 || "")}"></label>
     <label class="sm">Stunde <input name="l" type="number" min="1" value="${a.l}"></label>
     <div class="acts"><button class="btn" type="submit">Speichern</button><button type="button" class="btn ghost" data-act="atomcancel">Abbrechen</button></div></form>`;
 }
@@ -806,10 +832,10 @@ function viewEngine() {
   const rowsSrc = showAll ? Object.values(am).map(a => intro.find(x => x.a.id === a.id) || { a, code: a.code, intro: sc.intro[a.id] ? sc.intro[a.id].date : null, card: null, isNew: false, R: null, future: true }) : intro;
   rowsSrc.forEach(x => (byUnit[x.code] || (byUnit[x.code] = [])).push(x));
   const unitsSorted = Object.keys(byUnit).sort((a, b) => D.classes[ck(k)].unitOrder.indexOf(a) - D.classes[ck(k)].unitOrder.indexOf(b));
-  const tbl = unitsSorted.map(code => `<tr class="ugroup"><td colspan="5">${unitLink(k, code)}</td></tr>` + byUnit[code].map(x => {
+  const tbl = unitsSorted.map(code => `<tr class="ugroup"><td colspan="6">${unitLink(k, code)}</td></tr>` + byUnit[code].map(x => {
     const c = x.card;
     const R = x.R !== null && x.R !== undefined ? x.R : null;
-    return `<tr><td>${esc(x.a.t)}</td>
+    return `<tr><td>${esc(x.a.t)}</td><td>${x.future ? "" : levelPill(taskOf(x.a, levelOf(x)).l)}</td>
       <td>${R !== null ? `<span class="rbar"><i style="width:${Math.round(R * 100)}%"></i></span><span class="mono small">${Math.round(R * 100)} %</span>` : `<span class="small muted">${x.future ? (x.intro ? "ab " + fmt(x.intro) : "nicht eingeplant") : x.backlog ? "Altbestand" : "neu"}</span>`}</td>
       <td class="mono small">${c ? c.s.toFixed(1) + " T." : "—"}</td>
       <td class="mono small">${c ? fmt(c.due) : x.isNew ? "jetzt" : "—"}</td>
@@ -827,6 +853,7 @@ function viewEngine() {
         <p class="small">Jedes Atom ist einer Stunde zugeordnet. Ab der Stunde danach erscheint es auf der Heute-Seite zur Wiederholung, z. B. als Einstiegsaufgabe. Sie bewerten, wie gut die Klasse es abrufen konnte:</p>
         <ul class="small rlist">${RATES.map(([g, l, h]) => `<li><b class="r${g}t">${l}</b> ${h} der Klasse richtig</li>`).join("")}</ul>
         <p class="small">Daraus berechnet FSRS für jedes Atom Stabilität und Schwierigkeit und legt die nächste Wiederholung so, dass die Klasse es dann noch mit der gewählten Wahrscheinlichkeit abrufen kann. Gut sitzende Atome kommen immer seltener, wackelige öfter.</p>
+        <p class="small">Je stabiler ein Atom sitzt, desto anspruchsvoller wird die Aufgabe: ${levelPill(1)} bis ${LV_S2} Tage Stabilität, ${levelPill(2)} ab ${LV_S2} Tagen, ${levelPill(3)} ab ${LV_S3} Tagen. Nach „Nochmal“ oder bei geringem Abruf geht es eine Stufe zurück.</p>
         ${es.pick.length ? `<button type="button" class="btn" data-act="quiz" data-k="${k}">Heutige Wiederholung als Quiz zeigen</button>` : ""}</div>
       <div class="card"><h3>Einstellungen</h3>
         <label class="row">Zielbehalt <select data-act="ret">${[0.8, 0.85, 0.9, 0.95].map(v => `<option value="${v}" ${S.settings.retention === v ? "selected" : ""}>${Math.round(v * 100)} %</option>`).join("")}</select></label>
@@ -837,7 +864,7 @@ function viewEngine() {
         <p class="small muted">Atome, die vor diesem Tag eingeführt wurden, sind Altbestand: Sie kommen nicht alle auf einmal, sondern je Stunde wird mindestens eines eingestreut, bis alle einmal wiederholt sind.</p></div>
     </div>
     <div class="vhead sub"><h2>Atome</h2><div class="seg small">${[["intro", "Eingeführt"], ["all", "Alle"]].map(([v, l]) => `<button type="button" aria-selected="${UI.engFilter === v}" data-act="engfilter" data-v="${v}">${l}</button>`).join("")}</div></div>
-    ${tbl ? `<div class="tscroll"><table class="eng"><thead><tr><th>Atom</th><th>Abruf heute</th><th>Stabilität</th><th>Nächste</th><th>Wdh.</th></tr></thead><tbody>${tbl}</tbody></table></div>` : `<p class="muted">Bis zum ${fmt(d)} sind laut Plan noch keine Atome eingeführt.</p>`}
+    ${tbl ? `<div class="tscroll"><table class="eng"><thead><tr><th>Atom</th><th>Stufe</th><th>Abruf heute</th><th>Stabilität</th><th>Nächste</th><th>Wdh.</th></tr></thead><tbody>${tbl}</tbody></table></div>` : `<p class="muted">Bis zum ${fmt(d)} sind laut Plan noch keine Atome eingeführt.</p>`}
   </section>`;
 }
 
@@ -945,9 +972,9 @@ function renderOverlay() {
     return;
   }
   el.innerHTML = `<div class="ov-card quiz" role="dialog" aria-label="Wiederholung" style="${sty(lbOf(q.k, x.code))}">
-    <header><span class="chip"><b>${esc(x.code)}</b></span><span class="mono muted">${q.i + 1} / ${q.items.length}</span><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
-    <div class="qq">${esc(x.a.q)}</div>
-    ${q.show ? `<div class="qa">${esc(x.a.a)}</div><div class="small muted center">${esc(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>`}
+    <header><span class="chip"><b>${esc(x.code)}</b></span>${levelPill(taskOf(x.a, levelOf(x)).l)}<span class="mono muted">${q.i + 1} / ${q.items.length}</span><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
+    <div class="qq">${esc(taskOf(x.a, levelOf(x)).q)}</div>
+    ${q.show ? `<div class="qa">${esc(taskOf(x.a, levelOf(x)).a)}</div><div class="small muted center">${esc(x.a.t)}</div>${rateButtons(q.k, x.a.id).replace(/data-act="rate"/g, 'data-act="qrate"')}` : `<button type="button" class="btn big" data-act="qshow">Lösung zeigen <span class="muted small">(Leertaste)</span></button>`}
   </div>`;
 }
 
@@ -1139,6 +1166,7 @@ document.addEventListener("submit", ev => {
   const fm = ev.target.closest(".aform"); if (!fm) return; ev.preventDefault();
   const k = UI.cls, code = fm.dataset.code, id = fm.dataset.id, fd = new FormData(fm);
   const atom = { id: id === "new" ? code + "." + uid() : id, l: Math.max(1, +fd.get("l") || 1), t: String(fd.get("t")).trim(), q: String(fd.get("q")).trim(), a: String(fd.get("a")).trim() };
+  LV_FIELDS.forEach(f => { atom[f] = String(fd.get(f) || "").trim(); });
   if (!atom.t) return;
   const list = clone(atomsOf(k, code)); const j = list.findIndex(x => x.id === id);
   if (j >= 0) list[j] = atom; else list.push(atom);
@@ -1155,7 +1183,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
+window.__mp = { __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc };
 render.keepScroll = false;
 renderBanner(); render();
 if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }

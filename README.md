@@ -45,6 +45,9 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 - **Jahresplan**: Wochenübersicht je Strang, SOL-Formatvorschläge für Klasse 8.
 - **Sequenz**: Reihenfolge, Stunden, Strang, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je Strang.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar.
+- **Schwierigkeitsstufen**: Jedes Atom hat drei Aufgaben (`src/atoms.py` Stufe 1, `src/atoms_levels.py` Stufe 2 und 3).
+  Die Heute-Seite und das Quiz wählen nach FSRS-Stabilität: unter 7 Tagen „Abrufen“, ab 7 Tagen „Anwenden“, ab 30 Tagen
+  „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
 - **Learning Engine**: FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
   Quiz-Ansicht zum Projizieren, Altbestand für Atome vor dem Startdatum.
 - **Einstellungen**:
