@@ -206,7 +206,7 @@ function serve(dir) {
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   await p.uncheck('[data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => JSON.stringify(window.__mp.cal().classes) === '["kl8"]'), 'Meine Klassen 2026/27: nur Klasse 8');
-  ok(await p.$$eval('#ctx .grades button', bs => bs.some(e => e.textContent === '6' && e.disabled && /nicht zu Ihren Klassen/.test(e.title))), 'Leiste: Klasse 6 ausgegraut');
+  ok(await p.$$eval('#ctx .grades button', bs => bs.some(e => e.textContent === '6' && e.disabled && /nicht zu deinen Klassen/.test(e.title))), 'Leiste: Klasse 6 ausgegraut');
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(150);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
   ok(JSON.stringify(await p.$$eval('.tcard h2', hs => hs.map(h => h.textContent))) === JSON.stringify(['GYM · 8a', 'GYM · 8b']), 'Alle meine Klassen: nur 8a und 8b');
@@ -258,7 +258,33 @@ function serve(dir) {
     return { n: k.length, os7: k.filter(x => C[x].type === 'os' && C[x].grade === 7).map(x => C[x].variant).join(','), os10: k.filter(x => C[x].type === 'os' && C[x].grade === 10).map(x => C[x].variant).join(','),
       g11: k.filter(x => C[x].type === 'gym' && C[x].grade === 11).map(x => C[x].variant).join(','), sum9: sum('gym9'), sum8hs: sum('os8hs'), zrw8hs: Object.values(C.os8hs.zrw).reduce((a, x) => a + x, 0) }; });
   ok(lp.n === 19 && lp.os7 === 'HS,RS' && lp.os10 === 'RS' && lp.g11 === 'GK,LK', 'Lehrpläne: 19 Klassen, OS 7 HS/RS, OS 10 nur RS, GYM 11 GK/LK ' + JSON.stringify(lp));
-  ok(lp.sum9 === 104 && lp.sum8hs === lp.zrw8hs, 'Sequenzen entsprechen den Zeitrichtwerten (GYM 9: 104 Std.)');
+  // Sequenzen füllen das Schuljahr wie GYM 6/8: Stoff mindestens nach Zeitrichtwert, Klassenarbeiten, Wahlbereich, Abschluss
+  const fill = await p.evaluate(() => { const M = window.__mp, C = window.PLAN_DATA.classes, bad = [];
+    for (const id in C) { if (C[id].source !== 'lehrplan') continue;
+      const sc = M.schedule(id + '.a'), seq = C[id].seq, stoff = seq.filter(r => /^\d/.test(r[0])).reduce((a, r) => a + r[2], 0);
+      const zrw = Object.values(C[id].zrw).reduce((a, x) => a + x, 0), ka = seq.filter(r => /^KA/.test(r[0])).length;
+      if (sc.cap.A !== sc.planned.A || stoff < zrw || ka !== (C[id].grade >= 11 ? 2 : 4)) bad.push([id, sc.cap.A, sc.planned.A, stoff, zrw, ka].join(':')); }
+    const g9 = C.gym9.seq.map(r => r[0]);
+    const end12 = M.schedule('gym12gk.a').slots.reduce((a, s) => s.date > a ? s.date : a, '');
+    const end10 = M.schedule('os10rs.a').slots.reduce((a, s) => s.date > a ? s.date : a, '');
+    return { bad, g9: g9.includes('KA1') && g9.includes('KA4') && g9.includes('W1') && g9[g9.length - 1] === 'JA', end12, end10, ka: C.gym9.units.KA1.title }; });
+  ok(fill.bad.length === 0 && fill.g9, 'Lehrplan-Sequenzen füllen das Schuljahr (Stoff ≥ Zeitrichtwert, 4 KA bzw. 2 Klausuren, Wahlbereich, Jahresabschluss) ' + JSON.stringify(fill));
+  ok(fill.end12 < '2027-03-26' && fill.end12 >= '2027-03-15' && fill.end10 < '2027-05-15' && fill.end10 >= '2027-05-01', 'Abschlussklassen: GYM 12 bis vor Ostern, OS 10 bis vor Pfingsten ' + fill.end12 + ' ' + fill.end10);
+  // alte, unveränderte Lehrplan-Sequenz (nur Zeitrichtwerte) wird beim Laden durch die neue Vorlage ersetzt
+  const lpMig = await p.evaluate(() => { const M = window.__mp, C = window.PLAN_DATA.classes.os9hs, cur = M.S.cls.os9hs;
+    const old = []; let lb = null;
+    for (const [code] of C.seq) { if (!/^\d/.test(code)) continue; const l = code.split('.')[0]; if (lb && l !== lb) old.push({ id: 'p' + old.length, code: 'P', strand: 'A', hours: 1 }); lb = l; }
+    const zrw = Object.values(C.zrw), units = C.seq.filter(r => /^\d/.test(r[0]));
+    // Stunden der Einheiten so wählen, dass die Summe den Zeitrichtwerten entspricht
+    let rest = zrw.reduce((a, x) => a + x, 0); const rows = [];
+    units.forEach((r, i) => { const h = i === units.length - 1 ? rest : 1; rest -= h; rows.push({ id: 'u' + i, code: r[0], strand: 'A', hours: h }); });
+    M.applyDoc('os9hs', { seq: rows.concat([{ id: 'pz', code: 'P', strand: 'A', hours: 1 }]), mode: 'nacheinander', atoms: {}, groups: cur.groups });
+    const a = M.S.cls.os9hs.seq.some(r => /^KA/.test(r.code));
+    M.applyDoc('os9hs', { seq: [{ id: 'x', code: '1.1', strand: 'A', hours: 3 }], mode: 'nacheinander', atoms: {}, groups: cur.groups });
+    const b = M.S.cls.os9hs.seq.length === 1;
+    M.applyDoc('os9hs', { seq: C.seq.map(([code, strand, hours], i) => ({ id: 's' + i, code, strand, hours })), mode: 'nacheinander', atoms: {}, groups: cur.groups });
+    return [a, b]; });
+  ok(lpMig[0] && lpMig[1], 'Alte Lehrplan-Sequenz wird ersetzt, eigene Sequenzen bleiben ' + JSON.stringify(lpMig));
   const noAtoms = await p.evaluate(() => { const C = window.PLAN_DATA.classes, bad = [];
     for (const id in C) for (const code in C[id].units) { const u = C[id].units[code];
       if (u.lb && !/^(W|P|KA|JA|A-KA|B-KA)/.test(code) && !u.atoms.length) bad.push(id + ':' + code);
@@ -285,6 +311,11 @@ function serve(dir) {
   const dsAfter = await slotsWeek();
   ok(dsBefore.split(',').length === 4 && dsAfter.split(',').length === 5 && dsAfter.includes('16/2') && dsAfter.includes('16/3') && (await p.innerText('.ttv.cur')).includes('5 Unterrichtsstunden pro Woche'), 'Doppelstunde zählt im Plan als zwei Stunden ' + dsBefore + ' → ' + dsAfter);
   await p.selectOption('.ttv.cur select[data-f="len"][data-i="0"]', '1'); await p.waitForTimeout(150);
+  // letzter Unterrichtstag: eigener Wert kürzt den Plan, zurücksetzen auf Schuljahresende
+  await p.fill('input[data-act="lastday"]', '2027-06-30'); await p.dispatchEvent('input[data-act="lastday"]', 'change'); await p.waitForTimeout(150);
+  const ld = await p.evaluate(() => [window.__mp.S.cls.os7hs.lastDay, window.__mp.schedule('os7hs.a').slots.every(s => s.date <= '2027-06-30')]);
+  await p.click('[data-act="lastdayreset"]'); await p.waitForTimeout(150);
+  ok(ld[0] === '2027-06-30' && ld[1] && (await p.evaluate(() => window.__mp.S.cls.os7hs.lastDay === undefined)), 'Letzter Unterrichtstag einstellbar und zurücksetzbar ' + JSON.stringify(ld));
   await p.uncheck('[data-act="mine"][data-k="os7hs"]'); await p.uncheck('[data-act="mine"][data-k="os7rs"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => window.__mp.UI.type === 'gym' && ['kl6', 'kl8'].includes(window.__mp.UI.cls)), 'Nach dem Abwählen zurück zu einer eigenen GYM-Klasse');
   await p.waitForTimeout(900);

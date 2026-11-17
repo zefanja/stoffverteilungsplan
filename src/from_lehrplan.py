@@ -1,7 +1,9 @@
 """Erzeugt Klassen für die App aus src/lehrplan.json (Lehrplandatenbank Sachsen).
 
 Je Lernbereich entstehen Einheiten entlang der Lernziele, die Zeitrichtwerte werden anteilig verteilt,
-die Inhalte werden zu Stundenthemen. Wahlbereiche stehen als Einheiten zur Auswahl (nicht in der Sequenz).
+die Inhalte werden zu Stundenthemen. Wie in den ausgearbeiteten Plänen GYM 6/8 kommen Klassenarbeiten, ein Wahlbereich
+und ein Jahresabschluss dazu; die übrige Zeit des Schuljahres wird als Übungsstunden anteilig auf die Einheiten verteilt.
+Abschlussklassen (GYM 12, OS 10) enden früher.
 Oberschule ab Klasse 7: Hauptschul- (HS) und Realschulbildungsgang (RS) als eigene Klassen.
 Gymnasium 11/12: Grund- (GK) und Leistungskurs (LK); der Lehrplan gilt für beide Jahre gemeinsam,
 die App teilt LB 1–4 auf Klasse 11 und die übrigen auf Klasse 12 auf (Vorschlag, in der Sequenz änderbar).
@@ -121,19 +123,81 @@ def load_atoms(cid):
     return json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {}
 
 
-def attach_atoms(cid, units):
+def attach_atoms(cid, units, base_hours=None):
+    """Atome anhängen. Hat eine Einheit durch Übungsstunden mehr Stunden als nach Zeitrichtwert (base_hours),
+    rückt die Einführungsstunde der Atome anteilig nach hinten."""
     data = load_atoms(cid)
     for code, rows in data.items():
         u = units.get(code)
         assert u is not None, (cid, code, "Einheit unbekannt")
         n = max(1, len(u["stunden"]))
+        f = n / max(1, (base_hours or {}).get(code, n))
         u["atoms"] = []
         for i, r in enumerate(rows):
             assert len(r) == 8 and all(isinstance(x, str) and x for x in r[1:]), (cid, code, r)
-            u["atoms"].append(dict(id=f"{code}.{i + 1}", l=min(max(1, int(r[0])), n), t=r[1], q=r[2], a=r[3], q2=r[4], a2=r[5], q3=r[6], a3=r[7]))
+            l = min(max(1, round(int(r[0]) * f)), n)
+            u["atoms"].append(dict(id=f"{code}.{i + 1}", l=l, t=r[1], q=r[2], a=r[3], q2=r[4], a2=r[5], q3=r[6], a3=r[7]))
 
 
-def build(lehrplan, cal_start, weeks=25):
+def end_rule(school, grade):
+    """Abschlussklassen enden früher: GYM 12 vor den Osterferien (Abitur), OS 10 vor den Pfingstferien (Prüfungen)."""
+    return {("gym", 12): "ostern", ("os", 10): "pfingsten"}.get((school, grade))
+
+
+def last_day(cal, rule):
+    import datetime as dt
+    pat = {"ostern": "oster", "pfingsten": "pfingst"}.get(rule)
+    for h in cal["holidays"] if pat else []:
+        if pat in h["name"].lower():
+            return (dt.date.fromisoformat(h["frm"]) - dt.timedelta(1)).isoformat()
+    return None
+
+
+def capacity(cal, weekdays, until=None):
+    """Unterrichtsstunden im Schuljahr für einen Wochenplan (Liste der Wochentage 1–5, Doppelungen = mehrere Stunden)."""
+    import datetime as dt
+    d, e = dt.date.fromisoformat(cal["start"]), dt.date.fromisoformat(until or cal["end"])
+    free = {f["date"] for f in cal["free"]}
+    n = 0
+    while d <= e:
+        iso = d.isoformat()
+        if d.isoweekday() <= 5 and iso not in free and not any(h["frm"] <= iso <= h["to"] for h in cal["holidays"]):
+            n += weekdays.count(d.isoweekday())
+        d += dt.timedelta(1)
+    return n
+
+
+def ka_count(school, grade):
+    """Klassenarbeiten je Schuljahr (Vorschlag wie in GYM 6/8: zwei je Halbjahr; Oberstufe eine Klausur je Halbjahr)."""
+    return 2 if grade >= 11 else 4
+
+
+def place_tests(rows, n):
+    """Positionen (Index in rows, nach dem eingefügt wird) für n Klassenarbeiten: möglichst am Ende eines Lernbereichs,
+    gleichmäßig über den Stoff verteilt; die letzte am Ende."""
+    cum, c = [], 0
+    for r in rows:
+        c += r["h"] if r["code"] != "P" else 0
+        cum.append(c)
+    total = c or 1
+    pos, last = [], -1
+    for j in range(1, n + 1):
+        t = total * j / n
+        best = None
+        for i in range(last + 1, len(rows)):
+            if j < n and len(rows) - i <= n - j:
+                break
+            lb_end = rows[i]["code"] == "P"
+            score = abs(cum[i] - t) - (0.1 * total if lb_end else 0)
+            if best is None or score < best[0]:
+                best = (score, i)
+        if j == n:
+            best = (0, len(rows) - 1)
+        pos.append(best[1]); last = best[1]
+    return pos
+
+
+def build(lehrplan, cal, weeks=25):
     classes = {}
     for school in ("gym", "os"):
         for plan in lehrplan[school]:
@@ -142,32 +206,78 @@ def build(lehrplan, cal_start, weeks=25):
                 pflicht = [lb for lb in lbs if not lb["wahl"]]
                 total = sum(lb["ustd"] for lb in pflicht)
                 w = {"GK": 4, "LK": 5}.get(variant) or max(2, round(total / (20 if grade == 10 and school == "os" else weeks)))
-                units, seq, lbnames, zrw = {}, [], {}, {}
+                days = DAYS_BY_HOURS.get(w, DAYS_BY_HOURS[4])
+                rule = end_rule(school, grade)
+                cap = capacity(cal, days, last_day(cal, rule))
+                exam = rule is not None
+                units, lbnames, zrw = {}, {}, {}
+                # 1. Lernziele mit Zeitrichtwert-Stunden
+                rows = []
                 for lb in pflicht:
                     key = f"LB{lb['nr']}"
                     lbnames[key] = lb["title"]; zrw[key] = lb["ustd"]
                     lzs = merge_continuations([lz for lz in lb["lernziele"] if lz["text"]]) or [dict(text=lb["title"], bem=[], refs=[], inhalte=[])]
                     hours = split_hours(lb["ustd"], [1 + len(lz["inhalte"]) + sum(len(i["sub"]) for i in lz["inhalte"]) / 2 for lz in lzs])
                     for k, (lz, h) in enumerate(zip(lzs, hours), 1):
-                        code = f"{lb['nr']}.{k}" if len(lzs) > 1 else f"{lb['nr']}"
-                        units[code] = unit_from(lz, code, key, h)
-                        seq.append([code, "A", h])
-                    seq.append(["P", "A", 1])
-                for lb in [lb for lb in lbs if lb["wahl"]]:
+                        rows.append(dict(code=f"{lb['nr']}.{k}" if len(lzs) > 1 else f"{lb['nr']}", lb=key, lz=lz, h=h, base=h))
+                    rows.append(dict(code="P", lb="P", h=1))
+                wahl = [lb for lb in lbs if lb["wahl"]]
+                # 2. feste Bausteine wie in GYM 6/8: Klassenarbeiten (je 3 Std.), ein Wahlbereich, Jahresabschluss
+                nka, ka_h = ka_count(school, grade), 3
+                wb_h = 2 * w if wahl and grade != 12 else 0
+                ja_h = 0 if exam else 2
+                fixed = sum(r["h"] for r in rows) + nka * ka_h + wb_h + ja_h
+                # 3. restliche Reserve: gut ein Drittel als Puffer am Ende der Lernbereiche (Ausfall, Wiederholung),
+                #    der Rest als Übungsstunden anteilig in den Einheiten (wie in GYM 6/8)
+                rest = cap - fixed
+                if rest > 0:
+                    ps, us = [r for r in rows if r["code"] == "P"], [r for r in rows if r["code"] != "P"]
+                    rest_p = round(rest * 0.35)
+                    lbh = [sum(u["base"] for u in us if u["lb"] == lb) for lb in [f"LB{x['nr']}" for x in pflicht]]
+                    for r, extra in zip(ps, split_hours(rest_p, lbh, minimum=0)):
+                        r["h"] += extra
+                    for r, extra in zip(us, split_hours(rest - rest_p, [r["h"] for r in us], minimum=0)):
+                        r["h"] += extra
+                for r in rows:
+                    if r["code"] != "P":
+                        units[r["code"]] = unit_from(r["lz"], r["code"], r["lb"], r["h"])
+                # 4. Sequenz mit Klassenarbeiten
+                word = "Klausur" if grade >= 11 else "Klassenarbeit"
+                seq, prev = [], 0
+                stops = set(place_tests(rows, nka))
+                kn = 0
+                for i, r in enumerate(rows):
+                    seq.append([r["code"], "A", r["h"]])
+                    if i in stops:
+                        kn += 1
+                        cov = [x["code"] for x in rows[prev:i + 1] if x["code"] != "P"]
+                        span = cov[0] + ("–" + cov[-1] if len(cov) > 1 else "") if cov else ""
+                        code = f"KA{kn}"
+                        units[code] = dict(code=code, lb="test", title=f"{word} {kn} · {span}",
+                                           inhalte=[f"Wiederholung {span}", word, "Rückgabe, Berichtigung, Fehlerschwerpunkte"], tiefe=[],
+                                           vorwissen=cov, begriffe=[], hinweise=["Vorschlag: Termin und Umfang an die Vorgaben der Schule anpassen."],
+                                           material=[], stunden=[f"Wiederholung {span}", f"{word} {kn}", "Rückgabe und Berichtigung"], atoms=[])
+                        seq.append([code, "A", ka_h])
+                        prev = i + 1
+                for lb in wahl:
                     code = f"W{lb['nr']}"
                     lz_all = dict(text=lb["title"], bem=[b for lz in lb["lernziele"] for b in lz["bem"]], refs=[r for lz in lb["lernziele"] for r in lz["refs"]],
                                   inhalte=[dict(text=lz["text"], bem=[], refs=[], sub=[]) for lz in lb["lernziele"]] + [i for lz in lb["lernziele"] for i in lz["inhalte"]])
                     units[code] = unit_from(lz_all, code, "WB", 2 * w)
                     units[code]["title"] = "Wahlbereich: " + lb["title"]
-                attach_atoms(cid, units)
+                if wb_h:
+                    seq.append([f"W{wahl[0]['nr']}", "A", wb_h])
+                if ja_h:
+                    units["JA"] = dict(code="JA", lb="P", title="Jahresabschluss: Rückblick, Knobelaufgaben", stunden=["Rückblick auf das Schuljahr", "Knobelaufgaben"], atoms=[])
+                    seq.append(["JA", "A", ja_h])
+                attach_atoms(cid, units, {r["code"]: r["base"] for r in rows if r["code"] != "P"})
                 units["P"] = dict(code="P", lb="P", title="Puffer · Wiederholung", stunden=[], atoms=[])
-                lbnames.update(WB="Wahlbereich (2 Wochen, wahlweise)", P="Puffer")
-                days = DAYS_BY_HOURS.get(w, DAYS_BY_HOURS[4])
-                tt = [dict(frm=cal_start, lessons=[dict(day=d, period=2 + (i // 5), track="A") for i, d in enumerate(days)])]
+                lbnames.update(WB="Wahlbereich (2 Wochen, wahlweise)", test=word, P="Puffer / Abschluss")
+                tt = [dict(frm=cal["start"], lessons=[dict(day=d, period=2 + (i // 5), track="A") for i, d in enumerate(days)])]
                 label = f"Klasse {grade}"
                 classes[cid] = dict(type=school, grade=grade, variant=variant, variantLabel=VARIANTS.get(variant, ""),
                                     label=label + (f" {variant}" if variant else ""), short=str(grade) + (variant or "").lower()[:1],
-                                    nameA="Fachunterricht", nameB="", sol=False, source="lehrplan", plan=plan["key"],
+                                    nameA="Fachunterricht", nameB="", sol=7 <= grade <= 9, source="lehrplan", plan=plan["key"],
                                     ziele=plan["ziele"], units=units, unitOrder=list(units.keys()), seq=seq, mode="nacheinander",
-                                    tt=tt, lbnames=lbnames, zrw=zrw, weekly=w)
+                                    tt=tt, lbnames=lbnames, zrw=zrw, weekly=w, endRule=rule, cap=cap)
     return classes

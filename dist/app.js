@@ -204,6 +204,20 @@ const cloneLessons = ls => ls.map(l => Object.assign({ id: uid(), day: +l.day, p
 /* Unterrichtsstunden pro Woche (Doppelstunde = 2) */
 const lessonLen = l => +l.len === 2 ? 2 : 1;
 const weekHours = ls => (ls || []).reduce((a, l) => a + lessonLen(l), 0);
+/* Sequenz aus der ersten Lehrplan-Vorlage (ohne Klassenarbeiten, nur Zeitrichtwerte und je LB 1 Puffer), nie bearbeitet */
+function isOldLehrplanSeq(k, seq) {
+  const c = D.classes[k];
+  if (!c || c.source !== "lehrplan") return false;
+  const zrw = Object.values(c.zrw || {}).reduce((a, x) => a + x, 0);
+  let units = 0;
+  for (const r of seq) {
+    if (!r || typeof r !== "object") return false;
+    if (r.code === "P") { if (+r.hours !== 1) return false; continue; }
+    if (!/^\d/.test(r.code || "")) return false;
+    units += +r.hours || 0;
+  }
+  return units === zrw;
+}
 function defaultClass(k, y) {
   const c = D.classes[k]; y = y || cal();
   const tt = y.start === D.calendar.start
@@ -296,13 +310,25 @@ function atomMap(k) {
 const titleOf = (k, code) => code === "P" ? "Puffer · Wiederholung" : code === "JA" ? "Jahresabschluss" : (unitOf(k, code) || {}).title || code;
 
 /* ---------------- scheduling ---------------- */
+/* Letzter Unterrichtstag einer Klasse im Schuljahr: eigener Wert (leer = Schuljahresende) oder Vorschlag aus der Regel
+   der Klasse (GYM 12 vor den Osterferien, OS 10 vor den Pfingstferien). */
+function ruleLastDay(k, Y) {
+  const pat = { ostern: /oster/i, pfingsten: /pfingst/i }[D.classes[k].endRule];
+  const h = pat && (Y.holidays || []).filter(x => x.frm && pat.test(x.name || "")).sort((a, b) => a.frm < b.frm ? -1 : 1)[0];
+  return h ? addDays(h.frm, -1) : null;
+}
+function lastDayOf(k) {
+  const C = S.cls[k], Y = cal();
+  if (C && typeof C.lastDay === "string") return C.lastDay || null;
+  return ruleLastDay(k, Y);
+}
 function schedule(g) {
   if (cache[g] && cache[g].ver === ver) return cache[g];
   const k = ck(g), Y = cal(), C = S.cls[k], G = grp(g), seqMode = C.mode === "nacheinander";
   const free = {}; (Y.free || []).forEach(f => { if (f.date) free[f.date] = f.name || "unterrichtsfrei"; });
   const holidayOf = d => { for (const h of Y.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; return null; };
   const offOf = d => { for (const o of G.off || []) if (o.frm && o.to && o.frm <= d && d <= o.to) return o.name || "Kein Unterricht in dieser Klasse"; return null; };
-  const tts = sortTT((G.tt || []).filter(v => v.frm).slice());
+  const tts = sortTT((G.tt || []).filter(v => v.frm).slice()), endD = lastDayOf(k);
   const lessonsOn = d => { let cur = null; for (const v of tts) { if (v.frm <= d) cur = v; else break; } return cur ? cur.lessons : []; };
   const slots = [], dayInfo = {};
   if (Y.start && Y.end && Y.start <= Y.end) {
@@ -310,6 +336,7 @@ function schedule(g) {
       const w = dow(d); if (w > 5) continue;
       const h = holidayOf(d), f = free[d], o = h || f ? null : offOf(d);
       if (h || f) { dayInfo[d] = { school: false, note: h || f }; continue; }
+      if (endD && d > endD) { dayInfo[d] = { school: false, note: "nach dem letzten Unterrichtstag", off: true }; continue; }
       if (o) { dayInfo[d] = { school: false, note: o, off: true }; continue; }
       dayInfo[d] = { school: true };
       const seen = new Set();
@@ -480,6 +507,7 @@ function applyDoc(name, data) {
   } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
     const c = Object.assign(defaultClass(name), data);
+    if (isOldLehrplanSeq(name, data.seq)) c.seq = defaultClass(name).seq;
     if (!Array.isArray(data.tt) && !Array.isArray(data.groups)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : defaultClass(name).groups[0].tt;
     delete c.timetable;
     if (!Array.isArray(data.groups) || !data.groups.length) {
@@ -716,12 +744,12 @@ function renderBanner() {
   const el = document.getElementById("banner");
   const m = {
     loading: "Gespeicherte Daten werden geladen …",
-    slow: "Der Speicher antwortet noch nicht. Sie sehen gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
+    slow: "Der Speicher antwortet noch nicht. Du siehst gerade den Ausgangsplan; Änderungen werden gespeichert, sobald die Verbindung steht.",
     local: "Gespeichert wird in diesem Browser. Für ein anderes Gerät oder eine zusätzliche Sicherung: Einstellungen → Sicherung.",
-    off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffnen Sie die App angemeldet auf claude.ai.",
+    off: "Speichern ist in dieser Ansicht nicht verfügbar. Änderungen gelten nur bis zum Neuladen. Öffne die App angemeldet auf claude.ai.",
     err: "Speichern ist gerade fehlgeschlagen. Die App versucht es bei der nächsten Änderung erneut.",
-    ro: "Sie können diesen Plan ansehen, aber nicht ändern.",
-    quota: "Der Speicher ist voll. Löschen Sie alte Daten über Einstellungen → Sicherung.",
+    ro: "Du kannst diesen Plan ansehen, aber nicht ändern.",
+    quota: "Der Speicher ist voll. Lösche alte Daten über Einstellungen → Sicherung.",
   }[dbState];
   el.textContent = m || ""; el.hidden = !m; el.dataset.kind = dbState;
 }
@@ -740,9 +768,9 @@ function unitLink(k, code, label) {
 function clsTabs() { const k = curG(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
 function noClassMsg() {
   const T = TYPES[UI.type] || {}, has = CLASSES.some(k => D.classes[k].type === UI.type);
-  if (!mineList().length) return `Sie haben für ${esc(yearLabel(cal().id))} noch keine Klassen festgelegt. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
-  if (has) return `Sie unterrichten ${esc(yearLabel(cal().id))} keine Klasse der Schulart ${esc(T.label || "")}. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
-  return `Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wählen Sie oben eine andere Schulart.`;
+  if (!mineList().length) return `Du hast für ${esc(yearLabel(cal().id))} noch keine Klassen festgelegt. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  if (has) return `Du unterrichtest ${esc(yearLabel(cal().id))} keine Klasse der Schulart ${esc(T.label || "")}. <a href="#einstellungen">Einstellungen → Meine Klassen</a>`;
+  return `Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wähle oben eine andere Schulart.`;
 }
 function noClassView(title) {
   const T = TYPES[UI.type] || {};
@@ -756,14 +784,14 @@ function renderCtx() {
     <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => {
       const all = classesFor(UI.type, g), mine = all.filter(isMine), curV = cur && D.classes[cur].variant;
       const k = mine.find(c => D.classes[c].variant === curV) || mine[0];
-      return `<button type="button" aria-pressed="${!!cur && all.includes(cur)}" ${k ? `data-act="cls" data-k="${k}" title="${esc(mine.map(c => D.classes[c].label).join(", "))}"` : all.length ? `disabled title="Klasse ${g} gehört nicht zu Ihren Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+      return `<button type="button" aria-pressed="${!!cur && all.includes(cur)}" ${k ? `data-act="cls" data-k="${k}" title="${esc(mine.map(c => D.classes[c].label).join(", "))}"` : all.length ? `disabled title="Klasse ${g} gehört nicht zu deinen Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
     ${cur && classesFor(UI.type, D.classes[cur].grade).filter(isMine).length > 1 ? `<div class="seg small" role="group" aria-label="Bildungsgang bzw. Kursart">${classesFor(UI.type, D.classes[cur].grade).filter(isMine).map(c => `<button type="button" aria-pressed="${c === cur}" data-act="cls" data-k="${c}" title="${esc(D.classes[c].variantLabel)}">${esc(D.classes[c].variant || "")}</button>`).join("")}</div>` : ""}
     ${cur && S.cls[cur].groups.length > 1 ? `<div class="seg small" role="group" aria-label="Parallelklasse">${groupsOf(cur).map(g => `<button type="button" aria-pressed="${g === curG()}" data-act="grp" data-g="${g}">${esc(groupName(g))}</button>`).join("")}</div>` : ""}
     <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
 function trackName(k, tr) {
   const c = D.classes[ck(k)], sc = schedule(k);
-  if (tr === "SOL") return "SOL-Stunde";
+  if (tr === "SOL") return "FIL-Stunde";
   if (sc.seqMode) return "Fachunterricht";
   return tr === "A" ? "Strang A · " + c.nameA : "Strang B · " + c.nameB;
 }
@@ -776,7 +804,7 @@ function capCards(k) {
       <div class="nums"><span><b class="mono">${sc.cap[tr]}</b> verfügbar</span><span><b class="mono">${sc.planned[tr]}</b> geplant</span></div>
       <div class="res mono">${res === 0 ? "geht genau auf" : res > 0 ? `+${res} Std. Reserve` : `${-res} Std. fehlen`}</div></div>`);
   }
-  if (D.classes[ck(k)].sol) out.push(`<div class="cap"><div class="lbl">SOL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
+  if (sc.slots.some(s => s.track === "SOL")) out.push(`<div class="cap"><div class="lbl">FIL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
   return `<div class="caps">${out.join("")}</div>`;
 }
 const SOL_FORMATS = {
@@ -869,7 +897,7 @@ function slotBlock(k, s) {
   const tag = `<span class="per mono">${s.period}. Std.</span>`;
   if (s.track === "SOL") {
     const f = s.cancelled ? null : solFormat(k, s), cu = currentUnit(k, s.date);
-    return `<div class="slot sol ${s.cancelled ? "x" : ""}">${tag}<div class="sbody"><div class="stitle">SOL-Stunde${f ? ` · Format ${f}: ${esc(SOL_FORMATS[f][0])}` : " fällt aus"}</div>
+    return `<div class="slot sol ${s.cancelled ? "x" : ""}">${tag}<div class="sbody"><div class="stitle">FIL-Stunde${f ? ` · Format ${f}: ${esc(SOL_FORMATS[f][0])}` : " fällt aus"}</div>
       ${f ? `<div class="small">${esc(SOL_FORMATS[f][1])}${f === 2 && cu ? ` Aktuelle Einheit: ${esc(cu)} ${esc(titleOf(k, cu))}.` : ""}</div>` : ""}
       <div class="acts"><button type="button" class="btn ghost sm" data-act="solinfo">Alle Formate</button><button type="button" class="btn ghost sm" data-act="cancel" data-k="${k}" data-key="${s.key}">${s.cancelled ? "Findet doch statt" : "Fällt aus"}</button></div></div></div>`;
   }
@@ -905,7 +933,7 @@ function rateButtons(k, id) {
 /* ---------------- views: Jahresplan ---------------- */
 function viewPlan() {
   const k = curG(), sc = schedule(k), Y = cal(), today = todayIso();
-  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = D.classes[ck(k)].sol;
+  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = sc.slots.some(s => s.track === "SOL");
   let rows = "";
   if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
     const notes = new Set(); let school = 0;
@@ -927,7 +955,7 @@ function viewPlan() {
   }
   return `<section><div class="vhead"><h1>Jahresplan</h1>${clsTabs()}</div>
     ${capCards(k)}
-    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(k, t))}</th>`).join("")}${sol ? "<th>SOL</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(k, t))}</th>`).join("")}${sol ? "<th>FIL</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 /* ---------------- views: Sequenz ---------------- */
@@ -970,8 +998,8 @@ function viewSeq() {
     </div>
     <div class="grid2">
       <div class="card"><h3>Stunden je Lernbereich</h3><p class="small muted">geplant / Zeitrichtwert des Lehrplans</p>${lbRows}</div>
-      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier können Sie Puffer (P) auch von Hand verschieben oder kürzen.</p>
-      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Ihre Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
+      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier kannst du Puffer (P) auch von Hand verschieben oder kürzen.</p>
+      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Deine Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
     </div></section>`;
 }
 
@@ -1070,7 +1098,7 @@ function viewEngine() {
     </div>
     <div class="grid2">
       <div class="card"><h3>So funktioniert es</h3>
-        <p class="small">Jedes Atom ist einer Stunde zugeordnet. Ab der Stunde danach erscheint es auf der Heute-Seite zur Wiederholung, z. B. als Einstiegsaufgabe. Sie bewerten, wie gut die Klasse es abrufen konnte:</p>
+        <p class="small">Jedes Atom ist einer Stunde zugeordnet. Ab der Stunde danach erscheint es auf der Heute-Seite zur Wiederholung, z. B. als Einstiegsaufgabe. Du bewertest, wie gut die Klasse es abrufen konnte:</p>
         <ul class="small rlist">${RATES.map(([g, l, h]) => `<li><b class="r${g}t">${l}</b> ${h} der Klasse richtig</li>`).join("")}</ul>
         <p class="small">Daraus berechnet FSRS für jedes Atom Stabilität und Schwierigkeit und legt die nächste Wiederholung so, dass die Klasse es dann noch mit der gewählten Wahrscheinlichkeit abrufen kann. Gut sitzende Atome kommen immer seltener, wackelige öfter.</p>
         <p class="small">Je stabiler ein Atom sitzt, desto anspruchsvoller wird die Aufgabe: ${levelPill(1)} bis ${LV_S2} Tage Stabilität, ${levelPill(2)} ab ${LV_S2} Tagen, ${levelPill(3)} ab ${LV_S3} Tagen. Nach „Nochmal“ oder bei geringem Abruf geht es eine Stufe zurück.</p>
@@ -1102,7 +1130,7 @@ function myClassesCard() {
     return ks.map(k => myClassRow(k, mine)).join("");
   }).join("")).join("");
   return `<div class="card myclasses"><h3>Meine Klassen ${esc(yearLabel(Y.id))}</h3>
-    <p class="small muted">Haken Sie an, welche Klassen Sie in diesem Schuljahr unterrichten. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. In der Oberschule gibt es ab Klasse 7 eigene Pläne für den Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 für Grund- (GK) und Leistungskurs (LK). Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
+    <p class="small muted">Hake an, welche Klassen du in diesem Schuljahr unterrichtest. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. In der Oberschule gibt es ab Klasse 7 eigene Pläne für den Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 für Grund- (GK) und Leistungskurs (LK). Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
     <div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Parallelklassen</th><th>Namen</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="small muted">Lehrpläne: Lehrplandatenbank Sachsen${D.lehrplanQuelle ? `, abgerufen am ${esc(fmt(D.lehrplanQuelle.abgerufen, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}. Klasse 6 und 8 (Gymnasium) mit ausgearbeiteter Stoffverteilung und Atomen.</p></div>`;
 }
@@ -1116,11 +1144,19 @@ function myClassRow(k, mine) {
       <td><div class="gnames">${names}</div>${confirm}</td></tr>`;
   }
 }
+function lastDayRow(k) {
+  const c = ck(k), C = S.cls[c], Y = cal(), rule = ruleLastDay(c, Y), cur = lastDayOf(c), own = typeof C.lastDay === "string";
+  const why = { ostern: "Abitur: Unterricht bis vor die Osterferien", pfingsten: "Abschlussprüfungen: Unterricht bis vor die Pfingstferien" }[D.classes[c].endRule];
+  return `<div class="addrow"><label>Letzter Unterrichtstag <input type="date" data-act="lastday" value="${esc(cur || "")}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label>
+    ${own && C.lastDay !== (rule || "") ? `<button type="button" class="linkbtn small" data-act="lastdayreset">${rule ? "Vorschlag " + esc(fmt(rule)) : "bis Schuljahresende"}</button>` : ""}</div>
+    <p class="small muted">${why ? esc(why) + " (Vorschlag, gilt für alle Parallelklassen). " : ""}Leer = bis zum Schuljahresende. Danach plant die App keine Stunden mehr.</p>`;
+}
 function ttCard(k) {
   const C = grp(k), vs = sortTT(C.tt), Y = cal();
-  const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B", "SOL"].map(x => `<option ${l.track === x ? "selected" : ""}>${x}</option>`).join("")}</select>`;
+  const fil = D.classes[ck(k)].sol;
+  const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B"].concat(fil || l.track === "SOL" ? ["SOL"] : []).map(x => `<option value="${x}" ${l.track === x ? "selected" : ""}>${x === "SOL" ? "FIL" : x}</option>`).join("")}</select>`;
   const blocks = vs.map((v, vi) => {
-    const next = vs[vi + 1], until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : "Schuljahresende";
+    const next = vs[vi + 1], endD = lastDayOf(ck(k)), until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : endD ? fmt(endD, { day: "2-digit", month: "2-digit", year: "numeric" }) + " (letzter Unterrichtstag)" : "Schuljahresende";
     const current = v.frm <= UI.date && (!next || UI.date < next.frm);
     const rows = v.lessons.map((l, i) => `<tr>
       <td><select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="day" aria-label="Tag">${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${+l.day === d ? "selected" : ""}>${DAYS[d]}</option>`).join("")}</select></td>
@@ -1137,9 +1173,10 @@ function ttCard(k) {
   const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
   const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   return `<div class="card"><h3>Stundenplan ${esc(fullLabel(k))} · ${esc(yearLabel(Y.id))}</h3>
-    ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählen Sie oben in der Leiste.</p>` : ""}
-    <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen), SOL = selbstorganisiertes Lernen.</p>
+    ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählst du oben in der Leiste.</p>` : ""}
+    <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen)${fil ? ", FIL = zusätzliche FIL-Stunde (nur Klasse 7–9)" : ""}.</p>
     ${blocks}
+    ${lastDayRow(k)}
     <div class="addrow"><label>Neuer Stundenplan ab <input type="date" id="ttnewfrm" value="${esc(sug)}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label><button type="button" class="btn ghost sm" data-act="ttnew">Zeitraum anlegen</button></div>
     <p class="small muted">Der neue Zeitraum übernimmt die Stunden, die an diesem Tag gelten; danach anpassen.</p>
     <h3>Kein Unterricht in dieser Klasse</h3>
@@ -1181,7 +1218,7 @@ function viewSettings() {
       ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">${noClassMsg()}</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
-      <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
+      <p class="small">Deine Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
       <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" hidden>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand ${esc(yearLabel(Y.id))} leeren</button></div>
       <textarea id="importbox" rows="3" placeholder="Sicherung hier einfügen …" aria-label="Sicherung einfügen"></textarea>
       <div class="acts"><button type="button" class="btn ghost" data-act="import">Sicherung einspielen</button>
@@ -1207,8 +1244,8 @@ function obGrid(g) {
   return `<div class="obgrid card"><div class="obh"><b>${esc(fullLabel(g))}</b><span class="small muted">${n} Stunde${n === 1 ? "" : "n"} pro Woche${sortTT(grp(g).tt.slice()).length > 1 ? ` · gilt ab ${esc(fmt(v.frm, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}</span></div>
     <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
     ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
-      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
-    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).join(" → ")} → frei).</p>` : ""}</div>`;
+      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track === "SOL" ? "FIL" : l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
+    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).map(t => t === "SOL" ? "FIL" : t).join(" → ")} → frei).</p>` : ""}</div>`;
 }
 function obToggle(g, d, p) {
   const v = obVersion(g), k = ck(g); if (!v) return;
@@ -1233,19 +1270,19 @@ function viewOnboarding() {
   const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
   let body = "";
   if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
-    <p>In drei kurzen Schritten richten Sie das Schuljahr ein: welche Klassen Sie unterrichten und wann. Danach zeigt die Heute-Seite Ihre Stunden, und die App plant Stoff und Wiederholungen.</p>
+    <p>In drei kurzen Schritten richtest du das Schuljahr ein: welche Klassen du unterrichtest und wann. Danach zeigt die Heute-Seite deine Stunden, und die App plant Stoff und Wiederholungen.</p>
     <div class="card"><b>Schuljahr ${esc(yearLabel(Y.id))}</b><span class="small muted">${esc(fmt(Y.start, { day: "2-digit", month: "2-digit", year: "numeric" }))} – ${esc(fmt(Y.end, { day: "2-digit", month: "2-digit", year: "numeric" }))} · ${Y.holidays.length} Ferienabschnitte · ${Y.free.length} freie Tage</span>
     ${Y.holidays.length ? `<span class="small muted">Ferien und Feiertage für Sachsen sind eingetragen.</span>` : `<button type="button" class="btn ghost sm" data-act="ferien">Ferien Sachsen importieren</button>`}</div>`;
-  else if (st === 1) body = `<h2>Welche Klassen unterrichten Sie?</h2>
-    <p class="small">Haken Sie Ihre Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wählen Sie „2 Parallelklassen“: Sie planen dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
+  else if (st === 1) body = `<h2>Welche Klassen unterrichtest du?</h2>
+    <p class="small">Hake deine Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wähle „2 Parallelklassen“: Du planst dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
     ${Object.entries(TYPES).map(([t, T]) => `<h3 class="obtype">${esc(T.label)}</h3><table class="form obclasses"><tbody>${T.grades.flatMap(g => classesFor(t, g)).map(k => myClassRow(k, mine)).join("")}</tbody></table>`).join("")}`;
-  else if (st === 2) body = `<h2>Wann haben Sie Unterricht?</h2>
-    <p class="small">Klicken Sie für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), legen Sie das später unter Einstellungen → Stundenplan an.</p>
-    ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Sie haben noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
+  else if (st === 2) body = `<h2>Wann hast du Unterricht?</h2>
+    <p class="small">Klicke für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), lege das später unter Einstellungen → Stundenplan an.</p>
+    ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else body = `<h2>Fertig</h2>
-    <p>Ihr Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
+    <p>Dein Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
     <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? weekHours(obVersion(g).lessons) : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
-    <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passen Sie unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten starten Sie dort erneut.</p>`;
+    <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passt du unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten startest du dort erneut.</p>`;
   return `<div class="ov-card onboard" role="dialog" aria-label="Einrichtung">
     <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
     ${dots}<div class="obbody">${body}</div>
@@ -1259,7 +1296,7 @@ function renderOverlay() {
   if (UI.ob) { el.hidden = false; el.innerHTML = viewOnboarding(); return; }
   if (UI.solOpen) {
     el.hidden = false;
-    el.innerHTML = `<div class="ov-card" role="dialog" aria-label="SOL-Formate"><header><h2>SOL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
+    el.innerHTML = `<div class="ov-card" role="dialog" aria-label="FIL-Formate"><header><h2>FIL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
       <p class="small">Feste Struktur: 5 min planen, 30 min arbeiten, 10 min kontrollieren und reflektieren. Jede Aufgabe hat eine Lösung zur Selbstkontrolle; die Lehrkraft holt 3–5 Schüler mit derselben Lücke an eine Förderinsel.</p>
       <ol class="sol">${Object.entries(SOL_FORMATS).map(([n, [t, d]]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol>
       <p class="small muted">Die Heute-Seite schlägt das Format automatisch vor: vor und in der Woche einer Klassenarbeit Format 4, danach Format 5, sonst im Wechsel 1, 2, 3.</p></div>`;
@@ -1372,6 +1409,7 @@ document.addEventListener("click", ev => {
     case "year": switchYear(b.dataset.v, true); break;
     case "grp": { const g = b.dataset.g; UI.gid[ck(g)] = gidOf(g); try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {} UI.reveal = {}; UI.confirm = null; render(); break; }
     case "gadd": addGroup(k); break;
+    case "lastdayreset": { const c = ck(curG()); delete S.cls[c].lastDay; commit(c); break; }
     case "gdel": removeGroup(k); break;
     case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
     case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
@@ -1481,6 +1519,7 @@ document.addEventListener("change", ev => {
     case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
     case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; if (f === "track") row.track = t.value; else if (f === "len") { if (t.value === "2") row.len = 2; else delete row.len; } else row[f] = Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
+    case "lastday": { const c = ck(curG()); S.cls[c].lastDay = t.value || ""; commit(c); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
     case "mine": {
       const Y = cal(), l = mineList(), kk = t.dataset.k;
