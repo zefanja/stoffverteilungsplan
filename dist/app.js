@@ -851,13 +851,32 @@ function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx }) {
   toast(`${C.ln[code].title} (${code}) mit ${stunden.length} Std. eingefügt.`, true);
   return code;
 }
-function delLn(k, code) {
-  const C = S.cls[k]; if (!C.ln || !C.ln[code]) return;
-  const snap = snapshotFor(k), t = C.ln[code].title;
-  delete C.ln[code]; C.seq = C.seq.filter(r => r.code !== code); delete C.atoms[code];
-  C.checks = (C.checks || []).filter(x => x.code !== code);
-  undoStack = snap; commit(k); location.hash = "#sequenz"; toast(`${t} gelöscht.`, true);
+/* Leistungsnachweis löschen: Kontrolle (id) oder Sequenzzeile (row). Eine selbst angelegte Einheit verschwindet mit ihrer
+   letzten Zeile; eine Klassenarbeit der Vorlage verlässt nur die Sequenz und lässt sich über „Zeile hinzufügen“ zurückholen. */
+function removeLn(k, { id, row, code }) {
+  const C = S.cls[k], snap = snapshotFor(k); let msg = "";
+  if (id) {
+    const x = (C.checks || []).find(y => y.id === id); if (!x) return;
+    C.checks = C.checks.filter(y => y.id !== id); msg = `${CHECK_KINDS[x.kind]}${x.title ? " „" + x.title + "“" : ""} gelöscht.`;
+  } else {
+    const r = row ? C.seq.find(y => y.id === row) : C.seq.find(y => y.code === code);
+    code = r ? r.code : code; if (!code) return;
+    const title = titleOf(k, code);
+    if (r) { C.seq = C.seq.filter(y => y !== r); C.groups.forEach(G => { if (G.pin) delete G.pin[r.id]; }); }
+    if (C.ln && C.ln[code] && !C.seq.some(y => y.code === code)) {
+      delete C.ln[code]; delete C.atoms[code]; C.checks = (C.checks || []).filter(y => y.code !== code);
+      msg = `${title} gelöscht.`;
+    } else msg = `${title} aus der Sequenz entfernt. Über „Zeile hinzufügen“ lässt sie sich wieder einfügen.`;
+    if (/^#u-/.test(location.hash)) location.hash = "#sequenz";
+  }
+  UI.confirm = null; undoStack = snap; commit(k); toast(msg, true);
 }
+const lnDelBtn = (k, x) => {
+  const key = x.inLesson ? x.id : x.row || x.code, conf = UI.confirm === "lnx-" + key;
+  const data = x.inLesson ? `data-id="${esc(x.id)}"` : x.row ? `data-row="${esc(x.row)}"` : `data-code="${esc(x.code)}"`;
+  return conf ? `<span class="confirm small"><span>Löschen?</span><button type="button" class="btn danger sm" data-act="lnremove" ${data}>Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>`
+    : `<button type="button" class="mini del" data-act="confirm" data-v="lnx-${esc(key)}" aria-label="Leistungsnachweis löschen" title="Löschen">×</button>`;
+};
 /* Termine aller Leistungsnachweise einer (Parallel-)Klasse, nach Datum: Zeilen mit Lernbereich "test" (Hauptstunde) und Kontrollen. */
 /* Index der Stunde, in der die Arbeit geschrieben wird (vor ihr liegt ggf. die Wiederholung). */
 function lnMain(k, code, hours) {
@@ -1276,7 +1295,7 @@ function lnCard(k) {
   let defAfter = C.seq.length - 1; if (cur) { const j = C.seq.map(r => r.code).lastIndexOf(cur); if (j >= 0) defAfter = j; }
   const K0 = LN_KINDS.ka;
   const list = lnDates(k).map(x => `<tr><td class="nowrap">${lnDateInput(k, x)}</td>
-    <td><span class="pill">${esc(x.kind)}</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td></tr>`).join("");
+    <td><span class="pill">${esc(x.kind)}</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
   return `<div class="card lncard"><h3>Leistungsnachweise</h3>
     ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
     <div class="lnform">
@@ -1332,7 +1351,9 @@ function viewUnit(kc, idx) {
     <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx - 1}">‹ ${esc(order[idx - 1])}</a>` : ""}${idx < order.length - 1 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx + 1}">${esc(order[idx + 1])} ›</a>` : ""}</div>
     <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(u.custom ? "Leistungsnachweis" : c.lbnames[u.lb] || "")}</div></div>
       <div class="umeta mono">${r ? `${r.hours} Std. geplant${u.stunden.length ? ` (Soll ${u.stunden.length})` : ""}<br>${r.start ? fmt(r.start) + " – " + fmt(r.end) : ""}${r.overflow ? `<br><span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : ""}` : "nicht in der Sequenz"}</div></header>
-    ${u.lb === "test" && r && r.hours ? `<div class="card lnterm"><h3>Termin</h3>${lnDateInput(k, lnDates(k).find(x => !x.inLesson && x.row === r.id) || { row: r.id })}</div>` : ""}
+    ${u.lb === "test" ? `<div class="card lnterm"><h3>Termin</h3>${r && r.hours ? lnDateInput(k, lnDates(k).find(x => !x.inLesson && x.row === r.id) || { row: r.id }) : `<p class="small muted">Nicht in der Sequenz.</p>`}
+      <div class="acts">${UI.confirm === "lnx-" + (r ? r.id : code) ? `<span class="confirm"><span>${esc(u.title)} ${u.custom ? "mit Atomen löschen" : "aus der Sequenz entfernen"}?</span><button type="button" class="btn danger sm" data-act="lnremove" ${r ? `data-row="${esc(r.id)}"` : `data-code="${esc(code)}"`}>Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>`
+        : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="lnx-${esc(r ? r.id : code)}">Leistungsnachweis löschen</button>`}</div></div>` : ""}
     ${u.custom ? lnEditCard(k, code, u) : ""}
     <div class="grid2">
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
@@ -1343,12 +1364,10 @@ function viewUnit(kc, idx) {
     <div class="lessons-list">${lessons}</div></section>`;
 }
 function lnEditCard(k, code, u) {
-  const conf = UI.confirm === "lndel-" + code;
   return `<div class="card lnedit"><h3>${esc(LN_KINDS[u.kind] ? LN_KINDS[u.kind].label : "Leistungsnachweis")} bearbeiten</h3>
     <label>Titel <input data-act="lnset" data-code="${esc(code)}" data-f="title" value="${esc(u.title)}"></label>
     <label>Stunden (eine Zeile je Stunde) <textarea rows="${Math.max(2, u.stunden.length)}" data-act="lnset" data-code="${esc(code)}" data-f="stunden">${esc(u.stunden.join("\n"))}</textarea></label>
-    <p class="small muted">Die Zahl der Zeilen ist das Soll; die geplanten Stunden änderst du in der Sequenz.</p>
-    <div class="acts">${conf ? `<span class="confirm"><span>${esc(u.title)} mit Sequenzzeile und Atomen löschen?</span><button type="button" class="btn danger sm" data-act="lndel" data-code="${esc(code)}">Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="lndel-${esc(code)}">Leistungsnachweis löschen</button>`}</div></div>`;
+    <p class="small muted">Die Zahl der Zeilen ist das Soll; die geplanten Stunden änderst du in der Sequenz.</p></div>`;
 }
 function atomRow(k, code, a, card, nav = {}) {
   if (UI.editAtom && UI.editAtom.id === a.id) return `<li>${atomForm(k, code, a, a.id)}</li>`;
@@ -1787,8 +1806,8 @@ document.addEventListener("click", ev => {
       const code = addLn(k, { kind, topic: v("lntopic").value.trim(), hours: Math.max(1, Math.min(6, +v("lnhrs").value || 1)), wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value });
       break;
     }
-    case "lndel": UI.confirm = null; delLn(k, b.dataset.code); break;
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
+    case "lnremove": removeLn(k, { id: b.dataset.id, row: b.dataset.row, code: b.dataset.code }); break;
     case "chknew": UI.chkForm = { code: b.dataset.code, n: +b.dataset.l }; render(); break;
     case "chkcancel": UI.chkForm = null; render(); break;
     case "chksave": {
@@ -1937,7 +1956,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

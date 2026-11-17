@@ -382,10 +382,23 @@ function serve(dir) {
   const chkToday = await p.evaluate(() => [...document.querySelectorAll('.tcard .lcheck')].map(e => e.textContent.trim()).join('|'));
   ok(!!chk && chk.kind === 'Kurzkontrolle' && chkToday.includes('Kurzkontrolle') && chkToday.includes('Terme zusammenfassen'), 'Kurzkontrolle in einer Stunde: in der Übersicht mit Termin und auf der Heute-Seite ' + JSON.stringify([chk, chkToday]));
   await p.evaluate(() => { location.hash = 'u-kl8-' + window.__mp.unitOrderOf('kl8').indexOf('LK1'); }); await p.waitForTimeout(200);
-  await p.click('[data-act="confirm"][data-v="lndel-LK1"]'); await p.waitForTimeout(100); await p.click('[data-act="lndel"]'); await p.waitForTimeout(200);
+  await p.click('.lnterm [data-act="confirm"]'); await p.waitForTimeout(100); await p.click('.lnterm [data-act="lnremove"]'); await p.waitForTimeout(200);
   const ln2 = await p.evaluate(() => { const C = window.__mp.S.cls.kl8; return { n: C.seq.length, ln: Object.keys(C.ln || {}).length, hash: location.hash }; });
   await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
   ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#sequenz', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
+  // In der Übersicht löschen: Klassenarbeit der Vorlage verlässt die Sequenz, Kontrolle verschwindet; Rückgängig holt sie zurück
+  await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = [{ id: 'cdel', kind: 'kk', title: 'Weg', code: 'T2', n: 1 }]; M.touch(); location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  const del0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA2'); return { n: M.S.cls.kl8.seq.length, row: x.row }; });
+  await p.click(`.lncard [data-act="confirm"][data-v="lnx-${del0.row}"]`); await p.waitForTimeout(100);
+  await p.click(`.lncard [data-act="lnremove"][data-row="${del0.row}"]`); await p.waitForTimeout(200);
+  const del1 = await p.evaluate(() => { const M = window.__mp; return { n: M.S.cls.kl8.seq.length, ka2: M.lnDates('kl8.a').some(y => y.code === 'KA2'), avail: [...document.querySelectorAll('#addcode option')].some(o => o.value === 'KA2') }; });
+  await p.click('.lncard [data-act="confirm"][data-v="lnx-cdel"]'); await p.waitForTimeout(100);
+  await p.click('.lncard [data-act="lnremove"][data-id="cdel"]'); await p.waitForTimeout(200);
+  const del2 = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200);
+  const del3 = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
+  await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = []; M.touch(); });
+  ok(del1.n === del0.n - 1 && !del1.ka2 && del1.avail && del2 === 0 && del3 === 1, 'Übersicht: Klassenarbeit der Vorlage und Kontrolle löschen, Rückgängig ' + JSON.stringify([del0, del1, del2, del3]));
   // Leistungsnachweis per Datum festlegen: Hauptstunde am Termin, der übrige Plan läuft darum herum; lösen gibt ihn frei
   await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const pin0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA1'); return { date: x.date, row: x.row, t5: M.schedule('kl8.a').rows.find(r => r.code === 'T5').start }; });

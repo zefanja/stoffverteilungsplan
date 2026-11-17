@@ -77,6 +77,9 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Reihenfolge der Sequenz darum herum, eine Einheit auch über den Termin hinweg. Die Zeile wandert in der Sequenz an die
   zeitlich passende Stelle. Feste Termine gelten je Parallelklasse (`groups[].pin`, Zeilen-ID → Datum); „lösen“ gibt den
   Termin frei. Kontrollen in einer Stunde wandern per Datum in die erste Stunde dieses Tages.
+  Löschen: × in der Übersicht oder „Leistungsnachweis löschen“ in der Termin-Karte der Einheit (mit Rückfrage, rückgängig
+  machbar). Selbst angelegte verschwinden ganz, Klassenarbeiten der Vorlage verlassen nur die Sequenz und lassen sich über
+  „Zeile hinzufügen“ zurückholen.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar. Fallen zwei Stunden einer
   Einheit laut Stundenplan in eine Doppelstunde, stehen sie als ein Block („Stunde 2–3 · Doppelstunde“) mit Termin und
   Schulstunden; eine Doppelstunde, die zwei Einheiten teilt, ist als „Doppelstunde, 1./2. Teil“ markiert. Atome lassen
