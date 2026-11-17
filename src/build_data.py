@@ -63,5 +63,16 @@ for k in META:
         print(k,tr,"cap",cap[tr],"used",used,"rest",diff)
     out['classes'][k]=dict(**META[k],units=units,unitOrder=list(units.keys()),seq=seq,mode=mode,tt=TT[k],lbnames=c['lbnames'],zrw=c['zrw'])
     print(k,"atoms",sum(len(u['atoms']) for u in units.values()))
+# Alle weiteren Klassen aus den Lehrplänen; GYM 6 und 8 behalten ihre ausgearbeiteten Pläne mit Atomen.
+from from_lehrplan import build as build_lehrplan
+LP=json.load(open('src/lehrplan.json'))
+done={(m['type'],m['grade'],None) for m in META.values()}
+for k,c in build_lehrplan(LP,CAL['start']).items():
+    if (c['type'],c['grade'],c['variant']) in done: continue
+    out['classes'][k]=c
+    print(k,c['label'],'units',len(c['units']),'Std.',sum(r[2] for r in c['seq']),'w',c['weekly'])
+for k in META: out['classes'][k].update(variant=None,variantLabel="",source="stoffverteilung")
+out['defaultMine']=list(META.keys())
+out['lehrplanQuelle']=dict(url=LP['quelle'],abgerufen=LP['abgerufen'])
 js="window.PLAN_DATA="+json.dumps(out,ensure_ascii=False,separators=(",",":"))+";"
 open('dist/data.js','w').write(js); print(len(js))

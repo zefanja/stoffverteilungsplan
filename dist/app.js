@@ -3,7 +3,9 @@
 const D = window.PLAN_DATA;
 const CLASSES = Object.keys(D.classes);
 const TYPES = D.schoolTypes || { gym: { label: "Gymnasium", short: "GYM", grades: [5, 6, 7, 8, 9, 10, 11, 12] } };
-const classFor = (type, grade) => CLASSES.find(k => D.classes[k].type === type && +D.classes[k].grade === +grade) || null;
+/* Mehrere Klassen je Stufe möglich: Oberschule ab Kl. 7 Haupt-/Realschulbildungsgang (HS/RS), Gymnasium 11/12 Grund-/Leistungskurs (GK/LK). */
+const classesFor = (type, grade) => CLASSES.filter(k => D.classes[k].type === type && +D.classes[k].grade === +grade);
+const classFor = (type, grade) => classesFor(type, grade)[0] || null;
 
 /* ---------------- utils ---------------- */
 const pad = n => String(n).padStart(2, "0");
@@ -28,14 +30,16 @@ function isoWeek(s) {
 /* ---------------- Formelsatz mit MathJax ----------------
    mx(text) liefert HTML: normaler Text bleibt Text, Formelstellen werden zu <span class="m" data-tex="…">Originaltext</span>.
    Sobald MathJax geladen ist, ersetzt typesetMath() diese Spans durch SVG; ohne MathJax bleibt der Originaltext sichtbar. */
-const MX_CODE = /[*^]|\b(solve|factor|expand|randInt)\b|^=|=A\d/;
+const MX_CODE = /[*]|\b(solve|factor|expand|randInt)\b|^=|=A\d/;
 const MX_UNITS = new Set(["mm", "cm", "dm", "km", "ml", "kg", "min", "ct", "€"]);
 const MX_UNIT1 = new Set(["m", "l", "g", "h", "s", "t"]);
-const MX_GREEK = { "α": "\\alpha ", "β": "\\beta ", "γ": "\\gamma ", "δ": "\\delta ", "Δ": "\\Delta ", "Ω": "\\Omega ", "π": "\\pi ", "ℕ": "\\mathbb{N}", "ℤ": "\\mathbb{Z}", "ℚ": "\\mathbb{Q}" };
-const MX_OPS = { "+": "+", "−": "-", "·": "\\cdot ", "×": "\\times ", "=": "=", "<": "<", ">": ">", "≤": "\\le ", "≥": "\\ge ", "≠": "\\ne ", "≈": "\\approx ", "∈": "\\in ", "∉": "\\notin ", "⊂": "\\subset ", "∪": "\\cup ", "∩": "\\cap ", "|": "\\mid ", "…": "\\ldots ", ":": "\\mathbin{:}", ",": ",\\," };
-const MX_SUP = { "²": "2", "³": "3", "⁴": "4" };
-const MX_RE = /(\d{1,3}(?: \d{3})+(?![\d,])|\d+(?:,\d+)?\u0305?)|([A-Za-zÄÖÜäöüß]{2,}[²³]?)|([A-Za-zα-ωΑ-ΩℕℤℚΔ](?:_[a-z])?ₐ?′?)|(½)|([²³⁴])|([+−·×=<>≤≥≠≈∈∉⊂∪∩|…:\/√])|([()[\]{}])|(□)|(\?)|(%|°)|(\s+)|([\s\S])/gu;
-const MX_KINDS = ["num", "word", "let", "half", "sup", "op", "par", "box", "q", "pct", "sp", "other"];
+const MX_GREEK = { "α": "\\alpha ", "β": "\\beta ", "γ": "\\gamma ", "δ": "\\delta ", "Δ": "\\Delta ", "Ω": "\\Omega ", "π": "\\pi ", "φ": "\\varphi ", "ℕ": "\\mathbb{N}", "ℤ": "\\mathbb{Z}", "ℚ": "\\mathbb{Q}", "ℝ": "\\mathbb{R}", "∞": "\\infty " };
+const MX_FN = { sin: "\\sin ", cos: "\\cos ", tan: "\\tan ", ln: "\\ln ", lg: "\\lg ", log: "\\log ", lim: "\\lim ", exp: "\\exp ", dx: "\\,dx " };
+const MX_OPS = { "+": "+", "−": "-", "·": "\\cdot ", "×": "\\times ", "=": "=", "<": "<", ">": ">", "≤": "\\le ", "≥": "\\ge ", "≠": "\\ne ", "≈": "\\approx ", "∈": "\\in ", "∉": "\\notin ", "⊂": "\\subset ", "∪": "\\cup ", "∩": "\\cap ", "|": "\\mid ", "…": "\\ldots ", ":": "\\mathbin{:}", ",": ",\\,", "±": "\\pm ", "↦": "\\mapsto ", "∫": "\\int ", "÷": "\\div ", ";": ";\\;" };
+const MX_SUP = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "ⁿ": "n", "⁺": "+", "⁻": "-" };
+const MX_SUB = { "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "ₙ": "n", "ₐ": "a" };
+const MX_RE = /(\d{1,3}(?: \d{3})+(?![\d,])|\d+(?:,\d+)?\u0305?)|([A-Za-zÄÖÜäöüß]{2,}[²³]?)|([A-Za-zα-ωΑ-ΩℕℤℚℝΔφ∞](?:_[a-z])?′?)|(½)|([⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)|([₀-₉ₙₐ]+)|([+−·×=<>≤≥≠≈∈∉⊂∪∩|…:\/√∛±↦∫÷^_])|([()[\]{}])|(□)|(\?)|(%|°)|(\s+)|([\s\S])/gu;
+const MX_KINDS = ["num", "word", "let", "half", "sup", "sub", "op", "par", "box", "q", "pct", "sp", "other"];
 function mxTokens(s) {
   const out = []; let m; MX_RE.lastIndex = 0;
   while ((m = MX_RE.exec(s))) { const k = MX_KINDS[m.slice(1).findIndex(x => x !== undefined)]; out.push({ k, v: m[0], i: m.index }); }
@@ -45,6 +49,7 @@ function mxTokens(s) {
     else if (t.k === "let" && n && n.k === "other" && n.v === ".") t.k = "word";                             // z. B., d. h.
     else if (t.k === "let" && n && n.k === "other" && n.v === "-" && /^[A-Z]$/.test(t.v)) t.k = "word";      // L-förmig
     else if (t.k === "let" && p && p.k === "sp" && pp && (pp.k === "num" || pp.k === "q") && MX_UNIT1.has(t.v)) t.k = "unit";   // 2,5 l; ? l
+    else if (t.k === "word" && MX_FN[t.v]) t.k = "fn";                                                       // sin, ln, lim, dx
     else if (t.k === "word") {
       const base = t.v.replace(/[²³]$/, "");
       if (MX_UNITS.has(base) || /^(mm|cm|dm|km|m)[²³]$/.test(t.v)) t.k = "unit";
@@ -54,14 +59,14 @@ function mxTokens(s) {
   }
   return out;
 }
-const MX_MATH = new Set(["num", "var", "half", "sup", "op", "par", "box", "q", "pct", "unit", "sp"]);
+const MX_MATH = new Set(["num", "var", "half", "sup", "sub", "op", "par", "box", "q", "pct", "unit", "sp", "fn"]);
 function mxRuns(tk) {
   const runs = []; let i = 0;
   const prevNs = (a, j) => { for (let x = j - 1; x >= a; x--) if (tk[x].k !== "sp") return tk[x]; return null; };
   const nextNs = j => { for (let x = j + 1; x < tk.length; x++) if (tk[x].k !== "sp") return tk[x]; return null; };
   while (i < tk.length) {
     const t = tk[i];
-    if (!MX_MATH.has(t.k) || ["sp", "unit", "pct", "sup", "q"].includes(t.k) || (t.k === "op" && !"−√".includes(t.v))) { i++; continue; }
+    if (!MX_MATH.has(t.k) || ["sp", "unit", "pct", "sup", "sub", "q"].includes(t.k) || (t.k === "op" && !"−√∛∫".includes(t.v))) { i++; continue; }
     let j = i, depth = 0;
     for (; j < tk.length; j++) {
       const u = tk[j];
@@ -88,7 +93,7 @@ function mxRuns(tk) {
       while (a < e && tk[a].k === "sp") a++;
     }
     const seg = tk.slice(a, e);
-    const strong = seg.some(u => (u.k === "op" && u.v !== ",") || u.k === "sup" || u.k === "half" || u.k === "box" || u.k === "pct" || /[\u0305²³ₐ′_]/.test(u.v) || (u.k === "var" && /[α-ωΑ-ΩℕℤℚΔ]/.test(u.v)) || (u.k === "num" && /,\d/.test(u.v)))
+    const strong = seg.some(u => (u.k === "op" && u.v !== ",") || u.k === "sup" || u.k === "sub" || u.k === "fn" || u.k === "half" || u.k === "box" || u.k === "pct" || /[\u0305²³ₐ′_]/.test(u.v) || (u.k === "var" && /[α-ωΑ-ΩℕℤℚΔ]/.test(u.v)) || (u.k === "num" && /,\d/.test(u.v)))
       || seg.some((u, z) => u.k === "var" && z > 0 && seg[z - 1].k === "num")
       || (seg.length === 1 && seg[0].k === "var");
     if (seg.length && strong) runs.push([a, e]);
@@ -107,7 +112,9 @@ function mxTex(tk) {
       if (last && last.k === "atom" && (last.num || last.attach)) { last.tex += tex; last.num = false; last.attach = true; last.paren = false; }
       else it.push({ k: "atom", tex, attach: t.k === "half" });
     }
-    else if (t.k === "sup") { if (last) last.tex += "^{" + MX_SUP[t.v] + "}"; }
+    else if (t.k === "sup") { if (last) last.tex += "^{" + [...t.v].map(c => MX_SUP[c]).join("") + "}"; }
+    else if (t.k === "sub") { if (last) last.tex += "_{" + [...t.v].map(c => MX_SUB[c]).join("") + "}"; }
+    else if (t.k === "fn") it.push({ k: "atom", tex: MX_FN[t.v], fn: true });
     else if (t.k === "par" && "([{".includes(t.v)) {
       let d = 0, j = i;
       for (; j < tk.length; j++) if (tk[j].k === "par") { d += "([{".includes(tk[j].v) ? 1 : -1; if (d === 0) break; }
@@ -118,7 +125,8 @@ function mxTex(tk) {
       i = j;
     }
     else if (t.k === "op" && t.v === "/") it.push({ k: "slash" });
-    else if (t.k === "op" && t.v === "√") it.push({ k: "sqrt" });
+    else if (t.k === "op" && (t.v === "√" || t.v === "∛")) it.push({ k: "sqrt", idx: t.v === "∛" ? "3" : "" });
+    else if (t.k === "op" && (t.v === "^" || t.v === "_")) it.push({ k: t.v === "^" ? "pow" : "low" });
     else if (t.k === "op") it.push({ k: "op", tex: MX_OPS[t.v] || t.v });
     else if (t.k === "box") it.push({ k: "atom", tex: "\\square " });
     else if (t.k === "q") it.push({ k: "atom", tex: "\\text{?}" });
@@ -126,8 +134,15 @@ function mxTex(tk) {
     else if (t.k === "pct") { if (t.v === "°" && last) last.tex += "^{\\circ}"; else it.push({ k: "atom", tex: "\\,\\%" }); }
     else if (t.k === "sp") it.push({ k: "sp" });
   }
+  // Hochzahl/Index „a^(n+1)“, „x_1“: nächstes Atom (ohne äußere Klammer) an das vorige hängen
+  for (let i = 0; i < it.length; i++) {
+    if (it[i].k !== "pow" && it[i].k !== "low") continue;
+    const L = it[i - 1], R = it[i + 1];
+    if (L && L.k === "atom" && R && R.k === "atom") { L.tex += (it[i].k === "pow" ? "^{" : "_{") + (R.paren ? R.inner : R.tex) + "}"; L.paren = false; L.num = false; it.splice(i, 2); i--; }
+    else it[i] = { k: "op", tex: it[i].k === "pow" ? "\\hat{}" : "\\_" };
+  }
   // Wurzel auf das nächste Atom, Brüche aus Atom / Atom, gemischte Zahlen „2 1/4“
-  for (let i = 0; i < it.length; i++) if (it[i].k === "sqrt" && it[i + 1] && it[i + 1].k === "atom") { it[i + 1].tex = "\\sqrt{" + (it[i + 1].paren ? it[i + 1].inner : it[i + 1].tex) + "}"; it[i + 1].paren = false; it.splice(i, 1); }
+  for (let i = 0; i < it.length; i++) if (it[i].k === "sqrt" && it[i + 1] && it[i + 1].k === "atom") { it[i + 1].tex = "\\sqrt" + (it[i].idx ? "[" + it[i].idx + "]" : "") + "{" + (it[i + 1].paren ? it[i + 1].inner : it[i + 1].tex) + "}"; it[i + 1].paren = false; it.splice(i, 1); }
   for (let i = 0; i < it.length; i++) {
     if (it[i].k !== "slash") continue;
     let l = i - 1; while (l >= 0 && it[l].k === "sp") l--;
@@ -170,7 +185,7 @@ function typesetMath(root) {
   });
 }
 const DAYS = ["", "Mo", "Di", "Mi", "Do", "Fr"];
-const LBVAR = { LB1: "lb1", LB2: "lb2", LB3: "lb3", LB4: "lb4", LB5: "lb5", WB: "wb", test: "test", start: "start", P: "buf" };
+const LBVAR = { LB1: "lb1", LB2: "lb2", LB3: "lb3", LB4: "lb4", LB5: "lb5", LB6: "lb1", LB7: "lb2", LB8: "lb3", LB9: "lb4", WB: "wb", test: "test", start: "start", P: "buf" };
 const sty = lb => `--c:var(--${LBVAR[lb] || "buf"});--bg:var(--${LBVAR[lb] || "buf"}-bg)`;
 
 /* ---------------- state ---------------- */
@@ -236,7 +251,8 @@ UI.year = pickYear();
 const resetYearState = () => CLASSES.forEach(k => { S.cls[k] = defaultClass(k); GIDS.forEach(gid => { S.eng[gkey(k, gid)] = defaultEngine(); }); });
 resetYearState();
 /* Gewählte Klasse, sofern sie zur gewählten Schulart gehört; sonst null (z. B. Oberschule ohne Lehrplan). */
-const mineList = () => { const l = cal().classes; return Array.isArray(l) ? CLASSES.filter(k => l.includes(k)) : CLASSES.slice(); };
+/* Ohne Festlegung gelten die Klassen mit ausgearbeitetem Plan (D.defaultMine) als „meine“. */
+const mineList = () => { const l = Array.isArray(cal().classes) ? cal().classes : (D.defaultMine || CLASSES); return CLASSES.filter(k => l.includes(k)); };
 const isMine = k => mineList().includes(k);
 /* Gewählte Klasse, sofern sie zur gewählten Schulart gehört und zu „Meine Klassen“; sonst null. */
 const curClass = () => D.classes[UI.cls] && D.classes[UI.cls].type === UI.type && isMine(UI.cls) ? UI.cls : null;
@@ -474,17 +490,27 @@ function applyDoc(name, data) {
 function setDbState(s) { dbState = s; renderBanner(); }
 function checkLoaded() {
   if (dbState !== "loading" && dbState !== "slow") return;
-  if (!loaded.settings || !YEAR_DOCS.every(n => loaded[n])) return;
+  if (!loaded.settings || ![...subscribed].every(n => loaded[n])) return;
   clearTimeout(initDb.timer); setDbState("ok");
   if (!cal().engineStart) { cal().engineStart = todayIso(); save("settings"); touch(); render(); }
 }
+/* Abonniert werden nur die Dokumente der eigenen Klassen und der gerade gewählten Klasse (bei 19 Klassen sonst 57 Dokumente). */
+let subscribed = new Set();
+const wantedDocs = () => [...new Set([...mineList(), UI.cls])].filter(k => D.classes[k]).flatMap(k => [k, ...GIDS.map(gid => engDoc(gkey(k, gid)))]);
 function subscribeYear() {
   yearUnsubs.forEach(u => { try { u(); } catch (e) {} }); yearUnsubs = [];
   YEAR_DOCS.forEach(n => { loaded[n] = false; });
-  if (!db && local) { for (const name of YEAR_DOCS) { const d = lsGet(pathOf(name)); if (d) applyDoc(name, d); } touch(); return; }
+  subscribed = new Set();
+  ensureSubscribed();
+}
+function ensureSubscribed() {
+  const todo = wantedDocs().filter(n => !subscribed.has(n));
+  if (!todo.length) return;
+  todo.forEach(n => subscribed.add(n));
+  if (!db && local) { for (const name of todo) { const d = lsGet(pathOf(name)); if (d) applyDoc(name, d); } touch(); return; }
   if (!db) return;
   const g = yearGen;
-  for (const name of YEAR_DOCS) {
+  for (const name of todo) {
     let first = true;
     yearUnsubs.push(db.doc(pathOf(name)).onSnapshot(snap => {
       if (g !== yearGen) return;
@@ -714,8 +740,11 @@ function renderCtx() {
   const el = document.getElementById("ctx"); if (!el) return;
   const T = TYPES[UI.type] || { grades: [] }, cur = curClass();
   el.innerHTML = `<span class="ctxl">Schulart</span><div class="seg small" role="group" aria-label="Schulart">${Object.entries(TYPES).map(([t, x]) => `<button type="button" aria-pressed="${UI.type === t}" data-act="type" data-v="${t}" title="${esc(x.label)}">${esc(x.short)}</button>`).join("")}</div>
-    <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => { const k = classFor(UI.type, g);
-      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k && isMine(k) ? `data-act="cls" data-k="${k}" title="${esc(D.classes[k].label)}"` : k ? `disabled title="Klasse ${g} gehört nicht zu Ihren Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+    <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => {
+      const all = classesFor(UI.type, g), mine = all.filter(isMine), curV = cur && D.classes[cur].variant;
+      const k = mine.find(c => D.classes[c].variant === curV) || mine[0];
+      return `<button type="button" aria-pressed="${!!cur && all.includes(cur)}" ${k ? `data-act="cls" data-k="${k}" title="${esc(mine.map(c => D.classes[c].label).join(", "))}"` : all.length ? `disabled title="Klasse ${g} gehört nicht zu Ihren Klassen (Einstellungen → Meine Klassen)"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+    ${cur && classesFor(UI.type, D.classes[cur].grade).filter(isMine).length > 1 ? `<div class="seg small" role="group" aria-label="Bildungsgang bzw. Kursart">${classesFor(UI.type, D.classes[cur].grade).filter(isMine).map(c => `<button type="button" aria-pressed="${c === cur}" data-act="cls" data-k="${c}" title="${esc(D.classes[c].variantLabel)}">${esc(D.classes[c].variant || "")}</button>`).join("")}</div>` : ""}
     ${cur && S.cls[cur].groups.length > 1 ? `<div class="seg small" role="group" aria-label="Parallelklasse">${groupsOf(cur).map(g => `<button type="button" aria-pressed="${g === curG()}" data-act="grp" data-g="${g}">${esc(groupName(g))}</button>`).join("")}</div>` : ""}
     <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
@@ -939,8 +968,9 @@ function viewUnits() {
   const rowOf = {}; sc.rows.forEach(r => { if (!rowOf[r.code]) rowOf[r.code] = r; });
   const groups = {};
   c.unitOrder.filter(code => code !== "P" && code !== "JA").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
-  const order = ["start", "LB1", "LB2", "LB3", "LB4", "LB5", "WB", "test"];
+  const order = ["start", "LB1", "LB2", "LB3", "LB4", "LB5", "LB6", "LB7", "LB8", "LB9", "WB", "test"];
   return `<section><div class="vhead"><h1>Einheiten</h1>${clsTabs()}</div>
+    ${c.ziele && c.ziele.length ? `<details class="card ziele"><summary><b>Ziele der Klassenstufe</b> <span class="small muted">Lehrplan Sachsen${c.variantLabel ? " · " + esc(c.variantLabel) : ""}</span></summary>${c.ziele.map(([h, t]) => `<p><b>${esc(h)}</b><br>${mx(t)}</p>`).join("")}</details>` : ""}
     ${order.filter(lb => groups[lb]).map(lb => `<h2 class="lbh" style="${sty(lb)}">${esc(c.lbnames[lb] || lb)}</h2>
     <div class="ugrid">${groups[lb].map(code => {
       const u = unitOf(k, code), r = rowOf[code], i = c.unitOrder.indexOf(code);
@@ -1054,18 +1084,24 @@ function yearOptions() {
 function myClassesCard() {
   const Y = cal(), mine = mineList();
   const rows = Object.entries(TYPES).map(([t, T]) => `<tr class="mtype"><td colspan="3">${esc(T.label)}</td></tr>` + T.grades.map(g => {
-    const k = classFor(t, g);
-    if (!k) return `<tr class="mna"><td><label class="chk"><input type="checkbox" disabled> Klasse ${g}</label></td><td colspan="2" class="small muted">Lehrplan noch nicht hinterlegt</td></tr>`;
+    const ks = classesFor(t, g);
+    if (!ks.length) return `<tr class="mna"><td><label class="chk"><input type="checkbox" disabled> Klasse ${g}</label></td><td colspan="2" class="small muted">Lehrplan noch nicht hinterlegt</td></tr>`;
+    return ks.map(k => myClassRow(k, mine)).join("");
+  }).join("")).join("");
+  return `<div class="card myclasses"><h3>Meine Klassen ${esc(yearLabel(Y.id))}</h3>
+    <p class="small muted">Haken Sie an, welche Klassen Sie in diesem Schuljahr unterrichten. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. In der Oberschule gibt es ab Klasse 7 eigene Pläne für den Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 für Grund- (GK) und Leistungskurs (LK). Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
+    <div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Parallelklassen</th><th>Namen</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="small muted">Lehrpläne: Lehrplandatenbank Sachsen${D.lehrplanQuelle ? `, abgerufen am ${esc(fmt(D.lehrplanQuelle.abgerufen, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}. Klasse 6 und 8 (Gymnasium) mit ausgearbeiteter Stoffverteilung und Atomen.</p></div>`;
+}
+function myClassRow(k, mine) {
+  {
     const on = mine.includes(k), C = S.cls[k], n = C.groups.length;
     const names = on ? C.groups.map(G => `<input data-act="gname" data-g="${gkey(k, G.id)}" value="${esc(G.name)}" placeholder="${esc(n > 1 ? D.classes[k].short + G.id : "optional")}" aria-label="Name der Parallelklasse ${esc(G.id)}">`).join("") : "";
     const confirm = UI.confirm === "gdel-" + k ? `<span class="confirm small">${esc(groupName(gkey(k, C.groups[1].id)))} mit Stundenplan und Lernstand entfernen?<button type="button" class="btn danger sm" data-act="gdel" data-k="${k}">Entfernen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Nein</button></span>` : "";
-    return `<tr class="${on ? "on" : ""}"><td><label class="chk"><input type="checkbox" data-act="mine" data-k="${k}" ${on ? "checked" : ""}> ${esc(D.classes[k].label)}</label></td>
+    return `<tr class="${on ? "on" : ""}"><td><label class="chk"><input type="checkbox" data-act="mine" data-k="${k}" ${on ? "checked" : ""}> ${esc(D.classes[k].label)}${D.classes[k].variantLabel ? ` <span class="small muted">${esc(D.classes[k].variantLabel)}</span>` : ""}</label></td>
       <td>${on ? `<select data-act="gcount" data-k="${k}" aria-label="Anzahl Parallelklassen"><option value="1" ${n === 1 ? "selected" : ""}>1 Klasse</option><option value="2" ${n === 2 ? "selected" : ""}>2 Parallelklassen</option></select>` : ""}</td>
       <td><div class="gnames">${names}</div>${confirm}</td></tr>`;
-  }).join("")).join("");
-  return `<div class="card myclasses"><h3>Meine Klassen ${esc(yearLabel(Y.id))}</h3>
-    <p class="small muted">Haken Sie an, welche Klassen Sie in diesem Schuljahr unterrichten. Nur diese erscheinen oben in der Leiste und unter „Alle meine Klassen“. Parallelklassen teilen sich Sequenz und Atome, haben aber eigenen Stundenplan und Lernstand.</p>
-    <div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Parallelklassen</th><th>Namen</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
 }
 function ttCard(k) {
   const C = grp(k), vs = sortTT(C.tt), Y = cal();
@@ -1127,7 +1163,7 @@ function viewSettings() {
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
       ${myClassesCard()}
-      ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
+      ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">${noClassMsg()}</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
@@ -1176,6 +1212,7 @@ function render() {
   if (render.again) { render.again = false; render(); }
 }
 function renderNow() {
+  ensureSubscribed();
   const r = route(); let html;
   const m = /^u-(.+)-(\d+)$/.exec(r), mk = m && D.classes[m[1]] ? m[1] : null;
   const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, lernuebersicht: viewEngine, einstellungen: viewSettings };
