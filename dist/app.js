@@ -1195,6 +1195,8 @@ function viewSettings() {
   const confirm = UI.confirm === "resetall", cf = UI.confirm === "ferien";
   return `<section><div class="vhead"><h1>Einstellungen</h1>${clsTabs()}</div>
     <div class="grid2">
+      ${myClassesCard()}
+      ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">${noClassMsg()}</p></div>`}
       <div class="card"><h3>Schuljahre</h3>
         <div class="acts"><button type="button" class="btn ghost sm" data-act="obopen">Einrichtungsassistent starten</button></div>
         <div class="tscroll"><table class="form"><thead><tr><th>Schuljahr</th><th>Zeitraum</th><th></th><th></th></tr></thead><tbody>${years}</tbody></table></div>
@@ -1214,8 +1216,6 @@ function viewSettings() {
         <h3>Freie Einzeltage</h3><div class="tscroll"><table class="form"><thead><tr><th>Datum</th><th>Anlass</th><th></th></tr></thead><tbody>${fr}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
-      ${myClassesCard()}
-      ${k ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">${noClassMsg()}</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Deine Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
