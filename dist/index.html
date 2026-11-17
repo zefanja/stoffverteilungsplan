@@ -48,9 +48,14 @@ h1{font-size:clamp(24px,3.4vw,32px)} h2{font-size:20px} h3{font-size:15px;letter
 #nav a{padding:7px 12px;border-radius:6px;text-decoration:none;color:var(--muted);white-space:nowrap;font-weight:500}
 #nav a:hover{background:var(--soft);color:var(--ink)}
 #nav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
-.ctx{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.ctx select{font-family:var(--f-mono);font-size:13px;padding:5px 6px}
+.ctx{display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap;flex-basis:100%;border-top:1px solid var(--line);padding-top:8px}
+.ctx select{font-family:var(--f-mono);font-size:13px;padding:5px 6px;width:auto}
+.ctx .ctxl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
 .ctx .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.ctx .grades{align-items:center}
+.ctx .grades .lbl{padding:0 4px 0 6px}
+.ctx .grades button{min-width:30px;padding:4px 6px;font-family:var(--f-mono)}
+.ctx .seg button:disabled{opacity:.35;cursor:not-allowed}
 #banner{max-width:1240px;margin:10px auto 0;padding:8px 14px;border-radius:6px;background:var(--soft);font-size:13px}
 #banner[data-kind="off"],#banner[data-kind="err"],#banner[data-kind="quota"]{background:var(--warn-bg);color:var(--warn)}
 main{max-width:1240px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
@@ -229,7 +234,8 @@ ol.sol{margin:0;padding-left:22px;display:grid;gap:8px} ol.sol span{display:bloc
 #toast button{background:none;border:1px solid var(--paper);color:var(--paper);border-radius:5px;padding:3px 10px;cursor:pointer}
 [hidden]{display:none!important}
 @media (max-width:640px){
-  .ctx{width:100%}
+  .ctx .ctxl{display:none}
+  .ctx .grades{order:3}
   .slot{grid-template-columns:1fr}
   .rates{grid-template-columns:repeat(2,minmax(0,1fr))}
   .datebar .seg{margin-left:0}

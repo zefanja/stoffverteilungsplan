@@ -17,8 +17,9 @@ def lessons_on(k,iso):
     for v in TT[k]:
         if v['frm']<=iso: cur=v
     return cur['lessons'] if cur else []
-META={"kl6":dict(label="Klasse 6",short="6",nameA="LB 1 + 2 · Zahlen und Zuordnungen",nameB="LB 3 + 4 · Geometrie",sol=False),
-      "kl8":dict(label="Klasse 8",short="8",nameA="LB 1 + 3 + 5 · Algebra und Funktionen",nameB="LB 2 + 4 · Zufall und Ähnlichkeit",sol=True)}
+# Klassen-IDs kl6/kl8 bleiben wegen der gespeicherten Daten; neue Klassen z. B. "gym7", "os5".
+META={"kl6":dict(type="gym",grade=6,label="Klasse 6",short="6",nameA="LB 1 + 2 · Zahlen und Zuordnungen",nameB="LB 3 + 4 · Geometrie",sol=False),
+      "kl8":dict(type="gym",grade=8,label="Klasse 8",short="8",nameA="LB 1 + 3 + 5 · Algebra und Funktionen",nameB="LB 2 + 4 · Zufall und Ähnlichkeit",sol=True)}
 def days():
     d=dt.date.fromisoformat(CAL['start']); e=dt.date.fromisoformat(CAL['end'])
     fr={f['date'] for f in CAL['free']}
@@ -27,8 +28,10 @@ def days():
         if d.weekday()<5 and iso not in fr and not any(h['frm']<=iso<=h['to'] for h in CAL['holidays']): yield d
         d+=dt.timedelta(1)
 FER=json.load(open('src/ferien_sn.json'))
-out=dict(calendar=CAL,ferienSN=dict(school=FER['school'],public=FER['public']),classes={})
-for k in ("kl6","kl8"):
+SCHOOL_TYPES={"gym":dict(label="Gymnasium",short="GYM",grades=list(range(5,13))),
+              "os":dict(label="Oberschule",short="OS",grades=list(range(5,11)))}
+out=dict(schoolTypes=SCHOOL_TYPES,calendar=CAL,ferienSN=dict(school=FER['school'],public=FER['public']),classes={})
+for k in META:
     c=P[k]; units={}
     for code,u in c['units'].items():
         u=dict(u); u.setdefault('stunden',[])

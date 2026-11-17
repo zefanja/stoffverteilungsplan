@@ -1,7 +1,9 @@
 (function () {
 "use strict";
 const D = window.PLAN_DATA;
-const CLASSES = ["kl6", "kl8"];
+const CLASSES = Object.keys(D.classes);
+const TYPES = D.schoolTypes || { gym: { label: "Gymnasium", short: "GYM", grades: [5, 6, 7, 8, 9, 10, 11, 12] } };
+const classFor = (type, grade) => CLASSES.find(k => D.classes[k].type === type && +D.classes[k].grade === +grade) || null;
 
 /* ---------------- utils ---------------- */
 const pad = n => String(n).padStart(2, "0");
@@ -63,9 +65,12 @@ function ttFromLegacy(rows, start) {
   return out;
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
-const S = { settings: defaultSettings(), cls: {}, eng: { kl6: defaultEngine(), kl8: defaultEngine() } };
-const UI = { date: todayIso(), cls: "kl6", year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false };
-try { const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v; UI.todayAll = localStorage.getItem("mp-today") === "all"; } catch (e) {}
+const S = { settings: defaultSettings(), cls: {}, eng: {} };
+const UI = { date: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false };
+try {
+  const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v;
+  const t = localStorage.getItem("mp-type"); UI.type = t && TYPES[t] ? t : D.classes[UI.cls].type;
+  UI.todayAll = localStorage.getItem("mp-today") === "all"; } catch (e) {}
 function pickYear() {
   const ys = S.settings.years; let id = null;
   try { id = localStorage.getItem("mp-year"); } catch (e) {}
@@ -75,7 +80,11 @@ function pickYear() {
 }
 function cal() { return S.settings.years.find(y => y.id === UI.year) || S.settings.years[0]; }
 UI.year = pickYear();
-CLASSES.forEach(k => { S.cls[k] = defaultClass(k); });
+CLASSES.forEach(k => { S.cls[k] = defaultClass(k); S.eng[k] = defaultEngine(); });
+/* Gewählte Klasse, sofern sie zur gewählten Schulart gehört; sonst null (z. B. Oberschule ohne Lehrplan). */
+const curClass = () => D.classes[UI.cls] && D.classes[UI.cls].type === UI.type ? UI.cls : null;
+const hasLessons = k => (S.cls[k].tt || []).some(v => v.lessons && v.lessons.length);
+const fullLabel = k => `${(TYPES[D.classes[k].type] || {}).short || ""} · ${D.classes[k].label}`;
 
 let ver = 0; const cache = {};
 const touch = () => { ver++; };
@@ -203,14 +212,18 @@ function engineState(k, date) {
 /* ---------------- persistence ---------------- */
 /* Dokumente: planner/settings ist global. Klassen und Lernstand liegen je Schuljahr in jahr-<id>/…;
    das erste (aus der Zeit vor den Schuljahren übernommene) Jahr behält die alten Pfade planner/kl6 usw. */
-const YEAR_DOCS = ["kl6", "kl8", "e6", "e8"];
-const engDoc = k => k === "kl6" ? "e6" : "e8";
+/* Dokumentnamen: Klassen-ID für den Plan, "e:"+ID für den Lernstand. */
+const engDoc = k => "e:" + k;
+const isEngDoc = n => n.startsWith("e:");
+const clsOfDoc = n => isEngDoc(n) ? n.slice(2) : n;
+const YEAR_DOCS = CLASSES.flatMap(k => [k, engDoc(k)]);
+const LEGACY_IDS = ["kl6", "kl8"];
 function pathOf(name, y) {
   if (name === "settings") return "planner/settings";
   y = y || cal();
-  if (name === "kl6" || name === "kl8") return y.legacyDocs ? "planner/" + name : `jahr-${y.id}/${name}`;
-  const k = name === "e6" ? "kl6" : "kl8";
-  return y.legacyDocs ? "engine/" + k : `jahr-${y.id}/engine-${k}`;
+  const k = clsOfDoc(name), eng = isEngDoc(name);
+  if (y.legacyDocs && LEGACY_IDS.includes(k)) return (eng ? "engine/" : "planner/") + k;
+  return `jahr-${y.id}/${eng ? "engine-" : ""}${k}`;
 }
 let db = null, dbState = "loading", yearGen = 0, yearUnsubs = [], local = false;
 /* Ohne Claude-Datenbank (z. B. auf GitHub Pages) wird im Browser gespeichert. */
@@ -218,7 +231,7 @@ const LS = "mp-doc:";
 function lsGet(path) { try { const v = localStorage.getItem(LS + path); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 function lsOk() { try { localStorage.setItem(LS + "probe", "1"); localStorage.removeItem(LS + "probe"); return true; } catch (e) { return false; } }
 const dirty = {}, saving = {}, timers = {}, loaded = {};
-function docBody(name) { return name === "settings" ? S.settings : name === "kl6" || name === "kl8" ? S.cls[name] : S.eng[name === "e6" ? "kl6" : "kl8"]; }
+function docBody(name) { return name === "settings" ? S.settings : isEngDoc(name) ? S.eng[clsOfDoc(name)] : S.cls[name]; }
 function save(name) { dirty[name] = true; clearTimeout(timers[name]); const g = yearGen; timers[name] = setTimeout(() => { if (g === yearGen || name === "settings") flush(name); }, 700); }
 async function flush(name) {
   if (!db && local) {
@@ -250,7 +263,7 @@ function applyDoc(name, data) {
     delete o.calendar; delete o.engineStart;
     o.years = sortYears(o.years.filter(y => y && y.id).map(y => Object.assign({ holidays: [], free: [], engineStart: null }, y)));
     S.settings = o;
-  } else if (name === "kl6" || name === "kl8") {
+  } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
     const c = Object.assign(defaultClass(name), data);
     if (!Array.isArray(data.tt)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : c.tt;
@@ -258,8 +271,8 @@ function applyDoc(name, data) {
     if (!Array.isArray(c.off)) c.off = [];
     sortTT(c.tt);
     S.cls[name] = c;
-  } else {
-    S.eng[name === "e6" ? "kl6" : "kl8"] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
+  } else if (isEngDoc(name) && CLASSES.includes(clsOfDoc(name))) {
+    S.eng[clsOfDoc(name)] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
   }
 }
 function setDbState(s) { dbState = s; renderBanner(); }
@@ -479,11 +492,19 @@ function unitLink(k, code, label) {
   return `<a class="ulink" href="#u-${k}-${i}" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</a>`;
 }
 /* Kontext-Hinweis in den Überschriften; umgeschaltet wird oben in der Leiste. */
-function clsTabs() { return `<span class="badge">${esc(D.classes[UI.cls].label)} · ${esc(yearLabel(cal().id))}</span>`; }
+function clsTabs() { const k = curClass(); return `<span class="badge">${esc(k ? fullLabel(k) : (TYPES[UI.type] || {}).label || "")} · ${esc(yearLabel(cal().id))}</span>`; }
+function noClassView(title) {
+  const T = TYPES[UI.type] || {};
+  return `<section><div class="vhead"><h1>${esc(title)}</h1>${clsTabs()}</div>
+    <div class="card"><p>Für ${esc(T.label || "diese Schulart")} ist noch kein Lehrplan hinterlegt. Wählen Sie oben eine andere Schulart oder Klasse.</p></div></section>`;
+}
 function renderCtx() {
   const el = document.getElementById("ctx"); if (!el) return;
-  el.innerHTML = `<div class="seg small" role="group" aria-label="Klasse">${CLASSES.map(k => `<button type="button" aria-pressed="${UI.cls === k}" aria-selected="${UI.cls === k}" data-act="cls" data-k="${k}">${esc(D.classes[k].label)}</button>`).join("")}</div>
-    <select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
+  const T = TYPES[UI.type] || { grades: [] }, cur = curClass();
+  el.innerHTML = `<span class="ctxl">Schulart</span><div class="seg small" role="group" aria-label="Schulart">${Object.entries(TYPES).map(([t, x]) => `<button type="button" aria-pressed="${UI.type === t}" data-act="type" data-v="${t}" title="${esc(x.label)}">${esc(x.short)}</button>`).join("")}</div>
+    <div class="seg small grades" role="group" aria-label="Klassenstufe"><span class="lbl">Kl.</span>${T.grades.map(g => { const k = classFor(UI.type, g);
+      return `<button type="button" aria-pressed="${!!k && k === cur}" ${k ? `data-act="cls" data-k="${k}" title="${esc(fullLabel(k))}"` : `disabled title="Klasse ${g}: Lehrplan noch nicht hinterlegt"`}>${g}</button>`; }).join("")}</div>
+    <span class="ctxl">Schuljahr</span><select id="yearsel" aria-label="Schuljahr">${S.settings.years.map(y => `<option value="${esc(y.id)}" ${y.id === cal().id ? "selected" : ""}>${esc(yearLabel(y.id))}</option>`).join("")}<option value="__new">+ Neues Schuljahr …</option></select>`;
 }
 function trackName(k, tr) {
   const c = D.classes[k], sc = schedule(k);
@@ -526,7 +547,8 @@ function currentUnit(k, date) {
 /* ---------------- views: Heute ---------------- */
 function viewToday() {
   const d = UI.date, isToday = d === todayIso();
-  const show = UI.todayAll ? CLASSES : [UI.cls];
+  const mine = CLASSES.filter(hasLessons);
+  const show = UI.todayAll ? (mine.length ? mine : CLASSES) : curClass() ? [UI.cls] : [];
   return `<section class="today">
     <div class="datebar">
       <button type="button" class="iconbtn" data-act="day" data-n="-1" aria-label="Vorheriger Tag">‹</button>
@@ -534,9 +556,9 @@ function viewToday() {
       <button type="button" class="iconbtn" data-act="day" data-n="1" aria-label="Nächster Tag">›</button>
       ${isToday ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
       <input type="date" id="pickdate" value="${d}" aria-label="Datum wählen">
-      <div class="seg small">${[["one", D.classes[UI.cls].label], ["all", "Alle Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
+      <div class="seg small">${[["one", curClass() ? fullLabel(UI.cls) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
-    <div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>
+    ${show.length ? `<div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>` : `<div class="card"><p>Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
   </section>`;
 }
 function todayCard(k, d) {
@@ -561,7 +583,7 @@ function todayCard(k, d) {
   const res = ["A", "B"].filter(t => !(sc.seqMode && t === "B")).map(t => sc.cap[t] - sc.planned[t]);
   const warn = res.some(r => r < 0) ? `<a class="warn" href="#sequenz" data-act="cls" data-k="${k}">Der Plan ist voller als das Schuljahr: ${-Math.min(...res)} Std. fehlen. Zur Sequenz →</a>` : "";
   return `<article class="card tcard">
-    <header class="thead"><h2>${esc(c.label)}</h2><span class="badge">${sc.seqMode ? "nacheinander" : "in Strängen"}</span></header>
+    <header class="thead"><h2>${esc(UI.todayAll ? fullLabel(k) : c.label)}</h2><span class="badge">${sc.seqMode ? "nacheinander" : "in Strängen"}</span></header>
     ${warn}
     <div class="lessons">${body}</div>
     <section class="engine-box">
@@ -811,7 +833,7 @@ function ttCard(k) {
   }).join("");
   const sug = UI.date > (vs.length ? vs[vs.length - 1].frm : "") && UI.date <= Y.end ? monday(UI.date) < UI.date ? addDays(monday(UI.date), 7) : UI.date : "";
   const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
-  return `<div class="card"><h3>Stundenplan ${esc(D.classes[k].label)} · ${esc(yearLabel(Y.id))}</h3>
+  return `<div class="card"><h3>Stundenplan ${esc(fullLabel(k))} · ${esc(yearLabel(Y.id))}</h3>
     <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen), SOL = selbstorganisiertes Lernen.</p>
     ${blocks}
     <div class="addrow"><label>Neuer Stundenplan ab <input type="date" id="ttnewfrm" value="${esc(sug)}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label><button type="button" class="btn ghost sm" data-act="ttnew">Zeitraum anlegen</button></div>
@@ -850,7 +872,7 @@ function viewSettings() {
         <h3>Freie Einzeltage</h3><div class="tscroll"><table class="form"><thead><tr><th>Datum</th><th>Anlass</th><th></th></tr></thead><tbody>${fr}</tbody></table></div>
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
-      ${ttCard(k)}
+      ${curClass() ? ttCard(k) : `<div class="card"><h3>Stundenplan</h3><p class="small muted">Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
     </div>
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Ihre Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
@@ -899,10 +921,13 @@ function render() {
 }
 function renderNow() {
   const r = route(); let html;
-  const m = /^u-(kl6|kl8)-(\d+)$/.exec(r);
-  if (m) { if (UI.cls !== m[1]) { UI.cls = m[1]; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {} } html = viewUnit(m[1], +m[2]); }
-  else html = ({ heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, engine: viewEngine, einstellungen: viewSettings }[r] || viewToday)();
-  const active = m ? "einheiten" : r;
+  const m = /^u-(.+)-(\d+)$/.exec(r), mk = m && D.classes[m[1]] ? m[1] : null;
+  const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, engine: viewEngine, einstellungen: viewSettings };
+  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", engine: "Learning Engine" };
+  if (mk) { if (UI.cls !== mk || UI.type !== D.classes[mk].type) { UI.cls = mk; UI.type = D.classes[mk].type; try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {} } html = viewUnit(mk, +m[2]); }
+  else if (TITLES[r] && !curClass()) html = noClassView(TITLES[r]);
+  else html = (VIEWS[r] || viewToday)();
+  const active = mk ? "einheiten" : r;
   renderCtx();
   document.getElementById("nav").innerHTML = NAV.map(([id, l]) => `<a href="#${id}" ${active === id ? 'aria-current="page"' : ""}>${l}</a>`).join("");
   const main = document.getElementById("main");
@@ -929,7 +954,15 @@ document.addEventListener("click", ev => {
   switch (a) {
     case "undo": doUndo(); break;
     case "cls": {
-      UI.cls = b.dataset.k; UI.editAtom = null; UI.confirm = null; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {}
+      UI.cls = b.dataset.k; UI.type = D.classes[UI.cls].type; try { localStorage.setItem("mp-type", UI.type); } catch (e) {} UI.editAtom = null; UI.confirm = null; try { localStorage.setItem("mp-cls", UI.cls); } catch (e) {}
+      if (/^u-/.test(route())) { location.hash = "#einheiten"; break; }
+      render(); break;
+    }
+    case "type": {
+      const t = b.dataset.v; if (!TYPES[t]) break;
+      UI.type = t; UI.editAtom = null; UI.confirm = null;
+      if (D.classes[UI.cls].type !== t) { const g = D.classes[UI.cls].grade; const k = classFor(t, g) || CLASSES.find(c => D.classes[c].type === t); if (k) UI.cls = k; }
+      try { localStorage.setItem("mp-type", UI.type); localStorage.setItem("mp-cls", UI.cls); } catch (e) {}
       if (/^u-/.test(route())) { location.hash = "#einheiten"; break; }
       render(); break;
     }

@@ -28,6 +28,15 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
     await p.evaluate(h => location.hash = h, h); await p.waitForTimeout(150);
     ok((await p.innerText('main')).includes('Klasse 8'), `${h} folgt der gewählten Klasse`);
   }
+  // Schulart-Umschalter: Oberschule hat noch keinen Lehrplan
+  ok((await p.$$('#ctx .grades button')).length === 8 && (await p.$$('#ctx .grades button[disabled]')).length === 6, 'GYM: Klassen 5–12, nur 6 und 8 wählbar');
+  await p.click('#ctx [data-act="type"][data-v="os"]'); await p.waitForTimeout(100);
+  ok((await p.$$('#ctx .grades button')).length === 6 && (await p.$$('#ctx .grades button[disabled]')).length === 6, 'OS: Klassen 5–10, keine wählbar');
+  ok((await p.innerText('main')).includes('Oberschule ist noch kein Lehrplan'), 'OS: Hinweis statt Plan');
+  await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(100);
+  ok((await p.innerText('main')).includes('Oberschule ist noch kein Lehrplan'), 'OS: Heute zeigt Hinweis');
+  await p.click('#ctx [data-act="type"][data-v="gym"]'); await p.waitForTimeout(100);
+  ok((await p.innerText('.tcard h2')) === 'Klasse 8', 'Zurück zu GYM: Klasse 8 wieder gewählt');
   await p.click('[data-act="todaycls"][data-v="all"]').catch(() => {});
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(100);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
