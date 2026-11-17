@@ -204,6 +204,20 @@ const cloneLessons = ls => ls.map(l => Object.assign({ id: uid(), day: +l.day, p
 /* Unterrichtsstunden pro Woche (Doppelstunde = 2) */
 const lessonLen = l => +l.len === 2 ? 2 : 1;
 const weekHours = ls => (ls || []).reduce((a, l) => a + lessonLen(l), 0);
+/* Sequenz aus der ersten Lehrplan-Vorlage (ohne Klassenarbeiten, nur Zeitrichtwerte und je LB 1 Puffer), nie bearbeitet */
+function isOldLehrplanSeq(k, seq) {
+  const c = D.classes[k];
+  if (!c || c.source !== "lehrplan") return false;
+  const zrw = Object.values(c.zrw || {}).reduce((a, x) => a + x, 0);
+  let units = 0;
+  for (const r of seq) {
+    if (!r || typeof r !== "object") return false;
+    if (r.code === "P") { if (+r.hours !== 1) return false; continue; }
+    if (!/^\d/.test(r.code || "")) return false;
+    units += +r.hours || 0;
+  }
+  return units === zrw;
+}
 function defaultClass(k, y) {
   const c = D.classes[k]; y = y || cal();
   const tt = y.start === D.calendar.start
@@ -296,13 +310,25 @@ function atomMap(k) {
 const titleOf = (k, code) => code === "P" ? "Puffer · Wiederholung" : code === "JA" ? "Jahresabschluss" : (unitOf(k, code) || {}).title || code;
 
 /* ---------------- scheduling ---------------- */
+/* Letzter Unterrichtstag einer Klasse im Schuljahr: eigener Wert (leer = Schuljahresende) oder Vorschlag aus der Regel
+   der Klasse (GYM 12 vor den Osterferien, OS 10 vor den Pfingstferien). */
+function ruleLastDay(k, Y) {
+  const pat = { ostern: /oster/i, pfingsten: /pfingst/i }[D.classes[k].endRule];
+  const h = pat && (Y.holidays || []).filter(x => x.frm && pat.test(x.name || "")).sort((a, b) => a.frm < b.frm ? -1 : 1)[0];
+  return h ? addDays(h.frm, -1) : null;
+}
+function lastDayOf(k) {
+  const C = S.cls[k], Y = cal();
+  if (C && typeof C.lastDay === "string") return C.lastDay || null;
+  return ruleLastDay(k, Y);
+}
 function schedule(g) {
   if (cache[g] && cache[g].ver === ver) return cache[g];
   const k = ck(g), Y = cal(), C = S.cls[k], G = grp(g), seqMode = C.mode === "nacheinander";
   const free = {}; (Y.free || []).forEach(f => { if (f.date) free[f.date] = f.name || "unterrichtsfrei"; });
   const holidayOf = d => { for (const h of Y.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; return null; };
   const offOf = d => { for (const o of G.off || []) if (o.frm && o.to && o.frm <= d && d <= o.to) return o.name || "Kein Unterricht in dieser Klasse"; return null; };
-  const tts = sortTT((G.tt || []).filter(v => v.frm).slice());
+  const tts = sortTT((G.tt || []).filter(v => v.frm).slice()), endD = lastDayOf(k);
   const lessonsOn = d => { let cur = null; for (const v of tts) { if (v.frm <= d) cur = v; else break; } return cur ? cur.lessons : []; };
   const slots = [], dayInfo = {};
   if (Y.start && Y.end && Y.start <= Y.end) {
@@ -310,6 +336,7 @@ function schedule(g) {
       const w = dow(d); if (w > 5) continue;
       const h = holidayOf(d), f = free[d], o = h || f ? null : offOf(d);
       if (h || f) { dayInfo[d] = { school: false, note: h || f }; continue; }
+      if (endD && d > endD) { dayInfo[d] = { school: false, note: "nach dem letzten Unterrichtstag", off: true }; continue; }
       if (o) { dayInfo[d] = { school: false, note: o, off: true }; continue; }
       dayInfo[d] = { school: true };
       const seen = new Set();
@@ -480,6 +507,7 @@ function applyDoc(name, data) {
   } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
     const c = Object.assign(defaultClass(name), data);
+    if (isOldLehrplanSeq(name, data.seq)) c.seq = defaultClass(name).seq;
     if (!Array.isArray(data.tt) && !Array.isArray(data.groups)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : defaultClass(name).groups[0].tt;
     delete c.timetable;
     if (!Array.isArray(data.groups) || !data.groups.length) {
@@ -763,7 +791,7 @@ function renderCtx() {
 }
 function trackName(k, tr) {
   const c = D.classes[ck(k)], sc = schedule(k);
-  if (tr === "SOL") return "SOL-Stunde";
+  if (tr === "SOL") return "FIL-Stunde";
   if (sc.seqMode) return "Fachunterricht";
   return tr === "A" ? "Strang A · " + c.nameA : "Strang B · " + c.nameB;
 }
@@ -776,7 +804,7 @@ function capCards(k) {
       <div class="nums"><span><b class="mono">${sc.cap[tr]}</b> verfügbar</span><span><b class="mono">${sc.planned[tr]}</b> geplant</span></div>
       <div class="res mono">${res === 0 ? "geht genau auf" : res > 0 ? `+${res} Std. Reserve` : `${-res} Std. fehlen`}</div></div>`);
   }
-  if (D.classes[ck(k)].sol) out.push(`<div class="cap"><div class="lbl">SOL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
+  if (sc.slots.some(s => s.track === "SOL")) out.push(`<div class="cap"><div class="lbl">FIL-Stunden</div><div class="nums"><span><b class="mono">${sc.cap.SOL}</b> im Jahr</span></div><div class="res">zusätzlich</div></div>`);
   return `<div class="caps">${out.join("")}</div>`;
 }
 const SOL_FORMATS = {
@@ -869,7 +897,7 @@ function slotBlock(k, s) {
   const tag = `<span class="per mono">${s.period}. Std.</span>`;
   if (s.track === "SOL") {
     const f = s.cancelled ? null : solFormat(k, s), cu = currentUnit(k, s.date);
-    return `<div class="slot sol ${s.cancelled ? "x" : ""}">${tag}<div class="sbody"><div class="stitle">SOL-Stunde${f ? ` · Format ${f}: ${esc(SOL_FORMATS[f][0])}` : " fällt aus"}</div>
+    return `<div class="slot sol ${s.cancelled ? "x" : ""}">${tag}<div class="sbody"><div class="stitle">FIL-Stunde${f ? ` · Format ${f}: ${esc(SOL_FORMATS[f][0])}` : " fällt aus"}</div>
       ${f ? `<div class="small">${esc(SOL_FORMATS[f][1])}${f === 2 && cu ? ` Aktuelle Einheit: ${esc(cu)} ${esc(titleOf(k, cu))}.` : ""}</div>` : ""}
       <div class="acts"><button type="button" class="btn ghost sm" data-act="solinfo">Alle Formate</button><button type="button" class="btn ghost sm" data-act="cancel" data-k="${k}" data-key="${s.key}">${s.cancelled ? "Findet doch statt" : "Fällt aus"}</button></div></div></div>`;
   }
@@ -905,7 +933,7 @@ function rateButtons(k, id) {
 /* ---------------- views: Jahresplan ---------------- */
 function viewPlan() {
   const k = curG(), sc = schedule(k), Y = cal(), today = todayIso();
-  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = D.classes[ck(k)].sol;
+  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = sc.slots.some(s => s.track === "SOL");
   let rows = "";
   if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
     const notes = new Set(); let school = 0;
@@ -927,7 +955,7 @@ function viewPlan() {
   }
   return `<section><div class="vhead"><h1>Jahresplan</h1>${clsTabs()}</div>
     ${capCards(k)}
-    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(k, t))}</th>`).join("")}${sol ? "<th>SOL</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(k, t))}</th>`).join("")}${sol ? "<th>FIL</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 /* ---------------- views: Sequenz ---------------- */
@@ -1116,11 +1144,19 @@ function myClassRow(k, mine) {
       <td><div class="gnames">${names}</div>${confirm}</td></tr>`;
   }
 }
+function lastDayRow(k) {
+  const c = ck(k), C = S.cls[c], Y = cal(), rule = ruleLastDay(c, Y), cur = lastDayOf(c), own = typeof C.lastDay === "string";
+  const why = { ostern: "Abitur: Unterricht bis vor die Osterferien", pfingsten: "Abschlussprüfungen: Unterricht bis vor die Pfingstferien" }[D.classes[c].endRule];
+  return `<div class="addrow"><label>Letzter Unterrichtstag <input type="date" data-act="lastday" value="${esc(cur || "")}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label>
+    ${own && C.lastDay !== (rule || "") ? `<button type="button" class="linkbtn small" data-act="lastdayreset">${rule ? "Vorschlag " + esc(fmt(rule)) : "bis Schuljahresende"}</button>` : ""}</div>
+    <p class="small muted">${why ? esc(why) + " (Vorschlag, gilt für alle Parallelklassen). " : ""}Leer = bis zum Schuljahresende. Danach plant die App keine Stunden mehr.</p>`;
+}
 function ttCard(k) {
   const C = grp(k), vs = sortTT(C.tt), Y = cal();
-  const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B", "SOL"].map(x => `<option ${l.track === x ? "selected" : ""}>${x}</option>`).join("")}</select>`;
+  const fil = D.classes[ck(k)].sol;
+  const trackSel = (v, l, i) => `<select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="track" aria-label="Spur">${["A", "B"].concat(fil || l.track === "SOL" ? ["SOL"] : []).map(x => `<option value="${x}" ${l.track === x ? "selected" : ""}>${x === "SOL" ? "FIL" : x}</option>`).join("")}</select>`;
   const blocks = vs.map((v, vi) => {
-    const next = vs[vi + 1], until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : "Schuljahresende";
+    const next = vs[vi + 1], endD = lastDayOf(ck(k)), until = next ? fmt(addDays(next.frm, -1), { day: "2-digit", month: "2-digit", year: "numeric" }) : endD ? fmt(endD, { day: "2-digit", month: "2-digit", year: "numeric" }) + " (letzter Unterrichtstag)" : "Schuljahresende";
     const current = v.frm <= UI.date && (!next || UI.date < next.frm);
     const rows = v.lessons.map((l, i) => `<tr>
       <td><select data-act="tl" data-v="${v.id}" data-i="${i}" data-f="day" aria-label="Tag">${[1, 2, 3, 4, 5].map(d => `<option value="${d}" ${+l.day === d ? "selected" : ""}>${DAYS[d]}</option>`).join("")}</select></td>
@@ -1138,8 +1174,9 @@ function ttCard(k) {
   const off = (C.off || []).map((o, i) => `<tr><td><input data-act="off" data-i="${i}" data-f="name" value="${esc(o.name)}" aria-label="Anlass" placeholder="z. B. Praktikum"></td><td><input type="date" data-act="off" data-i="${i}" data-f="frm" value="${esc(o.frm)}" aria-label="von"></td><td><input type="date" data-act="off" data-i="${i}" data-f="to" value="${esc(o.to)}" aria-label="bis"></td><td><button type="button" class="mini del" data-act="offdel" data-i="${i}" aria-label="Löschen">×</button></td></tr>`).join("");
   return `<div class="card"><h3>Stundenplan ${esc(fullLabel(k))} · ${esc(yearLabel(Y.id))}</h3>
     ${S.cls[ck(k)].groups.length > 1 ? `<p class="small">Gilt nur für ${esc(groupName(k))}. Die andere Parallelklasse wählen Sie oben in der Leiste.</p>` : ""}
-    <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen), SOL = selbstorganisiertes Lernen.</p>
+    <p class="small muted">Jeder Zeitraum gilt ab seinem Datum bis zum Beginn des nächsten. Spur A und B sind die beiden Stränge (im Modus „nacheinander“ zählen beide zusammen)${fil ? ", FIL = zusätzliche FIL-Stunde (nur Klasse 7–9)" : ""}.</p>
     ${blocks}
+    ${lastDayRow(k)}
     <div class="addrow"><label>Neuer Stundenplan ab <input type="date" id="ttnewfrm" value="${esc(sug)}" min="${esc(Y.start)}" max="${esc(Y.end)}"></label><button type="button" class="btn ghost sm" data-act="ttnew">Zeitraum anlegen</button></div>
     <p class="small muted">Der neue Zeitraum übernimmt die Stunden, die an diesem Tag gelten; danach anpassen.</p>
     <h3>Kein Unterricht in dieser Klasse</h3>
@@ -1207,8 +1244,8 @@ function obGrid(g) {
   return `<div class="obgrid card"><div class="obh"><b>${esc(fullLabel(g))}</b><span class="small muted">${n} Stunde${n === 1 ? "" : "n"} pro Woche${sortTT(grp(g).tt.slice()).length > 1 ? ` · gilt ab ${esc(fmt(v.frm, { day: "2-digit", month: "2-digit", year: "numeric" }))}` : ""}</span></div>
     <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
     ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
-      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
-    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).join(" → ")} → frei).</p>` : ""}</div>`;
+      return `<td><button type="button" class="obcell ${l ? "on" : ""}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde">${l ? (multi ? esc(l.track === "SOL" ? "FIL" : l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
+    </tbody></table>${multi ? `<p class="small muted">Mehrfach klicken wechselt die Spur (${obTracks(k).map(t => t === "SOL" ? "FIL" : t).join(" → ")} → frei).</p>` : ""}</div>`;
 }
 function obToggle(g, d, p) {
   const v = obVersion(g), k = ck(g); if (!v) return;
@@ -1259,7 +1296,7 @@ function renderOverlay() {
   if (UI.ob) { el.hidden = false; el.innerHTML = viewOnboarding(); return; }
   if (UI.solOpen) {
     el.hidden = false;
-    el.innerHTML = `<div class="ov-card" role="dialog" aria-label="SOL-Formate"><header><h2>SOL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
+    el.innerHTML = `<div class="ov-card" role="dialog" aria-label="FIL-Formate"><header><h2>FIL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>
       <p class="small">Feste Struktur: 5 min planen, 30 min arbeiten, 10 min kontrollieren und reflektieren. Jede Aufgabe hat eine Lösung zur Selbstkontrolle; die Lehrkraft holt 3–5 Schüler mit derselben Lücke an eine Förderinsel.</p>
       <ol class="sol">${Object.entries(SOL_FORMATS).map(([n, [t, d]]) => `<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join("")}</ol>
       <p class="small muted">Die Heute-Seite schlägt das Format automatisch vor: vor und in der Woche einer Klassenarbeit Format 4, danach Format 5, sonst im Wechsel 1, 2, 3.</p></div>`;
@@ -1372,6 +1409,7 @@ document.addEventListener("click", ev => {
     case "year": switchYear(b.dataset.v, true); break;
     case "grp": { const g = b.dataset.g; UI.gid[ck(g)] = gidOf(g); try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {} UI.reveal = {}; UI.confirm = null; render(); break; }
     case "gadd": addGroup(k); break;
+    case "lastdayreset": { const c = ck(curG()); delete S.cls[c].lastDay; commit(c); break; }
     case "gdel": removeGroup(k); break;
     case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
     case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
@@ -1481,6 +1519,7 @@ document.addEventListener("change", ev => {
     case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
     case "tl": { const v = ttVersion(curG(), t.dataset.v), row = v && v.lessons[i]; if (!row) break; if (f === "track") row.track = t.value; else if (f === "len") { if (t.value === "2") row.len = 2; else delete row.len; } else row[f] = Math.max(1, Math.round(+t.value || 1)); commit(k); break; }
+    case "lastday": { const c = ck(curG()); S.cls[c].lastDay = t.value || ""; commit(c); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
     case "mine": {
       const Y = cal(), l = mineList(), kk = t.dataset.k;

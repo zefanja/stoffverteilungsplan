@@ -67,10 +67,10 @@ for k in META:
 from from_lehrplan import build as build_lehrplan
 LP=json.load(open('src/lehrplan.json'))
 done={(m['type'],m['grade'],None) for m in META.values()}
-for k,c in build_lehrplan(LP,CAL['start']).items():
+for k,c in build_lehrplan(LP,CAL).items():
     if (c['type'],c['grade'],c['variant']) in done: continue
     out['classes'][k]=c
-    print(k,c['label'],'units',len(c['units']),'Std.',sum(r[2] for r in c['seq']),'w',c['weekly'])
+    print(k,c['label'],'Std.',sum(r[2] for r in c['seq']),'cap',c['cap'],'Stoff',sum(r[2] for r in c['seq'] if r[0][0].isdigit()),'zrw',sum(c['zrw'].values()),'KA',sum(1 for r in c['seq'] if r[0].startswith('KA')),'Ende',c['endRule'])
 for k in META: out['classes'][k].update(variant=None,variantLabel="",source="stoffverteilung")
 out['defaultMine']=list(META.keys())
 out['lehrplanQuelle']=dict(url=LP['quelle'],abgerufen=LP['abgerufen'])

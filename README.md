@@ -58,7 +58,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   vier Kacheln: aktuelle Einheit, heute fällig, ø Abruf, Reserve (rot, wenn Stunden fehlen); Rot nur für Warnungen.
 - **Heute**: heutige Stunden je Klasse aus Kalender × Stundenplan × Sequenz, neue Atome der Stunde,
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
-- **Jahresplan**: Wochenübersicht je Strang, SOL-Formatvorschläge für Klasse 8.
+- **Jahresplan**: Wochenübersicht je Strang, FIL-Stunden (Spur „FIL“, nur Klasse 7–9) mit Formatvorschlägen.
 - **Sequenz**: Reihenfolge, Stunden, Strang, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je Strang.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar.
 - **Schwierigkeitsstufen**: Jedes Atom hat drei Aufgaben (`src/atoms.py` Stufe 1, `src/atoms_levels.py` Stufe 2 und 3).
@@ -101,8 +101,17 @@ Aus der [Lehrplandatenbank Sachsen](https://www.schulportal.sachsen.de/lplandb/)
 
 Je Lernbereich entsteht pro Lernziel eine Einheit mit den Inhalten, Bemerkungen, Bezügen (→) und übergreifenden Zielen (⇒)
 des Lehrplans; die Zeitrichtwerte werden nach Umfang auf die Einheiten verteilt, die Inhalte werden zu Stundenthemen.
-Nach jedem Lernbereich steht eine Pufferstunde; die Lehrplan-Wochen (25 Pflichtwochen) lassen im Schuljahr Reserve für
-Wahlbereich, Klassenarbeiten und Wiederholung. Wahlbereiche liegen als Einheiten bereit („Zeile hinzufügen“ in der Sequenz).
+Die Zeitrichtwerte decken nur 25 Unterrichtswochen ab. Wie in den ausgearbeiteten Plänen GYM 6/8 füllt die Vorlage daher
+das ganze Schuljahr (Standard-Stundenplan, Schuljahr 2026/27):
+- **Klassenarbeiten**: vier im Jahr (Kl. 11/12: zwei Klausuren), je 3 Std. (Wiederholung, Arbeit, Rückgabe), möglichst am Ende
+  eines Lernbereichs und gleichmäßig über den Stoff verteilt.
+- **Wahlbereich**: der erste Wahlbereich der Klassenstufe (2 Wochen) am Jahresende; die anderen liegen als Einheiten bereit.
+- **Jahresabschluss** (2 Std.) außer in Abschlussklassen.
+- **Übungsstunden**: die restliche Zeit gut zu einem Drittel als Puffer am Ende der Lernbereiche, sonst anteilig als zusätzliche
+  Übungsstunden in den Einheiten (die Einführungsstunden der Atome rücken entsprechend nach hinten).
+- **Abschlussklassen**: GYM 12 plant bis vor die Osterferien (Abitur), OS 10 bis vor die Pfingstferien (Prüfungen).
+  Der letzte Unterrichtstag ist je Klasse unter Einstellungen → Stundenplan änderbar (leer = Schuljahresende).
+Eine unveränderte Sequenz aus der ersten Lehrplan-Vorlage wird beim Laden automatisch durch die neue ersetzt.
 Der Standard-Stundenplan ergibt sich aus den Zeitrichtwerten (meist 4, OS 6 und LK 5 Wochenstunden) und ist anzupassen.
 Für jede Lehrplan-Einheit gibt es Atome mit Wiederholungsaufgaben auf drei Stufen (`src/atoms_lehrplan/<id>.json`,
 2–4 Atome je Einheit nach Umfang; Wahlbereiche ohne Atome). Sie sind ein Vorschlag und im Atom-Editor anpassbar.
