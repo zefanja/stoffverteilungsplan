@@ -46,6 +46,17 @@ function serve(dir) {
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   ok(await p.evaluate(n => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length === n, ttBefore), 'Weitere Klicks wechseln die Spur und entfernen die Stunde wieder');
+  // Zwei Stunden direkt nacheinander in derselben Spur werden zur Doppelstunde
+  const cell = (d, pp) => p.click(`#overlay [data-act="obcell"][data-g="kl6.a"][data-d="${d}"][data-p="${pp}"]`).then(() => p.waitForTimeout(50));
+  const di = () => p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.filter(l => +l.day === 2).map(l => `${l.period}${l.track}${l.len === 2 ? '×2' : ''}`).join(','));
+  await cell(2, 6); await cell(2, 7); const ob1 = await di();
+  const ob1ui = await p.evaluate(() => [!!document.querySelector('#overlay [data-p="6"][data-d="2"].dtop'), !!document.querySelector('#overlay [data-p="7"][data-d="2"].dbot')]);
+  await cell(2, 7); const ob2 = await di();          // 7. Std. wechselt nach B: keine Doppelstunde mehr
+  await cell(2, 7); const ob3 = await di();          // 7. Std. frei
+  await cell(2, 8); await cell(2, 7); const ob4 = await di();   // drei Stunden A hintereinander: 6+7 Doppel, 8 einzeln
+  for (const pp of [8, 7, 6]) { await cell(2, pp); await cell(2, pp); }
+  const ob5 = await di();
+  ok(ob1 === '6A×2' && ob1ui.every(Boolean) && ob2 === '6A,7B' && ob3 === '6A' && ob4 === '6A×2,8A' && ob5 === '', 'Assistent: zwei Stunden nacheinander in derselben Spur werden zur Doppelstunde ' + JSON.stringify([ob1, ob1ui, ob2, ob3, ob4, ob5]));
   await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(80);
   await p.click('#overlay [data-act="obdone"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => document.getElementById('overlay').hidden && window.__mp.S.settings.onboarded && JSON.stringify(window.__mp.cal().classes) === '["kl6","kl8"]'), 'Assistent beendet: Klassen festgelegt');
@@ -298,6 +309,37 @@ function serve(dir) {
   await p.click('[data-act="atomreset"][data-code="T2"]'); await p.waitForTimeout(200);
   const backG = await p.evaluate(() => window.__mp.hasGen(window.__mp.atomsOf('kl8', 'T2').find(a => a.id === 'T2.2')));
   ok(selV === 'algebra__ausmultiplizieren_distributiv' && offG[0] === '' && offG[1] === false && backG, 'Atom-Editor: Generator auswählen und abschalten, Zurücksetzen stellt ihn wieder her ' + JSON.stringify([selV, offG, backG]));
+
+  // Doppelstunden: in der Einheit und auf der Heute-Seite ein Block; Atome zwischen Stunden verschieben
+  const dsetup = await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0];
+    window.__ttKeep = JSON.stringify(G.tt);
+    G.tt = [{ id: 'dbl', frm: M.cal().start, lessons: [{ day: 1, period: 3, track: 'A' }, { day: 3, period: 2, track: 'B' }, { day: 4, period: 3, len: 2, track: 'A' }] }];
+    M.UI.cls = 'kl6'; M.UI.type = 'gym'; M.UI.gid.kl6 = 'a'; M.touch();
+    const sc = M.schedule('kl6.a'), pair = sc.slots.find((s, i) => { const n = sc.slots[i + 1]; return n && n.date === s.date && s.lesson && n.lesson && s.lesson.row === n.lesson.row && s.track === 'A'; });
+    return { blocks: M.unitBlocks('kl6.a', 'A1').blocks, day: pair && pair.date, code: pair && pair.lesson.row.code }; });
+  ok(JSON.stringify(dsetup.blocks) === '[[1],[2,3],[4],[5]]' && !!dsetup.day, 'Doppelstunde: Stunden 2 und 3 von A1 bilden einen Block ' + JSON.stringify(dsetup));
+  await p.evaluate(() => { location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); }); await p.waitForTimeout(200);
+  const ublk = await p.evaluate(() => { const L = [...document.querySelectorAll('.lesson[data-drop]')]; return { n: L.length, dbl: document.querySelectorAll('.lesson.dbl').length, dates: L.map(x => x.querySelector('.lhead > span:last-child').textContent.trim()) }; });
+  ok(ublk.n === 4 && ublk.dbl === 1 && new Set(ublk.dates.map(d => d.slice(0, 11))).size === 4, 'Einheit: jeder Block mit eigenem Termin, Doppelstunde einmal ' + JSON.stringify(ublk));
+  // ↑ schiebt das erste Atom der Doppelstunde in Stunde 1, Ziehen schiebt es zurück
+  const mv1 = await p.evaluate(() => { const b = document.querySelector('.lesson.dbl [data-act="atommove"][data-l="1"]'); const id = b.dataset.id; b.click(); return { id, l: window.__mp.atomsOf('kl6', 'A1').find(a => a.id === id).l }; });
+  await p.waitForTimeout(200);
+  await p.dragAndDrop(`li.atom[data-id="${mv1.id}"]`, '.lesson.dbl', { targetPosition: { x: 40, y: 12 } });
+  await p.waitForTimeout(200);
+  const mv2 = await p.evaluate(id => window.__mp.atomsOf('kl6', 'A1').find(a => a.id === id).l, mv1.id);
+  ok(mv1.l === 1 && mv2 === 2, 'Atom verschieben: ↑ in die vorige Stunde, Ziehen zurück in die Doppelstunde ' + JSON.stringify([mv1, mv2]));
+  await p.click('[data-act="atomreset"][data-code="A1"]'); await p.waitForTimeout(150);
+  // Heute: eine Doppelstunde derselben Einheit ist ein Block; gehalten und Ausfall gelten für beide Schulstunden
+  await p.evaluate(d => { window.__mp.UI.date = d; location.hash = 'heute'; }, dsetup.day); await p.waitForTimeout(200);
+  const dhb = await p.evaluate(() => { const sl = [...document.querySelectorAll('.tcard .slot')]; const d = sl.find(x => /Doppel/.test(x.querySelector('.per').textContent) && /–/.test(x.querySelector('.per').textContent)); return { n: sl.length, keys: d ? d.querySelector('[data-act="done"]').dataset.key : null, title: d ? d.querySelector('.stitle').textContent : '' }; });
+  await p.click('.tcard .slot [data-act="done"][data-key*=","]'); await p.waitForTimeout(150);
+  const dhd = await p.evaluate(k => k.split(',').every(x => window.__mp.S.cls.kl6.groups[0].done[x]), dhb.keys);
+  await p.click('.tcard .slot [data-act="cancel"][data-key*=","]'); await p.waitForTimeout(150);
+  const dhc = await p.evaluate(k => k.split(',').every(x => window.__mp.S.cls.kl6.groups[0].cancelled[x]), dhb.keys);
+  await p.click('.tcard .slot.x [data-act="cancel"]'); await p.waitForTimeout(150);
+  const dhr = await p.evaluate(k => k.split(',').every(x => !window.__mp.S.cls.kl6.groups[0].cancelled[x]), dhb.keys);
+  ok(!!dhb.keys && dhb.keys.split(',').length === 2 && /Stunde \d+–\d+ von/.test(dhb.title) && dhd && dhc && dhr, 'Heute: Doppelstunde als ein Block, gehalten, Ausfall und Rücknahme für beide Schulstunden ' + JSON.stringify([dhb, dhd, dhc, dhr]));
+  await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
 
   // Lehrpläne Sachsen: alle Klassen GYM 5–12 und OS 5–10, OS ab 7 mit HS/RS, GYM 11/12 mit GK/LK
   const lp = await p.evaluate(() => { const C = window.PLAN_DATA.classes, k = Object.keys(C);

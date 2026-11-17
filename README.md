@@ -65,7 +65,12 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, FIL-Stunden (Spur „FIL“, nur Klasse 7–9) mit Formatvorschlägen.
 - **Sequenz**: Reihenfolge, Stunden, Strang, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je Strang.
-- **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar.
+- **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar. Fallen zwei Stunden einer
+  Einheit laut Stundenplan in eine Doppelstunde, stehen sie als ein Block („Stunde 2–3 · Doppelstunde“) mit Termin und
+  Schulstunden; eine Doppelstunde, die zwei Einheiten teilt, ist als „Doppelstunde, 1./2. Teil“ markiert. Atome lassen
+  sich per Ziehen oder mit ↑/↓ zwischen den Stunden verschieben (je Klasse gespeichert, „auf die Vorlage zurücksetzen“ möglich).
+- **Doppelstunden auf der Heute-Seite**: Gehören beide Hälften zur selben Einheit, erscheinen sie als ein Block mit allen
+  neuen Atomen; „Als gehalten markieren“ und „Doppelstunde fällt aus“ gelten für beide Schulstunden.
 - **Schwierigkeitsstufen**: Jedes Atom hat drei Aufgaben (`src/atoms.py` Stufe 1, `src/atoms_levels.py` Stufe 2 und 3).
   Die Heute-Seite und das Quiz wählen nach FSRS-Stabilität: unter 7 Tagen „Abrufen“, ab 7 Tagen „Anwenden“, ab 30 Tagen
   „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
@@ -79,6 +84,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Quiz-Ansicht zum Projizieren (öffnet im Vollbild, am Ende oder beim Schließen zurück in den vorherigen Modus; Leertaste zeigt die Lösung, 1–4 bewertet), Altbestand für Atome vor dem Startdatum.
 - **Einrichtungsassistent**: öffnet sich, solange im Schuljahr keine Klassen festgelegt sind (oder über Einstellungen → Schuljahre).
   Fragt in wenigen Schritten Schulart, Klassen (mit HS/RS bzw. GK/LK und Parallelklassen) und die Unterrichtsstunden je Wochentag ab.
+  Zwei direkt aufeinanderfolgende Stunden am selben Tag in derselben Spur gelten als Doppelstunde (bei drei Stunden die ersten beiden).
 - **Einstellungen**:
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
   - „Ferien Sachsen importieren“ ersetzt Beginn, Ende, Ferien und freie Tage des angezeigten Jahres
