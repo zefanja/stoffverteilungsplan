@@ -1,15 +1,30 @@
 // Headless-Test: node src/test.js [ausgabeordner-für-screenshots]
 const { chromium } = require('playwright');
 const path = require('path');
+const http = require('http');
+const fs = require('fs');
 const ROOT = path.resolve(__dirname, '..');
 const OUT = process.argv[2] || path.join(ROOT, 'docs', 'screenshots');
 const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 1; } else console.log('ok  ', msg); };
+/* Die App wird über einen lokalen Webserver geladen statt über file://: Chromium hält localStorage bei
+   file:// nicht zuverlässig (gelegentlich leer nach Neuladen), echte Nutzer verwenden https. */
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml' };
+function serve(dir) {
+  return new Promise(res => {
+    const srv = http.createServer((req, rsp) => {
+      const f = path.join(dir, decodeURIComponent(req.url.split('?')[0].split('#')[0]).replace(/^\/+/, '') || 'index.html');
+      if (!f.startsWith(dir) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { rsp.writeHead(404); rsp.end(); return; }
+      rsp.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(rsp);
+    });
+    srv.listen(0, '127.0.0.1', () => res(srv));
+  });
+}
 (async () => {
+  const srv = await serve(path.join(ROOT, 'dist')), BASE = `http://127.0.0.1:${srv.address().port}/`;
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  // Speicher nur beim ersten Laden dieses Tabs leeren; ein Neuladen später prüft, ob alles erhalten bleibt
-  await p.addInitScript(() => { try { if (!sessionStorage.getItem('mp-test')) { localStorage.clear(); sessionStorage.setItem('mp-test', '1'); } } catch (e) {} });
-  await p.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#heute'); await p.waitForTimeout(500);
+  // neuer Browser-Kontext = leerer Speicher; ein Neuladen später prüft, ob alles erhalten bleibt
+  await p.goto(BASE + 'index.html#heute'); await p.waitForTimeout(500);
   await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
   await p.waitForTimeout(200);
 
@@ -207,7 +222,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
 
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
-  // Neuladen im selben Tab (ein zweiter Tab sieht bei file:// den Speicher in Chromium nicht immer)
+  // Neuladen im selben Tab
   const p2 = p;
   await p.reload(); await p.waitForTimeout(400);
   await p.evaluate(() => { location.hash = 'einstellungen'; }); await p.waitForTimeout(200);
@@ -216,5 +231,5 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
   ok(await p2.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
   ok(errs.length === 0, 'Keine Fehler in der Konsole ' + JSON.stringify(errs));
-  await b.close();
+  await b.close(); srv.close();
 })();

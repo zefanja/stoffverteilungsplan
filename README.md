@@ -29,7 +29,7 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 python3 -I src/fetch_ferien.py  # optional: Ferien Sachsen aktualisieren
 python3 -I src/extract.py       # in/*.xlsx -> src/plan.json
 python3 -I src/build_data.py    # plan.json + atoms.py -> dist/data.js
-NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
+NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, Screenshots nach docs/screenshots
 ```
 
 ## Funktionen
