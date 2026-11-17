@@ -243,7 +243,7 @@ function defaultClass(k, y) {
     ? c.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))
     : [{ id: uid(), frm: y.start, lessons: cloneLessons(c.tt[c.tt.length - 1].lessons) }];
   return { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })), atoms: {},
-    groups: [newGroup("a", "", tt)] };
+    groups: [newGroup("a", "", tt)], ln: {}, checks: [] };
 }
 /* Parallelklassen (höchstens 2): Sequenz, Modus und Atome teilen sie sich; jede Gruppe hat eigenen Stundenplan,
    eigene Ausfälle, Häkchen, Lernstand und Abweichungen von der Sequenz (adj: Zeilen-ID -> zusätzliche Stunden). */
@@ -310,7 +310,10 @@ const fullLabel = g => `${(TYPES[D.classes[ck(g)].type] || {}).short || ""} · $
 let ver = 0; const cache = {};
 const touch = () => { ver++; };
 
-const unitOf = (k, code) => D.classes[ck(k)].units[code];
+const unitOf = (k, code) => D.classes[ck(k)].units[code] || ((S.cls[ck(k)] || {}).ln || {})[code];
+/* Einheiten der Vorlage und selbst angelegte Leistungsnachweise (S.cls[k].ln); die eigenen stehen hinten, damit die
+   Adressen #u-<Klasse>-<Index> der Vorlage gleich bleiben. */
+const unitOrderOf = k => D.classes[ck(k)].unitOrder.concat(Object.keys((S.cls[ck(k)] || {}).ln || {}));
 const lbOf = (k, code) => (unitOf(k, code) || {}).lb || "P";
 const LV_FIELDS = ["q2", "a2", "q3", "a3"];
 function atomsOf(k, code) {
@@ -330,7 +333,7 @@ function atomMap(k) {
   const key = "am" + k;
   if (cache[key] && cache[key].ver === ver) return cache[key].m;
   const m = {};
-  for (const code of D.classes[k].unitOrder) for (const a of atomsOf(k, code)) m[a.id] = Object.assign({ code }, a);
+  for (const code of unitOrderOf(k)) for (const a of atomsOf(k, code)) m[a.id] = Object.assign({ code }, a);
   cache[key] = { ver, m }; return m;
 }
 const titleOf = (k, code) => code === "P" ? "Puffer · Wiederholung" : code === "JA" ? "Jahresabschluss" : (unitOf(k, code) || {}).title || code;
@@ -794,6 +797,68 @@ function rate(g, id, grade) {
   toast(`Gespeichert. Nächste Wiederholung ab ${fmt(c.due)} (in ${diffDays(date, c.due)} Tagen).`, true);
 }
 
+/* ---------------- Leistungsnachweise ----------------
+   Mit eigenen Stunden (Klassenarbeit, Klausur, Test, Präsentation, Projekt): eine eigene Einheit in S.cls[k].ln und
+   eine Zeile in der Sequenz. In einer Stunde (Kurzkontrolle u. a.): Eintrag in S.cls[k].checks an Einheit und Stunde,
+   kostet keine Unterrichtszeit. Beides gilt für alle Parallelklassen; die Termine folgen dem Stundenplan jeder Klasse. */
+const LN_KINDS = {
+  ka: { label: "Klassenarbeit", short: "Klassenarbeit", prefix: "KA", hours: 1, wdh: true, rueck: true },
+  klausur: { label: "Klausur", short: "Klausur", prefix: "KL", hours: 2, wdh: true, rueck: true },
+  test: { label: "Test / Leistungskontrolle", short: "Test", prefix: "LK", hours: 1, wdh: false, rueck: true },
+  praes: { label: "Präsentation / Referat", short: "Präsentation", prefix: "PR", hours: 1, wdh: false, rueck: false },
+  komplex: { label: "Komplexe Leistung / Projekt", short: "Projekt", prefix: "PJ", hours: 2, wdh: false, rueck: false }
+};
+const CHECK_KINDS = { kk: "Kurzkontrolle", muendl: "Mündliche Kontrolle", ha: "Hausaufgabenkontrolle", sonst: "Sonstige Bewertung" };
+function lnStunden(kind, hours, wdh, rueck) {
+  const K = LN_KINDS[kind], st = [];
+  if (wdh) st.push("Wiederholung");
+  for (let i = 1; i <= hours; i++) st.push(hours > 1 ? `${K.short} (${i}. Stunde)` : K.short);
+  if (rueck) st.push("Rückgabe und Berichtigung");
+  return st;
+}
+function lnCode(k, kind) {
+  const pre = LN_KINDS[kind].prefix, used = new Set(unitOrderOf(k));
+  let n = 1; while (used.has(pre + n)) n++;
+  return pre + n;
+}
+/* Neuen Leistungsnachweis anlegen und in der Sequenz hinter Zeile afterIdx einfügen (-1 = am Anfang). */
+function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx }) {
+  const C = S.cls[k], K = LN_KINDS[kind]; if (!K) return null;
+  const code = lnCode(k, kind), stunden = lnStunden(kind, hours, wdh, rueck);
+  const snap = snapshotFor(k);
+  C.ln = C.ln || {};
+  C.ln[code] = { kind, title: K.short + (topic ? ": " + topic : ""), lb: "test", custom: true, stunden, main: wdh ? 1 : 0, inhalte: [], begriffe: [], hinweise: [] };
+  const after = C.seq[afterIdx], strand = C.mode === "nacheinander" ? "A" : after ? after.strand : "A";
+  C.seq.splice(afterIdx + 1, 0, { id: uid(), code, strand, hours: stunden.length });
+  undoStack = snap; commit(k);
+  toast(`${C.ln[code].title} (${code}) mit ${stunden.length} Std. eingefügt.`, true);
+  return code;
+}
+function delLn(k, code) {
+  const C = S.cls[k]; if (!C.ln || !C.ln[code]) return;
+  const snap = snapshotFor(k), t = C.ln[code].title;
+  delete C.ln[code]; C.seq = C.seq.filter(r => r.code !== code); delete C.atoms[code];
+  C.checks = (C.checks || []).filter(x => x.code !== code);
+  undoStack = snap; commit(k); location.hash = "#sequenz"; toast(`${t} gelöscht.`, true);
+}
+/* Termine aller Leistungsnachweise einer (Parallel-)Klasse, nach Datum: Zeilen mit Lernbereich "test" (Hauptstunde) und Kontrollen. */
+function lnDates(g) {
+  const sc = schedule(g), k = ck(g), out = [];
+  sc.rows.forEach(r => {
+    const u = unitOf(k, r.code); if (!u || u.lb !== "test") return;
+    let m = u.main ?? u.stunden.findIndex(t => /klassenarbeit|klausur|test|leistungskontrolle/i.test(t) && !/wiederholung|rückgabe/i.test(t));
+    if (m < 0) m = 0; m = Math.min(m, Math.max(0, r.hours - 1));
+    const s = r.slots[m];
+    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: r.code, title: u.title, kind: u.kind ? LN_KINDS[u.kind].short : "Klassenarbeit", inLesson: false });
+  });
+  (S.cls[k].checks || []).forEach(x => {
+    const r = sc.rows.find(y => y.code === x.code), s = r && r.slots[Math.min(x.n, r.hours) - 1];
+    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: x.code, title: x.title || CHECK_KINDS[x.kind], kind: CHECK_KINDS[x.kind], inLesson: true, id: x.id, n: x.n });
+  });
+  return out.sort((a, b) => (a.date || "9") < (b.date || "9") ? -1 : (a.date || "9") > (b.date || "9") ? 1 : (a.period || 0) - (b.period || 0));
+}
+const checksAt = (k, code, ns) => (S.cls[ck(k)].checks || []).filter(x => x.code === code && ns.includes(x.n));
+
 /* ---------------- Ferien Sachsen & Schuljahre ---------------- */
 /* Aus Ferien- und Feiertagslisten ein Schuljahr bauen: Beginn = erster Werktag nach den Sommerferien,
    Ende = letzter Werktag vor den nächsten Sommerferien; eintägige Ferien und Feiertage an Schultagen werden freie Tage. */
@@ -853,7 +918,7 @@ async function createYear(id, copySeq, copyTT) {
   switchYear(id, true);
   CLASSES.forEach(k => {
     const P = prev.cls[k], C = S.cls[k];
-    if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); }
+    if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); C.ln = clone(P.ln || {}); C.checks = clone(P.checks || []); }
     /* Parallelklassen mit Namen übernehmen; Stundenplan je Gruppe aus ihrem letzten Zeitraum oder aus der Vorlage */
     C.groups = P.groups.map(PG => {
       const last = PG.tt && PG.tt.length ? sortTT(PG.tt.slice())[PG.tt.length - 1] : null;
@@ -892,7 +957,7 @@ function chip(k, code, extra) {
   return `<span class="chip" style="${sty(lb)}"><b>${esc(code)}</b>${extra ? `<span>${extra}</span>` : ""}</span>`;
 }
 function unitLink(k, code, label) {
-  const i = D.classes[ck(k)].unitOrder.indexOf(code);
+  const i = unitOrderOf(k).indexOf(code);
   if (i < 0 || code === "P" || code === "JA") return `<span class="ulink plain" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</span>`;
   return `<a class="ulink" href="#u-${ck(k)}-${i}" style="${sty(lbOf(k, code))}"><b>${esc(code)}</b> ${esc(label || titleOf(k, code))}</a>`;
 }
@@ -948,7 +1013,7 @@ const SOL_FORMATS = {
 };
 function solFormat(k, slot) {
   const sc = schedule(k), mon = monday(slot.date);
-  const hasKA = m => sc.slots.some(s => s.lesson && monday(s.date) === m && /KA/.test(s.lesson.row.code));
+  const hasKA = m => sc.slots.some(s => s.lesson && monday(s.date) === m && (/KA/.test(s.lesson.row.code) || ["ka", "klausur"].includes((unitOf(k, s.lesson.row.code) || {}).kind)));
   if (hasKA(addDays(mon, -7))) return 5;
   if (hasKA(mon) || hasKA(addDays(mon, 7))) return 4;
   return [1, 2, 3, 2][(slot.solIdx || 0) % 4];
@@ -981,7 +1046,7 @@ function viewToday() {
 function todayTiles(g, d) {
   const sc = schedule(g), es = engineState(g, d), k = ck(g);
   const nx = sc.slots.find(s => s.date >= d && s.lesson && !["P", "JA"].includes(s.lesson.row.code));
-  const code = currentUnit(g, d) || (nx ? nx.lesson.row.code : null), idx = code ? D.classes[k].unitOrder.indexOf(code) : -1;
+  const code = currentUnit(g, d) || (nx ? nx.lesson.row.code : null), idx = code ? unitOrderOf(k).indexOf(code) : -1;
   const withR = es.list.filter(x => x.R !== null && x.R !== undefined);
   const meanR = withR.length ? Math.round(withR.reduce((a, x) => a + x.R, 0) / withR.length * 100) : null;
   const res = (sc.seqMode ? ["A"] : ["A", "B"]).map(t => sc.cap[t] - sc.planned[t]);
@@ -1046,6 +1111,7 @@ function slotBlock(k, ss) {
     ${unitLink(k, L.row.code)}
     <div class="stitle">Stunde ${dbl ? `${L.n}–${last.lesson.n}` : L.n} von ${L.row.hours}: ${mx(li.title)}</div>
     ${!sc.seqMode ? `<div class="small muted">${esc(trackName(k, s.track))}</div>` : ""}
+    ${checksAt(k, L.row.code, ss.map(x => x.lesson.n)).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}</div>`).join("")}
     ${li.atoms.length ? `<div class="newatoms"><div class="lbl">Neu in dieser Stunde</div><ul>${li.atoms.map(a => `<li>${mx(a.t)}<span class="q">Check: ${mx(a.q)} <i>→ ${mx(a.a)}</i></span></li>`).join("")}</ul></div>` : ""}
     <div class="acts">
       <button type="button" class="btn ${done ? "ok" : ""} sm" data-act="done" data-k="${k}" data-key="${keys}" aria-pressed="${done}">${done ? "✓ Gehalten" : "Als gehalten markieren"}</button>
@@ -1099,14 +1165,14 @@ function viewPlan() {
 function viewSeq() {
   const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
   const used = new Set(C.seq.map(r => r.code));
-  const avail = c.unitOrder.filter(code => !used.has(code) || code === "P" || code === "JA");
+  const avail = unitOrderOf(k).filter(code => !used.has(code) || code === "P" || code === "JA");
   const lbh = lbHours(k);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
     return `<tr style="${sty(lbOf(k, r.code))}">
       <td class="mono muted">${i + 1}</td>
       <td><span class="chip"><b>${esc(r.code)}</b></span></td>
-      <td class="ttl">${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${c.unitOrder.indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
+      <td class="ttl">${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${unitOrderOf(k).indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
       <td><select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select></td>
       <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
         ${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
@@ -1133,6 +1199,7 @@ function viewSeq() {
       <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
       <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
     </div>
+    ${lnCard(k)}
     <div class="grid2">
       <div class="card"><h3>Stunden je Lernbereich</h3><p class="small muted">geplant / Zeitrichtwert des Lehrplans</p>${lbRows}</div>
       <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier kannst du Puffer (P) auch von Hand verschieben oder kürzen.</p>
@@ -1140,25 +1207,45 @@ function viewSeq() {
     </div></section>`;
 }
 
+function lnCard(k) {
+  const C = S.cls[ck(k)], sc = schedule(k), cur = currentUnit(k, UI.date);
+  let defAfter = C.seq.length - 1; if (cur) { const j = C.seq.map(r => r.code).lastIndexOf(cur); if (j >= 0) defAfter = j; }
+  const K0 = LN_KINDS.ka;
+  const list = lnDates(k).map(x => `<tr><td class="mono small nowrap">${x.date ? fmt(x.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + `, ${x.period}. Std.` : `<span class="neg">nicht eingeplant</span>`}</td>
+    <td><span class="pill">${esc(x.kind)}</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td></tr>`).join("");
+  return `<div class="card lncard"><h3>Leistungsnachweise</h3>
+    ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
+    <div class="lnform">
+      <label>Art <select id="lnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
+      <label class="wide">Thema <input id="lntopic" placeholder="z. B. Lineare Funktionen"></label>
+      <label>Stunden für die Arbeit <input id="lnhrs" class="num" type="number" min="1" max="6" value="${K0.hours}"></label>
+      <label class="chk"><input type="checkbox" id="lnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
+      <label class="chk"><input type="checkbox" id="lnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
+      <label class="wide">Einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
+      <button type="button" class="btn" data-act="lnadd">Anlegen und einfügen</button>
+    </div>
+    <p class="small muted">Klassenarbeit, Klausur, Test, Präsentation und Projekt bekommen eigene Stunden in der Sequenz, der Plan rückt nach. Kurzkontrollen und andere Bewertungen in einer Stunde legst du in der Einheit bei der jeweiligen Stunde an („+ Kontrolle“).</p></div>`;
+}
+
 /* ---------------- views: Einheiten ---------------- */
 function viewUnits() {
   const k = curG(), c = D.classes[ck(k)], sc = schedule(k);
   const rowOf = {}; sc.rows.forEach(r => { if (!rowOf[r.code]) rowOf[r.code] = r; });
   const groups = {};
-  c.unitOrder.filter(code => code !== "P" && code !== "JA").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
+  unitOrderOf(k).filter(code => code !== "P" && code !== "JA").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
   const order = ["start", "LB1", "LB2", "LB3", "LB4", "LB5", "LB6", "LB7", "LB8", "LB9", "WB", "test"];
   return `<section><div class="vhead"><h1>Einheiten</h1>${clsTabs()}</div>
     ${c.ziele && c.ziele.length ? `<details class="card ziele"><summary><b>Ziele der Klassenstufe</b> <span class="small muted">Lehrplan Sachsen${c.variantLabel ? " · " + esc(c.variantLabel) : ""}</span></summary>${c.ziele.map(([h, t]) => `<p><b>${esc(h)}</b><br>${mx(t)}</p>`).join("")}</details>` : ""}
-    ${order.filter(lb => groups[lb]).map(lb => `<h2 class="lbh" style="${sty(lb)}">${esc(c.lbnames[lb] || lb)}</h2>
+    ${order.filter(lb => groups[lb]).map(lb => `<h2 class="lbh" style="${sty(lb)}">${esc(lb === "test" ? "Leistungsnachweise" : c.lbnames[lb] || lb)}</h2>
     <div class="ugrid">${groups[lb].map(code => {
-      const u = unitOf(k, code), r = rowOf[code], i = c.unitOrder.indexOf(code);
+      const u = unitOf(k, code), r = rowOf[code], i = unitOrderOf(k).indexOf(code);
       return `<a class="ucard" href="#u-${ck(k)}-${i}" style="${sty(lb)}"><span class="chip"><b>${esc(code)}</b></span><span class="ut">${esc(u.title)}</span>
         <span class="um small muted mono">${r ? `${r.hours} Std.${r.start ? " · " + fmt(r.start) + "–" + fmt(r.end) : ""}` : "nicht in der Sequenz"} · ${atomsOf(k, code).length} Atome</span></a>`;
     }).join("")}</div>`).join("")}</section>`;
 }
 function viewUnit(kc, idx) {
   const k = curG() && ck(curG()) === kc ? curG() : gkey(kc, S.cls[kc].groups[0].id);
-  const c = D.classes[ck(k)], code = c.unitOrder[idx], u = unitOf(k, code);
+  const c = D.classes[ck(k)], order = unitOrderOf(k), code = order[idx], u = unitOf(k, code);
   if (!u) return `<p>Einheit nicht gefunden.</p>`;
   const E = S.eng[k], atoms = atomsOf(k, code), { r, blocks } = unitBlocks(k, code);
   const list = (t, a) => a && a.length ? `<div class="box"><h3>${t}</h3><ul>${a.map(x => `<li>${mx(x)}</li>`).join("")}</ul></div>` : "";
@@ -1169,14 +1256,19 @@ function viewUnit(kc, idx) {
     const when = s0 ? fmt(s0.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + ` · ${s0.period}.${dbl ? `–${slots[slots.length - 1].period}.` : ""} Std.` + (!dbl && dblPart(k, s0) ? ` (Doppelstunde, ${dblPart(k, s0)}. Teil)` : "") + (slots.every(x => grp(k).done[x.key]) ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : "";
     const la = atoms.filter(a => ns.includes(a.l)), nav = { up: bi > 0 ? blocks[bi - 1][0] : 0, down: bi < blocks.length - 1 ? blocks[bi + 1][0] : 0 };
     lessons += `<div class="lesson${dbl ? " dbl" : ""}" data-drop="${n}" data-code="${esc(code)}"><div class="lhead"><span class="mono muted">Stunde ${dbl ? `${n}–${nz}` : n}${dbl ? `<br><span class="pill">Doppelstunde</span>` : ""}</span><span class="ltitle">${dbl ? ns.map(x => `<span class="lsub"><span class="mono muted small">${x}</span> ${mx(titleOfN(x))}</span>`).join("") : mx(titleOfN(n))}</span><span class="mono small muted">${when}</span></div>
+      ${checksAt(k, code, ns).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}<span class="small muted">${dbl ? ` · Stunde ${x.n}` : ""}</span><button type="button" class="mini del" data-act="chkdel" data-id="${esc(x.id)}" aria-label="Kontrolle löschen">×</button></div>`).join("")}
       <ul class="alist">${la.map(a => atomRow(k, code, a, E.cards[a.id], nav)).join("") || `<li class="adrop small muted">Atome hierher ziehen</li>`}</ul>
-      ${UI.editAtom && UI.editAtom.code === code && UI.editAtom.id === "new" && UI.editAtom.l === n ? atomForm(k, code, { l: n, t: "", q: "", a: "" }, "new") : `<button type="button" class="linkbtn small" data-act="atomnew" data-code="${esc(code)}" data-l="${n}">+ Atom</button>`}
+      ${UI.chkForm && UI.chkForm.code === code && UI.chkForm.n === n ? `<div class="chkform"><label>Art <select id="chkkind">${Object.entries(CHECK_KINDS).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
+        ${dbl ? `<label>Stunde <select id="chkn">${ns.map(x => `<option>${x}</option>`).join("")}</select></label>` : ""}<label class="wide">Thema <input id="chktitle" placeholder="z. B. Bruchrechnung"></label>
+        <button type="button" class="btn sm" data-act="chksave" data-code="${esc(code)}" data-l="${n}">Speichern</button><button type="button" class="btn ghost sm" data-act="chkcancel">Abbrechen</button></div>` : ""}
+      ${UI.editAtom && UI.editAtom.code === code && UI.editAtom.id === "new" && UI.editAtom.l === n ? atomForm(k, code, { l: n, t: "", q: "", a: "" }, "new") : `<div class="lacts"><button type="button" class="linkbtn small" data-act="atomnew" data-code="${esc(code)}" data-l="${n}">+ Atom</button>${r && n <= r.hours && !(UI.chkForm && UI.chkForm.code === code && UI.chkForm.n === n) ? `<button type="button" class="linkbtn small" data-act="chknew" data-code="${esc(code)}" data-l="${n}">+ Kontrolle</button>` : ""}</div>`}
     </div>`;
   });
   return `<section class="unitv" style="${sty(u.lb)}">
-    <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx - 1}">‹ ${esc(c.unitOrder[idx - 1])}</a>` : ""}${idx < c.unitOrder.length - 1 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx + 1}">${esc(c.unitOrder[idx + 1])} ›</a>` : ""}</div>
-    <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(c.lbnames[u.lb] || "")}</div></div>
+    <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx - 1}">‹ ${esc(order[idx - 1])}</a>` : ""}${idx < order.length - 1 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx + 1}">${esc(order[idx + 1])} ›</a>` : ""}</div>
+    <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(u.custom ? "Leistungsnachweis" : c.lbnames[u.lb] || "")}</div></div>
       <div class="umeta mono">${r ? `${r.hours} Std. geplant${u.stunden.length ? ` (Soll ${u.stunden.length})` : ""}<br>${r.start ? fmt(r.start) + " – " + fmt(r.end) : ""}${r.overflow ? `<br><span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : ""}` : "nicht in der Sequenz"}</div></header>
+    ${u.custom ? lnEditCard(k, code, u) : ""}
     <div class="grid2">
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
@@ -1184,6 +1276,14 @@ function viewUnit(kc, idx) {
     <h2>Stunden und Atome</h2>
     <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde wird es wiederholt (Lernübersicht). Zum Verschieben ein Atom in eine andere Stunde ziehen oder ↑/↓ nutzen. Doppelstunden laut Stundenplan stehen zusammen. ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
     <div class="lessons-list">${lessons}</div></section>`;
+}
+function lnEditCard(k, code, u) {
+  const conf = UI.confirm === "lndel-" + code;
+  return `<div class="card lnedit"><h3>${esc(LN_KINDS[u.kind] ? LN_KINDS[u.kind].label : "Leistungsnachweis")} bearbeiten</h3>
+    <label>Titel <input data-act="lnset" data-code="${esc(code)}" data-f="title" value="${esc(u.title)}"></label>
+    <label>Stunden (eine Zeile je Stunde) <textarea rows="${Math.max(2, u.stunden.length)}" data-act="lnset" data-code="${esc(code)}" data-f="stunden">${esc(u.stunden.join("\n"))}</textarea></label>
+    <p class="small muted">Die Zahl der Zeilen ist das Soll; die geplanten Stunden änderst du in der Sequenz.</p>
+    <div class="acts">${conf ? `<span class="confirm"><span>${esc(u.title)} mit Sequenzzeile und Atomen löschen?</span><button type="button" class="btn danger sm" data-act="lndel" data-code="${esc(code)}">Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="lndel-${esc(code)}">Leistungsnachweis löschen</button>`}</div></div>`;
 }
 function atomRow(k, code, a, card, nav = {}) {
   if (UI.editAtom && UI.editAtom.id === a.id) return `<li>${atomForm(k, code, a, a.id)}</li>`;
@@ -1229,7 +1329,7 @@ function viewEngine() {
   const am = atomMap(k), sc = schedule(k);
   const rowsSrc = showAll ? Object.values(am).map(a => intro.find(x => x.a.id === a.id) || { a, code: a.code, intro: sc.intro[a.id] ? sc.intro[a.id].date : null, card: null, isNew: false, R: null, future: true }) : intro;
   rowsSrc.forEach(x => (byUnit[x.code] || (byUnit[x.code] = [])).push(x));
-  const unitsSorted = Object.keys(byUnit).sort((a, b) => D.classes[ck(k)].unitOrder.indexOf(a) - D.classes[ck(k)].unitOrder.indexOf(b));
+  const uo = unitOrderOf(k), unitsSorted = Object.keys(byUnit).sort((a, b) => uo.indexOf(a) - uo.indexOf(b));
   const tbl = unitsSorted.map(code => `<tr class="ugroup"><td colspan="6">${unitLink(k, code)}</td></tr>` + byUnit[code].map(x => {
     const c = x.card;
     const R = x.R !== null && x.R !== undefined ? x.R : null;
@@ -1516,7 +1616,7 @@ function renderNow() {
 }
 let lastRoute = null;
 window.addEventListener("hashchange", () => {
-  UI.editAtom = null; UI.confirm = null; render.keepScroll = false; render();
+  UI.editAtom = null; UI.chkForm = null; UI.confirm = null; render.keepScroll = false; render();
   if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }
 });
 
@@ -1607,13 +1707,27 @@ document.addEventListener("click", ev => {
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
-    case "reset": S.cls[k] = Object.assign(defaultClass(k), { atoms: S.cls[k].atoms, groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {} })) }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "reset": S.cls[k] = Object.assign(defaultClass(k), { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {} })) }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
     case "resetall": { resetYearState(); CLASSES.forEach(c => { save(c); GIDS.forEach(gid => save(engDoc(gkey(c, gid)))); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
     case "atomedit": UI.editAtom = { code: b.dataset.code, id: b.dataset.id }; render(); break;
     case "atomcancel": UI.editAtom = null; render(); break;
     case "atommove": moveAtom(k, b.dataset.code, b.dataset.id, +b.dataset.l); break;
+    case "lnadd": {
+      const v = id => document.getElementById(id), kind = v("lnkind").value;
+      const code = addLn(k, { kind, topic: v("lntopic").value.trim(), hours: Math.max(1, Math.min(6, +v("lnhrs").value || 1)), wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value });
+      break;
+    }
+    case "lndel": UI.confirm = null; delLn(k, b.dataset.code); break;
+    case "chknew": UI.chkForm = { code: b.dataset.code, n: +b.dataset.l }; render(); break;
+    case "chkcancel": UI.chkForm = null; render(); break;
+    case "chksave": {
+      const n = document.getElementById("chkn") ? +document.getElementById("chkn").value : +b.dataset.l, snap = snapshotFor(k), C = S.cls[k];
+      C.checks = C.checks || []; C.checks.push({ id: uid(), kind: document.getElementById("chkkind").value, title: document.getElementById("chktitle").value.trim(), code: b.dataset.code, n });
+      UI.chkForm = null; undoStack = snap; commit(k); toast(`${CHECK_KINDS[C.checks[C.checks.length - 1].kind]} in Stunde ${n} eingetragen.`, true); break;
+    }
+    case "chkdel": { const C = S.cls[k], snap = snapshotFor(k); C.checks = (C.checks || []).filter(x => x.id !== b.dataset.id); undoStack = snap; commit(k); toast("Kontrolle gelöscht.", true); break; }
     case "atomdel": { const code = b.dataset.code; const list = atomsOf(k, code).filter(x => x.id !== b.dataset.id); const snap = snapshotFor(k); S.cls[k].atoms[code] = clone(list); undoStack = snap; commit(k); toast("Atom gelöscht.", true); break; }
     case "atomreset": { const snap = snapshotFor(k); delete S.cls[k].atoms[b.dataset.code]; undoStack = snap; commit(k); toast("Atome auf die Vorlage zurückgesetzt.", true); break; }
     case "holadd": cal().holidays.push({ name: "Ferien", frm: "", to: "" }); commit(null, { settings: true }); break;
@@ -1673,10 +1787,17 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
+  if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lnhrs").value = K.hours; v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; } return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
+    case "lnset": {
+      const u = (S.cls[k].ln || {})[t.dataset.code]; if (!u) break;
+      if (f === "title") { if (t.value.trim()) u.title = t.value.trim(); }
+      else { const st = t.value.split("\n").map(x => x.trim()).filter(Boolean); if (st.length) u.stunden = st; }
+      commit(k); break;
+    }
     case "hrsset": setSeq(k, s => { s[i].hours = Math.max(0, Math.min(60, Math.round(+t.value || 0))); }); break;
     case "ret": S.settings.retention = +t.value; commit(null, { settings: true }); break;
     case "perlesson": S.settings.perLesson = Math.max(1, Math.min(15, Math.round(+t.value || 5))); commit(null, { settings: true }); break;
@@ -1745,7 +1866,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

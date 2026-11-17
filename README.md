@@ -65,6 +65,13 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, FIL-Stunden (Spur „FIL“, nur Klasse 7–9) mit Formatvorschlägen.
 - **Sequenz**: Reihenfolge, Stunden, Strang, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je Strang.
+- **Leistungsnachweise** (Sequenz → Leistungsnachweise): Klassenarbeit, Klausur, Test/Leistungskontrolle, Präsentation und
+  Komplexe Leistung/Projekt anlegen und hinter einer beliebigen Zeile der Sequenz einfügen. Sie bekommen eigene Stunden
+  (Arbeit, wahlweise Wiederholungsstunde davor und Rückgabe danach), der Plan rückt nach. Kürzel KA, KL, LK, PR, PJ mit
+  fortlaufender Nummer; Titel und Stundenthemen in der Einheit bearbeitbar, dort auch löschen. Kurzkontrollen, mündliche
+  Kontrollen, Hausaufgabenkontrollen und sonstige Bewertungen hängen an einer Stunde einer Einheit („+ Kontrolle“) und kosten
+  keine Unterrichtszeit; sie erscheinen in der Einheit und auf der Heute-Seite. Die Übersicht listet alle Termine der gewählten
+  (Parallel-)Klasse. Gespeichert in `S.cls[k].ln` und `S.cls[k].checks`; ein neues Schuljahr übernimmt sie mit der Sequenz.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar. Fallen zwei Stunden einer
   Einheit laut Stundenplan in eine Doppelstunde, stehen sie als ein Block („Stunde 2–3 · Doppelstunde“) mit Termin und
   Schulstunden; eine Doppelstunde, die zwei Einheiten teilt, ist als „Doppelstunde, 1./2. Teil“ markiert. Atome lassen
