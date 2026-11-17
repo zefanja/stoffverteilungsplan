@@ -7,7 +7,8 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await p.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
+  // Speicher nur beim ersten Laden dieses Tabs leeren; ein Neuladen später prüft, ob alles erhalten bleibt
+  await p.addInitScript(() => { try { if (!sessionStorage.getItem('mp-test')) { localStorage.clear(); sessionStorage.setItem('mp-test', '1'); } } catch (e) {} });
   await p.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#heute'); await p.waitForTimeout(500);
   await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
   await p.waitForTimeout(200);
@@ -206,8 +207,10 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
 
   // Speicherung im Browser (ohne Claude-Datenbank, z. B. GitHub Pages)
   await p.waitForTimeout(900);
-  const p2 = await p.context().newPage(); p2.on('pageerror', e => errs.push(e.message));
-  await p2.goto('file://' + path.join(ROOT, 'dist', 'index.html') + '#einstellungen'); await p2.waitForTimeout(400);
+  // Neuladen im selben Tab (ein zweiter Tab sieht bei file:// den Speicher in Chromium nicht immer)
+  const p2 = p;
+  await p.reload(); await p.waitForTimeout(400);
+  await p.evaluate(() => { location.hash = 'einstellungen'; }); await p.waitForTimeout(200);
   const kept = await p2.evaluate(() => { const m = window.__mp; return [m.S.settings.years.map(y => y.id).join(','), m.S.cls.kl8.groups[0].tt.length, m.S.cls.kl8.groups[0].off.length, document.getElementById('banner').dataset.kind, m.S.cls.kl8.groups.length]; });
   ok(kept[0] === '2026-27,2027-28' && kept[1] === 3 && kept[2] === 1 && kept[3] === 'local' && kept[4] === 2, 'Nach dem Neuladen ist alles noch da (localStorage) ' + JSON.stringify(kept));
   await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
