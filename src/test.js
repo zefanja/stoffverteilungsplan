@@ -20,6 +20,10 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   ok(r.kl6.cap.A === r.kl6.planned.A, 'Kl. 6 geht auf');
   ok(r.kl8.cap.A === r.kl8.planned.A && r.kl8.cap.SOL > 0, 'Kl. 8 geht auf, SOL ab 26.10.');
 
+  // Design: Seitenleiste mit Logo, Kacheln, Lernübersicht
+  ok((await p.innerText('#nav')).includes('Lernübersicht') && !(await p.innerText('#nav')).includes('Engine'), 'Navigation heißt „Lernübersicht“');
+  ok(await p.evaluate(() => [...document.querySelectorAll('.side img')].every(i => i.complete && i.naturalWidth > 0)), 'Logo und Felszeichen werden geladen');
+  ok((await p.$$('.tiles .tile')).length === 4, 'Heute zeigt vier Kennzahl-Kacheln');
   // Klassen-Umschalter oben
   ok((await p.$$('.tcard')).length === 1, 'Heute zeigt nur die gewählte Klasse');
   await p.click('#ctx [data-k="kl8"]'); await p.waitForTimeout(100);
@@ -41,6 +45,7 @@ const ok = (c, msg) => { if (!c) { console.log('FAIL', msg); process.exitCode = 
   await p.evaluate(() => location.hash = 'heute'); await p.waitForTimeout(100);
   await p.click('[data-act="todaycls"][data-v="all"]'); await p.waitForTimeout(100);
   ok((await p.$$('.tcard')).length === 2, 'Heute: „Alle Klassen“ zeigt beide');
+  ok((await p.$$('.tiles')).length === 0, 'Bei „Alle meine Klassen“ keine Kacheln');
   await p.click('[data-act="todaycls"][data-v="one"]'); await p.waitForTimeout(100);
 
   // Stundenplan-Zeiträume

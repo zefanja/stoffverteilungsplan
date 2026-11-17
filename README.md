@@ -2,7 +2,7 @@
 
 Webapp für die Unterrichtsplanung Mathematik am Gymnasium in Sachsen (Klasse 6 und 8):
 Stoffverteilung über das Schuljahr, eine „Heute“-Ansicht mit dem aktuellen Thema und eine
-Learning Engine, die mit FSRS plant, welche Atome heute wiederholt werden.
+Lernübersicht, die mit FSRS plant, welche Atome heute wiederholt werden.
 
 Veröffentlicht als Claude-Artefakt: https://claude.ai/artifact/QTM6gwAywgmNziMxYMs9zB
 und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
@@ -13,6 +13,7 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 |---|---|
 | `dist/index.html` | Seite mit Layout und Styles |
 | `dist/app.js` | App-Logik: Planberechnung, FSRS, Ansichten, Speicherung |
+| `dist/logo.svg`, `dist/logo-mark.svg` | Schullogo FELS (voll für die Seitenleiste, Felszeichen ohne Schriftzug für Kopf und Handy) |
 | `dist/data.js` | Erzeugt: Einheiten, Atome, Standard-Sequenzen, Kalender, Stundenpläne |
 | `src/extract.py` | Liest Einheiten und Sequenzen aus den Excel-Stoffverteilungsplänen in `in/` |
 | `src/atoms.py` | Atome je Einheit: Stunde, Atom, Prüffrage, Lösung |
@@ -34,12 +35,15 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 ## Funktionen
 
 - **Schulart (GYM/OS), Klassenstufe und Schuljahr** werden oben in der Leiste gewählt. Stufen ohne hinterlegten Lehrplan sind
-  ausgegraut; Jahresplan, Sequenz, Einheiten, Learning Engine,
+  ausgegraut; Jahresplan, Sequenz, Einheiten, Lernübersicht,
   Stundenplan und Heute-Ansicht folgen dieser Auswahl („Alle meine Klassen“ zeigt auf der Heute-Seite alle Klassen mit Stunden im Stundenplan).
 - **Parallelklassen** (höchstens 2 je Stufe, z. B. 8a/8b; Einstellungen → Parallelklassen): Sequenz, Modus und Atome
   werden einmal für alle geplant. Jede Parallelklasse hat eigenen Stundenplan, Zeiträume ohne Unterricht, Ausfälle,
   Häkchen und Lernstand. „Einheit braucht 1 Std. mehr“ und automatische Pufferkürzung werden als Abweichung nur dieser
   Klasse gespeichert und in der Sequenz neben den Stunden angezeigt (z. B. „8b: +1“). Gewechselt wird oben in der Leiste.
+- **Design**: Farben aus dem Schullogo (Blau #0094cd, Orange #f59b0a, Grün #afca0b, Rot #d91016; für Text abgedunkelt).
+  Seitenleiste mit Felszeichen, Navigation und vollem Logo, auf dem Handy als Kopfzeile. Heute zeigt für die gewählte Klasse
+  vier Kacheln: aktuelle Einheit, heute fällig, ø Abruf, Reserve (rot, wenn Stunden fehlen); Rot nur für Warnungen.
 - **Heute**: heutige Stunden je Klasse aus Kalender × Stundenplan × Sequenz, neue Atome der Stunde,
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, SOL-Formatvorschläge für Klasse 8.
@@ -48,7 +52,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
 - **Schwierigkeitsstufen**: Jedes Atom hat drei Aufgaben (`src/atoms.py` Stufe 1, `src/atoms_levels.py` Stufe 2 und 3).
   Die Heute-Seite und das Quiz wählen nach FSRS-Stabilität: unter 7 Tagen „Abrufen“, ab 7 Tagen „Anwenden“, ab 30 Tagen
   „Vernetzen“; nach „Nochmal“ oder bei Abrufwahrscheinlichkeit unter 75 % eine Stufe niedriger. Im Atom-Editor bearbeitbar.
-- **Learning Engine**: FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
+- **Lernübersicht** (früher „Learning Engine“): FSRS (v4.5-Standardparameter), Bewertung Nochmal/Schwer/Gut/Leicht nach Anteil richtiger Antworten,
   Quiz-Ansicht zum Projizieren, Altbestand für Atome vor dem Startdatum.
 - **Einstellungen**:
   - Schuljahre anlegen und wechseln; ein neues Jahr bekommt die Ferien Sachsen und übernimmt auf Wunsch Sequenz, Atome und Stundenplan.
@@ -57,7 +61,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # Screenshots nach docs/screenshots
   - Stundenplan je Klasse in Zeiträumen („gültig ab“); dazu Zeiträume ohne Unterricht (Praktikum, Klassenfahrt).
   - Sicherung als Text oder Datei.
 
-Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre, Engine-Einstellungen) und je Schuljahr
+Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre, Einstellungen der Wiederholung) und je Schuljahr
 `jahr-<id>/kl6`, `jahr-<id>/kl8`, `jahr-<id>/engine-kl6`, `jahr-<id>/engine-kl8`. Das aus der Zeit vor den Schuljahren übernommene
 Jahr 2026/27 nutzt weiter `planner/kl6`, `planner/kl8`, `engine/kl6`, `engine/kl8`; alte Stundenpläne werden beim Laden in Zeiträume umgewandelt.
 

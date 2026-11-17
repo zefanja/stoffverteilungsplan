@@ -611,8 +611,25 @@ function viewToday() {
       <input type="date" id="pickdate" value="${d}" aria-label="Datum wählen">
       <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
+    ${show.length === 1 ? todayTiles(show[0], d) : ""}
     ${show.length ? `<div class="tgrid ${show.length === 1 ? "one" : ""}">${show.map(k => todayCard(k, d)).join("")}</div>` : `<div class="card"><p>Für ${esc((TYPES[UI.type] || {}).label || "diese Schulart")} ist noch kein Lehrplan hinterlegt.</p></div>`}
   </section>`;
+}
+/* Kennzahlen der gewählten Klasse: aktuelle Einheit, heute fällig, ø Abruf, Reserve im Schuljahr. */
+function todayTiles(g, d) {
+  const sc = schedule(g), es = engineState(g, d), k = ck(g);
+  const nx = sc.slots.find(s => s.date >= d && s.lesson && !["P", "JA"].includes(s.lesson.row.code));
+  const code = currentUnit(g, d) || (nx ? nx.lesson.row.code : null), idx = code ? D.classes[k].unitOrder.indexOf(code) : -1;
+  const withR = es.list.filter(x => x.R !== null && x.R !== undefined);
+  const meanR = withR.length ? Math.round(withR.reduce((a, x) => a + x.R, 0) / withR.length * 100) : null;
+  const res = (sc.seqMode ? ["A"] : ["A", "B"]).map(t => sc.cap[t] - sc.planned[t]);
+  const r = res.some(x => x < 0) ? Math.min(...res) : res.reduce((a, x) => a + x, 0);
+  return `<div class="tiles">
+    ${code && idx >= 0 ? `<a class="tile t1" href="#u-${k}-${idx}" title="${esc(titleOf(k, code))}"><b>${esc(code)}</b><span>${esc(titleOf(k, code))}</span></a>` : `<div class="tile t1"><b>—</b><span>aktuelle Einheit</span></div>`}
+    <a class="tile t2" href="#engine"><b>${es.dueCount}</b><span>heute fällig${es.backCount ? ` · ${es.backCount} Altbestand` : ""}</span></a>
+    <a class="tile t3" href="#engine"><b>${meanR === null ? "—" : meanR + " %"}</b><span>ø Abruf</span></a>
+    <a class="tile t4 ${r < 0 ? "neg" : ""}" href="#sequenz"><b>${r > 0 ? "+" : ""}${r}</b><span>${r < 0 ? "Std. fehlen im Schuljahr" : "Std. Reserve im Schuljahr"}</span></a>
+  </div>`;
 }
 function todayCard(k, d) {
   const c = D.classes[ck(k)], sc = schedule(k), info = sc.dayInfo[d];
@@ -642,7 +659,7 @@ function todayCard(k, d) {
     <section class="engine-box">
       <header><h3>Heute wiederholen</h3><span class="muted small">${es.dueCount ? `${es.dueCount} fällig` : "nichts fällig"}${es.backCount ? ` · ${es.backCount} im Altbestand` : ""}</span>
       ${es.pick.length ? `<button type="button" class="btn" data-act="quiz" data-k="${k}">Als Quiz zeigen</button>` : ""}</header>
-      ${rv || `<p class="muted small">Sobald Atome im Unterricht eingeführt sind, plant die Learning Engine hier die Wiederholungen.</p>`}
+      ${rv || `<p class="muted small">Sobald Atome im Unterricht eingeführt sind, plant die Lernübersicht hier die Wiederholungen.</p>`}
     </section>
   </article>`;
 }
@@ -797,7 +814,7 @@ function viewUnit(kc, idx) {
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
     <h2>Stunden und Atome</h2>
-    <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde plant die Learning Engine ihre Wiederholung. ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
+    <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde wird es wiederholt (Lernübersicht). ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
     <div class="lessons-list">${lessons}</div></section>`;
 }
 function atomRow(k, code, a, card) {
@@ -819,7 +836,7 @@ function atomForm(k, code, a, id) {
     <div class="acts"><button class="btn" type="submit">Speichern</button><button type="button" class="btn ghost" data-act="atomcancel">Abbrechen</button></div></form>`;
 }
 
-/* ---------------- views: Learning Engine ---------------- */
+/* ---------------- views: Lernübersicht ---------------- */
 function viewEngine() {
   const k = curG(), d = UI.date, es = engineState(k, d), E = S.eng[k];
   const intro = es.list;
@@ -841,7 +858,7 @@ function viewEngine() {
       <td class="mono small">${c ? fmt(c.due) : x.isNew ? "jetzt" : "—"}</td>
       <td class="mono small">${c ? c.reps + (c.lapses ? ` (${c.lapses}×)` : "") : "0"}</td></tr>`;
   }).join("")).join("");
-  return `<section><div class="vhead"><h1>Learning Engine</h1>${clsTabs()}</div>
+  return `<section><div class="vhead"><h1>Lernübersicht</h1>${clsTabs()}</div>
     <div class="stats">
       <div class="stat"><span class="v mono">${intro.length}<small>/${total}</small></span><span class="l">Atome eingeführt</span></div>
       <div class="stat"><span class="v mono">${es.dueCount}</span><span class="l">fällig am ${fmt(d)}${es.backCount ? ` · ${es.backCount} im Altbestand` : ""}</span></div>
@@ -860,7 +877,7 @@ function viewEngine() {
         <p class="small muted">Höher = häufigere Wiederholungen. 85–90 % passt für die meisten Klassen.</p>
         <label class="row">Wiederholungen pro Stunde <input type="number" min="1" max="15" class="num" value="${S.settings.perLesson}" data-act="perlesson"></label>
         <p class="small muted">So viele Atome schlägt die Heute-Seite höchstens vor, etwa die Hälfte davon neu eingeführte.</p>
-        <label class="row">Start der Learning Engine <input type="date" data-act="engstart" value="${esc(cal().engineStart || cal().start)}"></label>
+        <label class="row">Start der Wiederholungen <input type="date" data-act="engstart" value="${esc(cal().engineStart || cal().start)}"></label>
         <p class="small muted">Atome, die vor diesem Tag eingeführt wurden, sind Altbestand: Sie kommen nicht alle auf einmal, sondern je Stunde wird mindestens eines eingestreut, bis alle einmal wiederholt sind.</p></div>
     </div>
     <div class="vhead sub"><h2>Atome</h2><div class="seg small">${[["intro", "Eingeführt"], ["all", "Alle"]].map(([v, l]) => `<button type="button" aria-selected="${UI.engFilter === v}" data-act="engfilter" data-v="${v}">${l}</button>`).join("")}</div></div>
@@ -979,7 +996,7 @@ function renderOverlay() {
 }
 
 /* ---------------- router & render ---------------- */
-const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["engine", "Learning Engine"], ["einstellungen", "Einstellungen"]];
+const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["engine", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
 function route() { const h = (location.hash || "#heute").slice(1); return h || "heute"; }
 /* Ein Feld, das beim Neuaufbau den Fokus verliert, kann ein change-Ereignis auslösen; dann nach dem Durchlauf erneut zeichnen. */
 let rendering = false;
@@ -993,7 +1010,7 @@ function renderNow() {
   const r = route(); let html;
   const m = /^u-(.+)-(\d+)$/.exec(r), mk = m && D.classes[m[1]] ? m[1] : null;
   const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, engine: viewEngine, einstellungen: viewSettings };
-  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", engine: "Learning Engine" };
+  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", engine: "Lernübersicht" };
   if (mk) { if (UI.cls !== mk || UI.type !== D.classes[mk].type) { UI.cls = mk; UI.type = D.classes[mk].type; try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {} } html = viewUnit(mk, +m[2]); }
   else if (TITLES[r] && !curClass()) html = noClassView(TITLES[r]);
   else html = (VIEWS[r] || viewToday)();
