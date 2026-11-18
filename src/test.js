@@ -33,7 +33,11 @@ function serve(dir) {
   // Einrichtungsassistent: öffnet beim ersten Start, fragt Klassen und Unterrichtszeiten ab
   ok(!(await p.$eval('#overlay', e => e.hidden)) && (await p.innerText('#overlay')).includes('Willkommen'), 'Assistent öffnet beim ersten Start');
   await p.click('#overlay [data-act="obstep"][data-v="1"]'); await p.waitForTimeout(100);
-  ok((await p.$$('#overlay [data-act="mine"]')).length === 19 && (await p.$$('#overlay [data-act="mine"]:checked')).length === 2, 'Schritt Klassen: 19 Klassen, GYM 6 und 8 vorausgewählt');
+  const obNone = [(await p.$$('#overlay [data-act="mine"]')).length, (await p.$$('#overlay [data-act="mine"]:checked')).length, await p.$eval('#overlay [data-act="obstep"][data-v="2"]', b => b.disabled)];
+  await p.check('#overlay [data-act="mine"][data-k="kl6"]'); await p.waitForTimeout(80);
+  await p.check('#overlay [data-act="mine"][data-k="kl8"]'); await p.waitForTimeout(80);
+  const obPick = [(await p.$$('#overlay [data-act="mine"]:checked')).length, await p.evaluate(() => JSON.stringify(window.__mp.cal().classes))];
+  ok(obNone[0] === 19 && obNone[1] === 0 && obNone[2] === true && obPick[0] === 2 && obPick[1] === '["kl6","kl8"]', 'Schritt Klassen: 19 Klassen, keine vorausgewählt, Weiter erst nach Auswahl ' + JSON.stringify([obNone, obPick]));
   await p.screenshot({ path: path.join(OUT, 's_assistent_klassen.png') });
   await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(100);
   ok((await p.$$('#overlay .obgrid')).length === 2, 'Schritt Unterrichtszeiten: ein Wochenraster je Klasse');

@@ -27,6 +27,8 @@ jobs:
         run: node src/build_vorlage.js
       - name: Syntax prüfen
         run: node --check dist/app.js && node --check dist/data.js && node --check dist/vorlage.js
+      - name: Skripte mit Version laden (gegen veraltete Dateien im Browser-Cache)
+        run: sed -i -E "s#src=\"(data|vorlage|generators|app)\.js\"#src=\"\1.js?v=${GITHUB_SHA::8}\"#g" dist/index.html && grep -c "\.js?v=" dist/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

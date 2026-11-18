@@ -1899,7 +1899,8 @@ function obFinish() {
   toast("Eingerichtet. Änderungen jederzeit unter Einstellungen.");
 }
 function viewOnboarding() {
-  const st = UI.ob.step, Y = cal(), mine = mineList();
+  // Ohne Festlegung im Schuljahr ist im Assistenten keine Klasse vorausgewählt
+  const st = UI.ob.step, Y = cal(), mine = Array.isArray(Y.classes) ? mineList() : [];
   const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
   let body = "";
   if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
@@ -2205,7 +2206,7 @@ document.addEventListener("change", ev => {
     case "lastday": { const c = ck(curG()); S.cls[c].lastDay = t.value || ""; commit(c); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
     case "mine": {
-      const Y = cal(), l = mineList(), kk = t.dataset.k;
+      const Y = cal(), l = Array.isArray(Y.classes) || !UI.ob ? mineList() : [], kk = t.dataset.k;
       Y.classes = t.checked ? CLASSES.filter(c => c === kk || l.includes(c)) : l.filter(c => c !== kk);
       if (t.checked) { UI.cls = kk; UI.type = D.classes[kk].type; }
       fixSelection(); try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {}
