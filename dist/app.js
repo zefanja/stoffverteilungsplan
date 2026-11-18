@@ -520,7 +520,40 @@ const fullLabel = g => `${(TYPES[D.classes[ck(g)].type] || {}).short || ""} · $
 let ver = 0; const cache = {};
 const touch = () => { ver++; };
 
-const unitOf = (k, code) => D.classes[ck(k)].units[code] || ((S.cls[ck(k)] || {}).ln || {})[code];
+const unitOf = (k, code) => {
+  const C = S.cls[ck(k)] || {}, u = D.classes[ck(k)].units[code] || (C.ln || {})[code];
+  const d = u && u.lb === "test" && (C.lnDur || {})[code];
+  return d ? lnWithDur(u, d) : u;
+};
+/* Leistungsnachweis mit eingestellter Dauer: 45 min = eine Arbeitsstunde, 90 min = zwei; Wiederholung davor und Rückgabe
+   danach bleiben. Ergebnis wird je Einheit und Dauer zwischengespeichert. */
+const isArbeit = t => !/wiederholung|rückgabe|berichtigung/i.test(t || "");
+const lnDurCache = new Map();
+function lnWithDur(u, d) {
+  const key = u, hit = lnDurCache.get(key); if (hit && hit.d === d && hit.src === u.stunden) return hit.u;
+  const st = u.stunden || [], first = st.findIndex(isArbeit), lastA = st.length - 1 - st.slice().reverse().findIndex(isArbeit);
+  if (first < 0) return u;
+  const pre = st.slice(0, first), post = st.slice(lastA + 1), n = Math.max(1, Math.round(d / 45));
+  const t = String(st[first]).replace(/\s*\(\d+\. Stunde\)$/, "");
+  const x = Object.assign({}, u, { stunden: pre.concat(n > 1 ? Array.from({ length: n }, (_, i) => `${t} (${i + 1}. Stunde)`) : [t], post), main: pre.length, dur: d });
+  lnDurCache.set(key, { d, src: u.stunden, u: x });
+  return x;
+}
+const lnDurOf = (k, code) => { const C = S.cls[ck(k)] || {}, u = unitOf(k, code); if (!u) return 45; return (C.lnDur || {})[code] || Math.min(90, 45 * Math.max(1, (u.stunden || []).filter(isArbeit).length)); };
+/* Rückgabe-Stunde eines Leistungsnachweises (Planung: frühestens am Tag nach der Arbeit). */
+const isRueck = (k, L) => { const u = unitOf(k, L.row.code); return !!(u && u.lb === "test" && /rückgabe|berichtigung/i.test((u.stunden || [])[L.n - 1] || "")); };
+/* Dauer eines Leistungsnachweises ändern; die Sequenzzeilen wachsen bzw. schrumpfen um die Arbeitsstunden. */
+function setLnDur(k, code, d) {
+  const C = S.cls[k], before = (unitOf(k, code).stunden || []).filter(isArbeit).length, snap = snapshotFor(k);
+  C.lnDur = C.lnDur || {}; C.lnDur[code] = d;
+  const after = (unitOf(k, code).stunden || []).filter(isArbeit).length, delta = after - before;
+  C.seq.forEach(r => { if (r.code === code) r.hours = Math.max(0, (+r.hours || 0) + delta); });
+  undoStack = snap; commit(k);
+  toast(`${titleOf(k, code)}: ${d} min${delta ? `, ${delta > 0 ? "eine Stunde mehr" : "eine Stunde weniger"} in der Sequenz` : ""}.`, true);
+}
+const CHECK_DUR = [20, 30];
+/* Minuten, die Kontrollen in einer Stunde belegen, und Summe je Einheit */
+const checkMin = x => +x.dur || 20;
 /* Einheiten der Vorlage und selbst angelegte Leistungsnachweise (S.cls[k].ln); die eigenen stehen hinten, damit die
    Adressen #u-<Klasse>-<Index> der Vorlage gleich bleiben. */
 const unitOrderOf = k => D.classes[ck(k)].unitOrder.concat(Object.keys((S.cls[ck(k)] || {}).ln || {}));
@@ -609,12 +642,26 @@ function schedule(g) {
       if (p < 0) { r.overflow += Ls.length; return; }
       let st = Math.max(0, p - lnMain(k, r.code, r.hours));
       while (Ls.some((_, i) => used[st + i])) st++;
-      Ls.forEach((L, i) => { const s = ts[st + i]; if (!s) { r.overflow++; return; } used[st + i] = true; put(L, s); });
+      let idx = st - 1, lastDate = null;
+      Ls.forEach(L => {
+        idx++;
+        // Rückgabe nicht in derselben (Doppel-)Stunde wie die Arbeit: erst an einem späteren Tag
+        if (isRueck(k, L) && lastDate) while (idx < ts.length && (used[idx] || ts[idx].date <= lastDate)) idx++;
+        while (idx < ts.length && used[idx]) idx++;
+        const s = ts[idx]; if (!s) { r.overflow++; return; } used[idx] = true; put(L, s); lastDate = s.date;
+      });
     });
     let j = 0;
     tracks[tr].forEach(L => {
       if (L.row.pinned) return;
       while (j < ts.length && used[j]) j++;
+      const prev = L.row.slots[L.row.slots.length - 1];
+      if (isRueck(k, L) && prev && ts[j] && ts[j].date <= prev.date) {
+        // freie Stunde am selben Tag bekommt der nachfolgende Stoff; die Rückgabe rückt auf den nächsten Tag
+        let q = j; while (q < ts.length && (used[q] || ts[q].date <= prev.date)) q++;
+        if (!ts[q]) { L.row.overflow++; return; }
+        used[q] = true; put(L, ts[q]); return;
+      }
       const s = ts[j]; if (!s) { L.row.overflow++; return; }
       j++; put(L, s);
     });
@@ -1037,11 +1084,11 @@ function rate(g, id, grade) {
    eine Zeile in der Sequenz. In einer Stunde (Kurzkontrolle u. a.): Eintrag in S.cls[k].checks an Einheit und Stunde,
    kostet keine Unterrichtszeit. Beides gilt für alle Parallelklassen; die Termine folgen dem Stundenplan jeder Klasse. */
 const LN_KINDS = {
-  ka: { label: "Klassenarbeit", short: "Klassenarbeit", prefix: "KA", hours: 1, wdh: true, rueck: true },
-  klausur: { label: "Klausur", short: "Klausur", prefix: "KL", hours: 2, wdh: true, rueck: true },
-  test: { label: "Test / Leistungskontrolle", short: "Test", prefix: "LK", hours: 1, wdh: false, rueck: true },
-  praes: { label: "Präsentation / Referat", short: "Präsentation", prefix: "PR", hours: 1, wdh: false, rueck: false },
-  komplex: { label: "Komplexe Leistung / Projekt", short: "Projekt", prefix: "PJ", hours: 2, wdh: false, rueck: false }
+  ka: { label: "Klassenarbeit", short: "Klassenarbeit", prefix: "KA", hours: 1, dur: 45, wdh: true, rueck: true },
+  klausur: { label: "Klausur", short: "Klausur", prefix: "KL", hours: 2, dur: 90, wdh: true, rueck: true },
+  test: { label: "Test / Leistungskontrolle", short: "Test", prefix: "LK", hours: 1, dur: 45, wdh: false, rueck: true },
+  praes: { label: "Präsentation / Referat", short: "Präsentation", prefix: "PR", hours: 1, dur: 45, wdh: false, rueck: false },
+  komplex: { label: "Komplexe Leistung / Projekt", short: "Projekt", prefix: "PJ", hours: 2, dur: 90, wdh: false, rueck: false }
 };
 const CHECK_KINDS = { kk: "Kurzkontrolle", muendl: "Mündliche Kontrolle", ha: "Hausaufgabenkontrolle", sonst: "Sonstige Bewertung" };
 function lnStunden(kind, hours, wdh, rueck) {
@@ -1057,12 +1104,14 @@ function lnCode(k, kind) {
   return pre + n;
 }
 /* Neuen Leistungsnachweis anlegen und in der Sequenz hinter Zeile afterIdx einfügen (-1 = am Anfang). */
-function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx, date, g }) {
+function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx, date, g, dur }) {
   const C = S.cls[k], K = LN_KINDS[kind]; if (!K) return null;
+  if (dur) hours = Math.max(1, Math.round(dur / 45));
   const code = lnCode(k, kind), stunden = lnStunden(kind, hours, wdh, rueck);
   const snap = snapshotFor(k);
   C.ln = C.ln || {};
   C.ln[code] = { kind, title: K.short + (topic ? ": " + topic : ""), lb: "test", custom: true, stunden, main: wdh ? 1 : 0, inhalte: [], begriffe: [], hinweise: [] };
+  C.lnDur = C.lnDur || {}; C.lnDur[code] = dur || Math.min(90, hours * 45);
   const after = C.seq[afterIdx], strand = C.mode === "nacheinander" ? "A" : after ? after.strand : "A", row = { id: uid(), code, strand, hours: stunden.length };
   C.seq.splice(afterIdx + 1, 0, row);
   const Y = cal();
@@ -1110,11 +1159,11 @@ function lnDates(g) {
   sc.rows.forEach(r => {
     const u = unitOf(k, r.code); if (!u || u.lb !== "test" || !r.hours) return;
     const s = r.slots[lnMain(k, r.code, r.hours)];
-    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: r.code, row: r.id, pinned: r.pinned || null, title: u.title, kind: u.kind ? LN_KINDS[u.kind].short : "Klassenarbeit", inLesson: false });
+    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: r.code, row: r.id, pinned: r.pinned || null, title: u.title, kind: u.kind ? LN_KINDS[u.kind].short : "Klassenarbeit", inLesson: false, dur: lnDurOf(k, r.code) });
   });
   (S.cls[k].checks || []).forEach(x => {
     const r = (x.row && sc.rows.find(y => y.id === x.row)) || sc.rows.find(y => y.code === x.code), s = r && r.slots[Math.min(x.n, r.hours) - 1];
-    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: x.code, title: x.title || CHECK_KINDS[x.kind], kind: CHECK_KINDS[x.kind], inLesson: true, id: x.id, n: x.n });
+    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: x.code, title: x.title || CHECK_KINDS[x.kind], kind: CHECK_KINDS[x.kind], inLesson: true, id: x.id, n: x.n, dur: checkMin(x) });
   });
   return out.sort((a, b) => (a.date || "9") < (b.date || "9") ? -1 : (a.date || "9") > (b.date || "9") ? 1 : (a.period || 0) - (b.period || 0));
 }
@@ -1431,7 +1480,7 @@ function slotBlock(k, ss) {
     ${unitLink(k, L.row.code)}
     <div class="stitle">Stunde ${dbl ? `${L.n}–${last.lesson.n}` : L.n} von ${L.row.hours}: ${mx(li.title)}</div>
     ${!sc.seqMode ? `<div class="small muted">${esc(trackName(k, s.track))}</div>` : ""}
-    ${checksAt(k, L.row.code, ss.map(x => x.lesson.n), L.row.id).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}</div>`).join("")}
+    ${checksAt(k, L.row.code, ss.map(x => x.lesson.n), L.row.id).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])} · ${checkMin(x)} min</span>${x.title ? ` ${mx(x.title)}` : ""}</div>`).join("")}
     ${li.atoms.length ? `<div class="newatoms"><div class="lbl">Neu in dieser Stunde</div><ul>${li.atoms.map(a => `<li>${mx(a.t)}<span class="q">Check: ${mx(a.q)} <i>→ ${mx(a.a)}</i></span></li>`).join("")}</ul></div>` : ""}
     <div class="acts">
       <button type="button" class="btn ${done ? "ok" : ""} sm" data-act="done" data-k="${k}" data-key="${keys}" aria-pressed="${done}">${done ? "✓ Gehalten" : "Als gehalten markieren"}</button>
@@ -1501,7 +1550,7 @@ function viewSeq() {
   const used = new Set(C.seq.map(r => r.code));
   const isLn = code => (unitOf(k, code) || {}).lb === "test";
   const avail = unitOrderOf(k).filter(code => !isLn(code) && code !== "P" && code !== "JA" && !used.has(code));
-  const generic = [["__ln", "Leistungsnachweis"], ["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
+  const generic = [["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
   const lbh = lbHours(k);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
@@ -1534,7 +1583,6 @@ function viewSeq() {
       <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
       <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
       <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
-      <label id="adddatebox">Termin (optional) <input type="date" id="adddate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
       <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
     </div>
     ${lnCard(k)}
@@ -1557,19 +1605,19 @@ function lnCard(k) {
   let defAfter = C.seq.length - 1; if (cur) { const j = C.seq.map(r => r.code).lastIndexOf(cur); if (j >= 0) defAfter = j; }
   const K0 = LN_KINDS.ka;
   const list = lnDates(k).map(x => `<tr><td class="nowrap">${lnDateInput(k, x)}</td>
-    <td><span class="pill">${esc(x.kind)}</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
+    <td><span class="pill">${esc(x.kind)} · ${x.dur} min</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
   return `<div class="card lncard"><h3>Leistungsnachweise</h3>
-    ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
-    <div class="lnform">
+    <div class="lnform"><div class="lnformh">Leistungsnachweis anlegen</div>
       <label>Art <select id="lnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
       <label class="wide">Thema <input id="lntopic" placeholder="z. B. Lineare Funktionen"></label>
-      <label>Stunden für die Arbeit <input id="lnhrs" class="num" type="number" min="1" max="6" value="${K0.hours}"></label>
+      <label>Dauer <select id="lndur"><option value="45" ${K0.dur === 45 ? "selected" : ""}>45 min (1 Stunde)</option><option value="90" ${K0.dur === 90 ? "selected" : ""}>90 min (2 Stunden)</option></select></label>
       <label class="chk"><input type="checkbox" id="lnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
       <label class="chk"><input type="checkbox" id="lnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
-      <label>Termin (optional) <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
-      <label class="wide">Einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
-      <button type="button" class="btn" data-act="lnadd">Anlegen und einfügen</button>
+      <label>Termin <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
+      <label class="wide">ohne Termin: einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
+      <button type="button" class="btn" data-act="lnadd">Anlegen</button>
     </div>
+    ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
     <p class="small muted">Mit Termin liegt der neue Leistungsnachweis fest an diesem Tag, ohne Termin hinter der gewählten Zeile. Termin ändern: einfach ein Datum eingeben. Die Arbeit liegt dann fest an diesem Tag${S.cls[ck(k)].groups.length > 1 ? ` (für ${esc(groupName(k))})` : ""}, der übrige Plan läuft darum herum; „lösen“ gibt den Termin wieder frei. Klassenarbeit, Klausur, Test, Präsentation und Projekt bekommen eigene Stunden in der Sequenz, der Plan rückt nach. Kurzkontrollen und andere Bewertungen in einer Stunde legst du in der Einheit bei der jeweiligen Stunde an („+ Kontrolle“).</p></div>`;
 }
 
@@ -1602,9 +1650,12 @@ function viewUnit(kc, idx) {
     const when = s0 ? fmt(s0.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + ` · ${s0.period}.${dbl ? `–${slots[slots.length - 1].period}.` : ""} Std.` + (!dbl && dblPart(k, s0) ? ` (Doppelstunde, ${dblPart(k, s0)}. Teil)` : "") + (slots.every(x => grp(k).done[x.key]) ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : "";
     const la = atoms.filter(a => ns.includes(a.l)), nav = { up: bi > 0 ? blocks[bi - 1][0] : 0, down: bi < blocks.length - 1 ? blocks[bi + 1][0] : 0 };
     lessons += `<div class="lesson${dbl ? " dbl" : ""}" data-drop="${n}" data-code="${esc(code)}"><div class="lhead"><span class="mono muted">Stunde ${dbl ? `${n}–${nz}` : n}${dbl ? `<br><span class="pill">Doppelstunde</span>` : ""}</span><span class="ltitle">${dbl ? ns.map(x => `<span class="lsub"><span class="mono muted small">${x}</span> ${mx(titleOfN(x))}</span>`).join("") : mx(titleOfN(n))}</span><span class="mono small muted">${when}</span></div>
-      ${checksAt(k, code, ns).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}<span class="small muted">${dbl ? ` · Stunde ${x.n}` : ""}</span><button type="button" class="mini del" data-act="chkdel" data-id="${esc(x.id)}" aria-label="Kontrolle löschen">×</button></div>`).join("")}
+      ${checksAt(k, code, ns).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}<span class="small muted">${dbl ? ` · Stunde ${x.n}` : ""}</span>
+        <select class="chkdursel" data-act="chkdur" data-id="${esc(x.id)}" aria-label="Dauer">${CHECK_DUR.map(d => `<option value="${d}" ${checkMin(x) === d ? "selected" : ""}>${d} min</option>`).join("")}</select>
+        <span class="small muted">· noch ${Math.max(0, 45 * (dbl ? ns.length : 1) - checksAt(k, code, dbl ? ns : [x.n]).reduce((m, y) => m + checkMin(y), 0))} min Unterricht</span><button type="button" class="mini del" data-act="chkdel" data-id="${esc(x.id)}" aria-label="Kontrolle löschen">×</button></div>`).join("")}
       <ul class="alist">${la.map(a => atomRow(k, code, a, E.cards[a.id], nav)).join("") || `<li class="adrop small muted">Atome hierher ziehen</li>`}</ul>
       ${UI.chkForm && UI.chkForm.code === code && UI.chkForm.n === n ? `<div class="chkform"><label>Art <select id="chkkind">${Object.entries(CHECK_KINDS).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
+        <label>Dauer <select id="chkdur">${CHECK_DUR.map(d => `<option value="${d}">${d} min</option>`).join("")}</select></label>
         ${dbl ? `<label>Stunde <select id="chkn">${ns.map(x => `<option>${x}</option>`).join("")}</select></label>` : ""}<label class="wide">Thema <input id="chktitle" placeholder="z. B. Bruchrechnung"></label>
         <button type="button" class="btn sm" data-act="chksave" data-code="${esc(code)}" data-l="${n}">Speichern</button><button type="button" class="btn ghost sm" data-act="chkcancel">Abbrechen</button></div>` : ""}
       ${UI.editAtom && UI.editAtom.code === code && UI.editAtom.id === "new" && UI.editAtom.l === n ? atomForm(k, code, { l: n, t: "", q: "", a: "" }, "new") : `<div class="lacts"><button type="button" class="linkbtn small" data-act="atomnew" data-code="${esc(code)}" data-l="${n}">+ Atom</button>${r && n <= r.hours && !(UI.chkForm && UI.chkForm.code === code && UI.chkForm.n === n) ? `<button type="button" class="linkbtn small" data-act="chknew" data-code="${esc(code)}" data-l="${n}">+ Kontrolle</button>` : ""}</div>`}
@@ -1615,6 +1666,8 @@ function viewUnit(kc, idx) {
     <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(u.custom ? "Leistungsnachweis" : c.lbnames[u.lb] || "")}</div></div>
       <div class="umeta mono">${r ? `${r.hours} Std. geplant${u.stunden.length ? ` (Soll ${u.stunden.length})` : ""}<br>${r.start ? fmt(r.start) + " – " + fmt(r.end) : ""}${r.overflow ? `<br><span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : ""}` : "nicht in der Sequenz"}</div></header>
     ${u.lb === "test" ? `<div class="card lnterm"><h3>Termin</h3>${r && r.hours ? lnDateInput(k, lnDates(k).find(x => !x.inLesson && x.row === r.id) || { row: r.id }) : `<p class="small muted">Nicht in der Sequenz.</p>`}
+      <label class="lndurl">Dauer <select data-act="lndur" data-code="${esc(code)}">${[45, 90].map(d => `<option value="${d}" ${lnDurOf(k, code) === d ? "selected" : ""}>${d} min (${d / 45} ${d === 45 ? "Stunde" : "Stunden"})</option>`).join("")}</select></label>
+      ${(() => { const ai = u.stunden.map((t, i) => isArbeit(t) ? i : -1).filter(i => i >= 0), ds = r ? ai.map(i => r.slots[i] && r.slots[i].date) : []; return ai.length > 1 && ds.every(Boolean) && new Set(ds).size > 1 ? `<p class="small neg">90 min, aber an diesem Tag ist keine Doppelstunde: die Arbeit verteilt sich auf ${ds.map(d => fmt(d, { weekday: "short", day: "2-digit", month: "2-digit" })).join(" und ")} – Termin besser auf einen Tag mit Doppelstunde legen.</p>` : ""; })()}
       <div class="acts">${UI.confirm === "lnx-" + (r ? r.id : code) ? `<span class="confirm"><span>${esc(u.title)} ${u.custom ? "mit Atomen löschen" : "aus der Sequenz entfernen"}?</span><button type="button" class="btn danger sm" data-act="lnremove" ${r ? `data-row="${esc(r.id)}"` : `data-code="${esc(code)}"`}>Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>`
         : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="lnx-${esc(r ? r.id : code)}">Leistungsnachweis löschen</button>`}</div></div>` : ""}
     ${u.custom ? lnEditCard(k, code, u) : ""}
@@ -1622,6 +1675,8 @@ function viewUnit(kc, idx) {
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
+    ${(() => { const m = (S.cls[ck(k)].checks || []).filter(x => x.code === code).reduce((a, x) => a + checkMin(x), 0);
+      return m >= 45 && r && !u.custom && u.lb !== "test" ? `<div class="warn small">Kontrollen belegen in dieser Einheit ${m} min, also etwa ${Math.floor(m / 45)} Unterrichtsstunde${m >= 90 ? "n" : ""}. <button type="button" class="linkbtn" data-act="unitplus" data-code="${esc(code)}" data-n="${Math.floor(m / 45)}">Einheit um ${Math.floor(m / 45)} Std. verlängern</button></div>` : ""; })()}
     <h2>Stunden und Atome</h2>
     ${atomsNewer(k, code) ? `<div class="card tplnote"><h3>Die Fachschaft hat die Atome dieser Einheit geändert</h3>
       <p class="small">Du hast hier eigene Atome. Die ${esc(tplSource(ck(k)))} enthält inzwischen eine andere Fassung (${atomsOf(k, code).length} eigene, ${((D.classes[ck(k)].units[code] || {}).atoms || []).length} in der Vorlage).</p>
@@ -1899,7 +1954,8 @@ function obFinish() {
   toast("Eingerichtet. Änderungen jederzeit unter Einstellungen.");
 }
 function viewOnboarding() {
-  const st = UI.ob.step, Y = cal(), mine = mineList();
+  // Ohne Festlegung im Schuljahr ist im Assistenten keine Klasse vorausgewählt
+  const st = UI.ob.step, Y = cal(), mine = Array.isArray(Y.classes) ? mineList() : [];
   const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
   let body = "";
   if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
@@ -2076,14 +2132,6 @@ document.addEventListener("click", ev => {
     case "del": { const snap = snapshotFor(k); const code = S.cls[k].seq[i].code; S.cls[k].seq.splice(i, 1); undoStack = snap; commit(k); toast(`${code} aus der Sequenz entfernt.`, true); break; }
     case "addrow": {
       const code = document.getElementById("addcode").value, strand = document.getElementById("addstrand").value, h = Math.max(0, +document.getElementById("addhrs").value || 0);
-      if (code === "__ln") {
-        // allgemeiner Leistungsnachweis am Ende: 1 Std. = nur die Arbeit, 2 = mit Rückgabe, 3 und mehr = mit Wiederholung davor
-        const hh = Math.max(1, h), rueck = hh >= 2, wdh = hh >= 3, C2 = S.cls[k];
-        const before = C2.seq.length, c2 = addLn(k, { kind: "ka", topic: "", hours: Math.max(1, hh - (rueck ? 1 : 0) - (wdh ? 1 : 0)), wdh, rueck, afterIdx: before - 1, date: document.getElementById("adddate").value, g: curG() });
-        const nr = c2 && C2.seq.find(r => r.code === c2);
-        if (nr && C2.mode !== "nacheinander" && nr.strand !== strand) { nr.strand = strand; commit(k); }
-        break;
-      }
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
@@ -2107,16 +2155,17 @@ document.addEventListener("click", ev => {
     case "atommove": moveAtom(k, b.dataset.code, b.dataset.id, +b.dataset.l); break;
     case "lnadd": {
       const v = id => document.getElementById(id), kind = v("lnkind").value;
-      const code = addLn(k, { kind, topic: v("lntopic").value.trim(), hours: Math.max(1, Math.min(6, +v("lnhrs").value || 1)), wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value, date: v("lndate").value, g: curG() });
+      const code = addLn(k, { kind, topic: v("lntopic").value.trim(), dur: +v("lndur").value || 45, wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value, date: v("lndate").value, g: curG() });
       break;
     }
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
     case "lnremove": removeLn(k, { id: b.dataset.id, row: b.dataset.row, code: b.dataset.code }); break;
     case "chknew": UI.chkForm = { code: b.dataset.code, n: +b.dataset.l }; render(); break;
     case "chkcancel": UI.chkForm = null; render(); break;
+    case "unitplus": { const n = +b.dataset.n || 1, code = b.dataset.code, C = S.cls[k], snap = snapshotFor(k), row = C.seq.find(r => r.code === code); if (!row) break; row.hours = (+row.hours || 0) + n; undoStack = snap; commit(k); toast(`${code}: ${n} Std. mehr für die Kontrollen eingeplant.`, true); break; }
     case "chksave": {
       const n = document.getElementById("chkn") ? +document.getElementById("chkn").value : +b.dataset.l, snap = snapshotFor(k), C = S.cls[k];
-      C.checks = C.checks || []; C.checks.push({ id: uid(), kind: document.getElementById("chkkind").value, title: document.getElementById("chktitle").value.trim(), code: b.dataset.code, n });
+      C.checks = C.checks || []; C.checks.push({ id: uid(), kind: document.getElementById("chkkind").value, title: document.getElementById("chktitle").value.trim(), code: b.dataset.code, n, dur: +document.getElementById("chkdur").value || 20 });
       UI.chkForm = null; undoStack = snap; commit(k); toast(`${CHECK_KINDS[C.checks[C.checks.length - 1].kind]} in Stunde ${n} eingetragen.`, true); break;
     }
     case "chkdel": { const C = S.cls[k], snap = snapshotFor(k); C.checks = (C.checks || []).filter(x => x.id !== b.dataset.id); undoStack = snap; commit(k); toast("Kontrolle gelöscht.", true); break; }
@@ -2179,13 +2228,14 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
-  if (t.id === "addcode") { const bx = document.getElementById("adddatebox"); if (bx) bx.hidden = t.value !== "__ln"; return; }
-  if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lnhrs").value = K.hours; v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; } return; }
+  if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lndur").value = String(K.dur); v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; } return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
     case "lndate": if (t.value) setLnDate(curG(), t.dataset.row, t.value); break;
+    case "lndur": setLnDur(ck(curG()), t.dataset.code, +t.value); break;
+    case "chkdur": { const C = S.cls[ck(curG())], x = (C.checks || []).find(y => y.id === t.dataset.id); if (x) { const snap = snapshotFor(ck(curG())); x.dur = +t.value; undoStack = snap; commit(ck(curG())); toast(`${CHECK_KINDS[x.kind]}: ${x.dur} min.`, true); } break; }
     case "chkdate": if (t.value) setCheckDate(curG(), t.dataset.id, t.value); break;
     case "lnset": {
       const u = (S.cls[k].ln || {})[t.dataset.code]; if (!u) break;
@@ -2205,7 +2255,7 @@ document.addEventListener("change", ev => {
     case "lastday": { const c = ck(curG()); S.cls[c].lastDay = t.value || ""; commit(c); break; }
     case "ttfrm": { const G = grp(curG()), v = ttVersion(curG(), t.dataset.v); if (!v || !t.value) break; if (G.tt.some(x => x !== v && x.frm === t.value)) { toast("Ab diesem Datum gibt es schon einen Stundenplan."); render(); break; } v.frm = t.value; sortTT(G.tt); commit(k); break; }
     case "mine": {
-      const Y = cal(), l = mineList(), kk = t.dataset.k;
+      const Y = cal(), l = Array.isArray(Y.classes) || !UI.ob ? mineList() : [], kk = t.dataset.k;
       Y.classes = t.checked ? CLASSES.filter(c => c === kk || l.includes(c)) : l.filter(c => c !== kk);
       if (t.checked) { UI.cls = kk; UI.type = D.classes[kk].type; }
       fixSelection(); try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {}
@@ -2261,7 +2311,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
