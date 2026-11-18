@@ -93,8 +93,10 @@ der gewählten (Parallel-)Klasse.
   („–“). Ein Leistungsnachweis ohne Termin läuft im Strang der Einheit davor, auch nachdem er verschoben wurde. Das gilt
   in allen Klassen; außer GYM 6 laufen alle Klassen der Vorlage ohnehin „nacheinander“ in einem Strang.
 - **Kontrollen in einer Stunde** („+ Kontrolle“ bei einer Stunde der Einheit): Kurzkontrolle, Test, mündliche Kontrolle,
-  Hausaufgabenkontrolle, sonstige Bewertung, 20 oder 30 min. Die Stunde zeigt die verbleibende Unterrichtszeit; ab 45 min
-  Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern. Mit Datum (auch kurze Tests mit Termin) liegen
+  Hausaufgabenkontrolle, sonstige Bewertung, 20 oder 30 min. Die Stunde zeigt die verbleibende Unterrichtszeit. Eine Stunde
+  mit 30 min Kontrolle ist **belegt**: dort werden keine neuen Atome eingeführt, die Einheit bekommt automatisch eine Stunde
+  dazu (in der Sequenz „+1 für Kontrolle“) und ihr Stoff läuft danach weiter. Nach 20 min wird höchstens ein neues Atom
+  eingeführt, die übrigen rücken in die nächste Stunde; die Einheit zeigt, in welcher Stunde verschobene Atome kommen. Mit Datum (auch kurze Tests mit Termin) liegen
   sie **fest** in der ersten Mathestunde dieses Tages und wandern nicht mit, wenn sich Stunden der Sequenz ändern; in der Liste
   stehen sie dann ohne Einheit. „lösen“ hängt sie an die Stunde, in der sie gerade liegen.
 - **Bearbeiten und Löschen**: Titel und Stundenthemen eigener Leistungsnachweise in ihrer Einheit; Löschen über × in der

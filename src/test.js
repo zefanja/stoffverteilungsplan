@@ -440,17 +440,19 @@ function serve(dir) {
     return { a, b, c }; });
   ok(rueck.a.rueck > rueck.a.arbeit[0] && rueck.a.hours === 3 && rueck.b.hours === 4 && rueck.b.dur === 90 && rueck.b.arbeit.length === 2 && rueck.b.arbeit[0] === rueck.b.arbeit[1] && rueck.b.rueck > rueck.b.arbeit[1] && rueck.c.hours === 3,
     'Klassenarbeit in der Doppelstunde: Rückgabe frühestens am nächsten Unterrichtstag, 90 min belegen die Doppelstunde, Sequenz wächst und schrumpft ' + JSON.stringify(rueck));
-  // Kurzkontrolle mit Dauer: Restzeit in der Stunde, ab 45 min Hinweis zum Verlängern
-  const kk = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6; C.checks = [{ id: 'k1', kind: 'kk', title: 'A', code: 'A1', n: 1, dur: 30 }, { id: 'k2', kind: 'kk', title: 'B', code: 'A1', n: 2, dur: 20 }]; M.touch();
-    location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); return true; });
-  await p.waitForTimeout(250);
-  const kkUi = await p.evaluate(() => ({ rest: [...document.querySelectorAll('.lcheck')].map(e => e.textContent.replace(/\s+/g, ' ')), warn: !!document.querySelector('[data-act="unitplus"]') }));
-  const hrs0 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
-  await p.click('[data-act="unitplus"]'); await p.waitForTimeout(150);
-  const hrs1 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
-  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  // Kontrollen belegen Stunden: 30 min = keine neuen Atome (Einheit +1 Std.), 20 min = höchstens ein neues Atom
+  const kkCap = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6, g = 'kl6.a';
+    const base = M.schedule(g).rows.find(r => r.code === 'A1'), h0 = base.hours, nAtoms = M.atomsOf('kl6', 'A1').length;
+    C.checks = [{ id: 'k1', kind: 'test', title: 'A', code: 'A1', n: 1, dur: 30 }, { id: 'k2', kind: 'kk', title: 'B', code: 'A1', n: 2, dur: 20 }]; M.touch();
+    const sc = M.schedule(g), r = sc.rows.find(x => x.code === 'A1');
+    const perLesson = r.slots.map((s, i) => M.lessonInfo(g, { row: r, n: i + 1 }).atoms.length);
+    const introduced = M.atomsOf('kl6', 'A1').filter(a => sc.intro[a.id]).length;
+    return { h0, h1: r.hours, extra: r.extra, perLesson, nAtoms, introduced, rawL2: M.atomsOf('kl6', 'A1').filter(a => a.l === 2).length }; });
+  await p.evaluate(() => { location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); }); await p.waitForTimeout(250);
+  const kkUi = await p.evaluate(() => ({ rest: [...document.querySelectorAll('.lcheck')].map(e => e.textContent.replace(/\s+/g, ' ')), notes: [...document.querySelectorAll('.capnote')].map(e => e.textContent), moved: document.querySelectorAll('.atom.moved').length }));
   await p.evaluate(() => { window.__mp.S.cls.kl6.checks = []; window.__mp.touch(); });
-  ok(kkUi.rest.some(t => t.includes('noch 15 min')) && kkUi.warn && hrs1 === hrs0 + 1, 'Kurzkontrolle mit Dauer: Restzeit der Stunde, ab 45 min Vorschlag „Einheit verlängern“ ' + JSON.stringify([kkUi, hrs0, hrs1]));
+  ok(kkCap.h1 === kkCap.h0 + 1 && kkCap.extra === 1 && kkCap.perLesson[0] === 0 && kkCap.perLesson[1] <= 1 && kkCap.introduced === kkCap.nAtoms && kkUi.notes.length === 2 && kkUi.moved > 0 && kkUi.rest.some(t => t.includes('noch 15 min')),
+    'Kontrollen belegen Stunden: 30 min ohne neue Atome (Einheit +1 Std.), 20 min höchstens ein Atom, kein Atom geht verloren ' + JSON.stringify([kkCap, kkUi]));
   await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
   // Seitenwechsel über die Navigation beginnt oben, auch beim erneuten Klick auf die offene Seite
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);

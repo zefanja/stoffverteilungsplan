@@ -80,6 +80,10 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   von GYM 6 mit – Regel identisch zu `kaDates()` halten, sonst geht „Kl. 6 geht auf“ kaputt.
 - `sortPinnedRows(g)` (aufgerufen in `viewSeq`) ordnet fest terminierte Leistungsnachweise in `C.seq` nach Termin ein –
   rein kosmetisch, der Plan bleibt gleich. Tests dürfen sich deshalb nicht auf die Vorlagen-Reihenfolge der KA-Zeilen verlassen.
+- Kontrollen belegen Stunden: `schedule()` rechnet in zwei Durchgängen (`assign(extra)`): erst die Lage aller Kontrollen
+  (`sc.chk`, liest auch `checkPos`), dann +1 Stunde je Stunde mit ≥ 30 min Kontrollen (`r.extra`). `r.blocked` (Stunde →
+  max. neue Atome: 0 bei ≥ 30 min, 1 bei ≥ 20 min) und `atomPlan()` verteilen die Atome; überall `atomLesson(r, a)`
+  statt `a.l` nutzen (Einführung, `lessonInfo`). Der Atom-Editor arbeitet weiter mit `a.l`.
 - **Rückgabe-Regel** (`isRueck()`): Rückgabe/Berichtigung frühestens an einem späteren Tag als die Arbeit; die freie
   Hälfte der Doppelstunde bekommt der nachfolgende Stoff.
 - Kürzel `P` (Puffer) und `JA` (Jahresabschluss) kommen mehrfach vor: nie allein über `code` adressieren (Kontrollen

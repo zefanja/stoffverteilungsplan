@@ -285,6 +285,9 @@ details.ziele p{margin:0;font-size:14px}
 .lsub{display:block}
 .lsub+.lsub{margin-top:2px}
 .adrop{padding:6px 8px;border:1px dashed var(--line);border-radius:5px}
+.atom.moved{position:relative;opacity:.75}
+.atom.moved::after{content:"wird in Stunde " attr(data-moved) " eingeführt";position:absolute;right:8px;bottom:4px;font-size:11px;color:var(--accent)}
+.capnote{margin:0;padding:2px 8px;border-left:3px solid var(--warn)}
 .lncard{display:grid;gap:10px}
 .lndate{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap;white-space:nowrap}
 .lndate input[type=date]{font:inherit;font-size:13px;width:auto!important;min-width:0;padding:3px 6px}
