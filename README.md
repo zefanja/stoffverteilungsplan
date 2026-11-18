@@ -42,8 +42,8 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
   Strang und Stunden je Lernbereich gegen den Zeitrichtwert. „Zeile hinzufügen“ bietet Puffer, Jahresabschluss und noch
   nicht eingeplante Einheiten.
 - **Planberechnung** (`schedule()` in `app.js`): Kalender × Stundenplan ergeben die Unterrichtsstunden je Strang; feste
-  Termine von Leistungsnachweisen belegen zuerst ihre Stunden, alle anderen Stunden der Sequenz füllen die übrigen Plätze
-  der Reihe nach. Ausfälle und „Einheit braucht 1 Std. mehr“ kürzen auf Wunsch automatisch den nächsten Puffer.
+  Termine von Leistungsnachweisen belegen zuerst ihre Stunden (strangunabhängig), alle anderen Stunden der Sequenz füllen
+  die übrigen Plätze ihres Strangs der Reihe nach. Ausfälle und „Einheit braucht 1 Std. mehr“ kürzen auf Wunsch automatisch den nächsten Puffer.
 - **Jahresplan**: Wochenübersicht je Strang mit Ferien, Stundenplanwechseln und FIL-Stunden (mit Formatvorschlag: vor und in
   der Woche einer Klassenarbeit Format 4, danach Format 5, sonst 1–3 im Wechsel).
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit Terminen, Atome. Zwei Stunden einer Einheit in einer Doppelstunde
@@ -75,6 +75,10 @@ der gewählten (Parallel-)Klasse.
 - **Termin ändern**: Datum eingeben genügt (Liste oder Termin-Karte der Einheit). Die Arbeitsstunde liegt dann fest an diesem
   Tag (ohne Mathestunde: in der nächsten), Wiederholung davor, Rückgabe danach; der übrige Plan läuft darum herum, eine
   Einheit auch über den Termin hinweg. Feste Termine gelten je Parallelklasse; „lösen“ gibt den Termin frei.
+- **Kein Strang**: Ein Leistungsnachweis mit Termin gehört zu keinem Strang. Er belegt am Termin die erste Mathestunde des
+  Tages, egal ob aus Strang A oder B (nie FIL); die Einheiten dieses Strangs laufen darum herum. Seine Inhalte legt die
+  Lehrkraft fest, sie können aus beiden Strängen stammen. In der Sequenz steht statt der Strangauswahl „–“. Nur ein
+  Leistungsnachweis ohne Termin läuft im Strang der Zeile, hinter der er eingefügt wurde.
 - **Kontrollen in einer Stunde** („+ Kontrolle“ bei einer Stunde der Einheit): Kurzkontrolle, Test, mündliche Kontrolle,
   Hausaufgabenkontrolle, sonstige Bewertung, 20 oder 30 min. Die Stunde zeigt die verbleibende Unterrichtszeit; ab 45 min
   Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern. Per Datum wandern sie in die erste Stunde
@@ -172,7 +176,7 @@ Sicherung daran, eine Sicherung zu speichern („Sicherung kopieren“ oder „A
 | `src/atoms_lehrplan/<id>.json` | Atome der übrigen Klassen je Einheit: `[Stunde, Atom, Frage, Lösung, Frage 2, Lösung 2, Frage 3, Lösung 3]` |
 | `src/lehrplan.json`, `src/fetch_lehrplan.js`, `src/parse_lehrplan.py` | Lehrpläne Sachsen (Lehrplandatenbank) und ihr Import |
 | `src/from_lehrplan.py` | Klassen aus dem Lehrplan: Einheiten je Lernziel, Stundenthemen, Sequenz mit KA-Platzhaltern, Standard-Stundenplan |
-| `src/build_data.py` | Baut `dist/data.js`, gleicht Puffer an die Stundenpläne an, setzt die KA-Platzhalter in GYM 6/8 und die Generatoren |
+| `src/build_data.py` | Baut `dist/data.js`, gleicht Puffer je Strang an die Stundenpläne an (Klassenarbeiten an ihren Standardterminen mitgerechnet), setzt die KA-Platzhalter in GYM 6/8 und die Generatoren |
 | `src/ferien_sn.json`, `src/fetch_ferien.py` | Schulferien und Feiertage Sachsen (openholidaysapi.org) |
 | `src/anemo/generators.ts`, `src/anemo/labels.json` | 194 Aufgabengeneratoren, unverändert aus [zefanja/anemo](https://github.com/zefanja/anemo) (`src/lib/server/tasks/generators.ts`), und ihre Titel |
 | `src/generator_map.json` | Generator je Atom (Klasse → Atom-ID → Generator-ID oder Liste) |

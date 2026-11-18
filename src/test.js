@@ -465,6 +465,21 @@ function serve(dir) {
   const tAfter = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
   ok(tOpts === '20,30,45' && kaOpts === '45,90' && offWdh && tShort.seq === tn0 && tShort.x && tShort.x[0] >= '2026-12-08' && tShort.x[1] === 20 && tAfter === 0,
     'Test / Leistungskontrolle: 20/30/45 min, kurzer Test in einer Stunde ohne eigene Sequenzzeile, rückgängig ' + JSON.stringify([tOpts, kaOpts, offWdh, tn0, tShort, tAfter]));
+  // Leistungsnachweise mit Termin gehören zu keinem Strang: KA2 (bisher Strang B) an einem Tag mit nur Strang A
+  const nost = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6, g = 'kl6.a', row = C.seq.find(x => x.code === 'KA2');
+    const keep = JSON.stringify(C.groups[0].pin), keepSeq = JSON.stringify(C.seq), keepTT = JSON.stringify(C.groups[0].tt);
+    C.groups[0].tt = [{ id: 'ns', frm: M.cal().start, lessons: [{ day: 1, period: 3, track: 'A' }, { day: 3, period: 2, track: 'B' }, { day: 4, period: 4, track: 'A' }, { day: 5, period: 1, track: 'B' }] }]; M.touch();
+    M.setLnDate(g, row.id, '2027-01-11');
+    const sc = M.schedule(g), r = sc.rows.find(x => x.id === row.id), main = r.slots[M.lnDates(g).find(x => x.row === row.id) ? 1 : 1];
+    const gaps = tr => sc.slots.filter(s => s.track === tr && !s.cancelled && s.date < '2027-06-01' && !s.lesson).length;
+    const res = { strand: row.strand, arbeit: main.date + '/' + main.track, gapsA: gaps('A'), gapsB: gaps('B') };
+    C.groups[0].pin = JSON.parse(keep); C.seq = JSON.parse(keepSeq); C.groups[0].tt = JSON.parse(keepTT); M.touch();
+    return res; });
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl6'; M.UI.type = 'gym'; location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  const nostUi = await p.evaluate(() => [...document.querySelectorAll('table.seq tbody tr')].filter(tr => /KA\d/.test(tr.querySelector('.chip').textContent)).map(tr => !tr.querySelector('select[data-act="strand"]')));
+  await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(150);
+  ok(nost.strand === 'B' && nost.arbeit === '2027-01-11/A' && nost.gapsA === 0 && nost.gapsB === 0 && nostUi.length === 4 && nostUi.every(Boolean),
+    'Leistungsnachweis ohne Strang: KA2 liegt am Termin in einer Stunde von Strang A, beide Stränge ohne Lücken, Sequenz zeigt keinen Strang ' + JSON.stringify([nost, nostUi]));
   // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
   const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
     const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });

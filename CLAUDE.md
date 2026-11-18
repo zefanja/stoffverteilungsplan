@@ -61,8 +61,12 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
 - Slots = Schultage × Stundenplan (Zeiträume `G.tt`, Doppelstunde `len: 2` = zwei Slots), ohne Ferien, freie Tage,
   `G.off`, ausgefallene (`G.cancelled`) und nach dem letzten Unterrichtstag.
 - Zeilen der Sequenz (`C.seq`, je Zeile `id`, `code`, `strand`, `hours`; plus `G.adj` je Parallelklasse) werden je Strang
-  verteilt. **Feste Termine** (`G.pin[zeilenId] = Datum`) belegen zuerst ihre Slots (Hauptstunde `lnMain()` am Termin),
-  der Rest füllt die freien Slots der Reihe nach.
+  verteilt. **Feste Termine** (`G.pin[zeilenId] = Datum`) belegen zuerst ihre Slots, und zwar **strangunabhängig** über alle
+  Nicht-FIL-Slots (Hauptstunde `lnMain()` in der ersten Stunde ab dem Termin). Der Rest füllt die freien Slots seines
+  Strangs der Reihe nach. `planned` je Strang zählt fest terminierte Stunden dort, wo sie tatsächlich liegen.
+- Die Lehrkraft will: Leistungsnachweise haben keinen Strang, Einheiten „fließen drum herum“, das Datum bestimmt den
+  Termin. `build_data.py` (`ka_track_hours`) rechnet deshalb die Standardtermine der KA-Platzhalter beim Pufferausgleich
+  von GYM 6 mit – Regel identisch zu `kaDates()` halten, sonst geht „Kl. 6 geht auf“ kaputt.
 - **Rückgabe-Regel** (`isRueck()`): Rückgabe/Berichtigung frühestens an einem späteren Tag als die Arbeit; die freie
   Hälfte der Doppelstunde bekommt der nachfolgende Stoff.
 - Kürzel `P` (Puffer) und `JA` (Jahresabschluss) kommen mehrfach vor: nie allein über `code` adressieren (Kontrollen
