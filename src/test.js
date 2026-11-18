@@ -451,6 +451,20 @@ function serve(dir) {
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
   const unitsNoLn = await p.evaluate(() => ({ ln: [...document.querySelectorAll('.ucard .chip b')].some(b => /^KA\d|^LK\d/.test(b.textContent)), head: [...document.querySelectorAll('.lbh')].some(h => /Leistungsnachweis|Klassenarbeit/.test(h.textContent)) }));
   ok(!unitsNoLn.ln && !unitsNoLn.head, 'Einheitenübersicht ohne Leistungsnachweise ' + JSON.stringify(unitsNoLn));
+  // Test / Leistungskontrolle: 20, 30 oder 45 min; kurze Tests laufen in einer Stunde mit (keine eigene Sequenzzeile)
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
+  await p.selectOption('#lnkind', 'test');
+  const tOpts = await p.evaluate(() => [...document.querySelectorAll('#lndur option')].map(o => o.value).join(','));
+  const kaOpts = await p.evaluate(() => { const k = document.getElementById('lnkind'); k.value = 'ka'; k.dispatchEvent(new Event('change', { bubbles: true })); const r = [...document.querySelectorAll('#lndur option')].map(o => o.value).join(','); k.value = 'test'; k.dispatchEvent(new Event('change', { bubbles: true })); return r; });
+  await p.selectOption('#lndur', '20');
+  const offWdh = await p.evaluate(() => document.getElementById('lnwdh').disabled && document.getElementById('lnrueck').disabled);
+  const tn0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
+  await p.fill('#lntopic', 'Terme'); await p.fill('#lndate', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  const tShort = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.inLesson && y.kind === 'Test'); return { seq: M.S.cls.kl8.seq.length, x: x ? [x.date, x.dur, x.title] : null }; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const tAfter = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
+  ok(tOpts === '20,30,45' && kaOpts === '45,90' && offWdh && tShort.seq === tn0 && tShort.x && tShort.x[0] >= '2026-12-08' && tShort.x[1] === 20 && tAfter === 0,
+    'Test / Leistungskontrolle: 20/30/45 min, kurzer Test in einer Stunde ohne eigene Sequenzzeile, rückgängig ' + JSON.stringify([tOpts, kaOpts, offWdh, tn0, tShort, tAfter]));
   // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
   const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
     const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });
