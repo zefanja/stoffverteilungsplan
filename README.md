@@ -77,7 +77,9 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   umgestellt (alte Klassenarbeiten → Platzhalter, Standardtermine, sofern kein eigener Termin gesetzt ist). In „Zeile
   hinzufügen“ stehen nur Puffer, Jahresabschluss und noch nicht eingeplante Einheiten; Leistungsnachweise legt man ausschließlich
   im Formular „Leistungsnachweis anlegen“ über der Liste der Leistungsnachweise an.
-  Dauer: Klassenarbeiten, Klausuren, Tests usw. dauern 45 oder 90 min (beim Anlegen und in der Termin-Karte einstellbar,
+  Dauer: Klassenarbeiten, Klausuren, Präsentationen und Projekte dauern 45 oder 90 min, Tests 20, 30 oder 45 min. Ein Test mit
+  20/30 min läuft in einer Stunde mit (wie eine Kurzkontrolle, mit Termin in der ersten Stunde des Tages, sonst in der ersten Stunde
+  nach der gewählten Zeile) und kostet keine eigene Stunde. Einstellbar beim Anlegen und in der Termin-Karte (
   `S.cls[k].lnDur`); 90 min belegen zwei Unterrichtsstunden, die Sequenzzeile wächst bzw. schrumpft entsprechend, und die
   Termin-Karte warnt, wenn am Termin keine Doppelstunde liegt. Kurzkontrollen dauern 20 oder 30 min; die Stunde zeigt die
   verbleibende Unterrichtszeit, ab 45 min Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern.
