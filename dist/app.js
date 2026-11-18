@@ -1499,7 +1499,7 @@ function viewSeq() {
   const used = new Set(C.seq.map(r => r.code));
   const isLn = code => (unitOf(k, code) || {}).lb === "test";
   const avail = unitOrderOf(k).filter(code => !isLn(code) && code !== "P" && code !== "JA" && !used.has(code));
-  const generic = [["__ln", "Leistungsnachweis (Klassenarbeit, neuer Platzhalter)"], ["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
+  const generic = [["__ln", "Leistungsnachweis"], ["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
   const lbh = lbHours(k);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
