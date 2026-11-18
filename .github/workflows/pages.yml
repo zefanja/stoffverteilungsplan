@@ -3,7 +3,7 @@ name: GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["dist/**", ".github/workflows/pages.yml"]
+    paths: ["dist/**", "src/vorlage/**", "src/build_vorlage.js", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,8 +23,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Fachschaftsvorlage bauen und prüfen
+        run: node src/build_vorlage.js
       - name: Syntax prüfen
-        run: node --check dist/app.js && node --check dist/data.js
+        run: node --check dist/app.js && node --check dist/data.js && node --check dist/vorlage.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
