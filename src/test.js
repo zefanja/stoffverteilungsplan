@@ -391,7 +391,7 @@ function serve(dir) {
   const del0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA2'); return { n: M.S.cls.kl8.seq.length, row: x.row }; });
   await p.click(`.lncard [data-act="confirm"][data-v="lnx-${del0.row}"]`); await p.waitForTimeout(100);
   await p.click(`.lncard [data-act="lnremove"][data-row="${del0.row}"]`); await p.waitForTimeout(200);
-  const del1 = await p.evaluate(() => { const M = window.__mp; return { n: M.S.cls.kl8.seq.length, ka2: M.lnDates('kl8.a').some(y => y.code === 'KA2'), avail: [...document.querySelectorAll('#addcode option')].some(o => o.value === 'KA2') }; });
+  const del1 = await p.evaluate(() => { const M = window.__mp; return { n: M.S.cls.kl8.seq.length, ka2: M.lnDates('kl8.a').some(y => y.code === 'KA2'), avail: [...document.querySelectorAll('#addcode option')].some(o => o.value === '__ln') }; });
   await p.click('.lncard [data-act="confirm"][data-v="lnx-cdel"]'); await p.waitForTimeout(100);
   await p.click('.lncard [data-act="lnremove"][data-id="cdel"]'); await p.waitForTimeout(200);
   const del2 = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
@@ -399,6 +399,28 @@ function serve(dir) {
   const del3 = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
   await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = []; M.touch(); });
   ok(del1.n === del0.n - 1 && !del1.ka2 && del1.avail && del2 === 0 && del3 === 1, 'Übersicht: Klassenarbeit der Vorlage und Kontrolle löschen, Rückgängig ' + JSON.stringify([del0, del1, del2, del3]));
+  // Klassenarbeits-Platzhalter: vier je Klasse mit Standardterminen aus den Ferien; Auswahlliste nur allgemein
+  const kaD = await p.evaluate(() => { const M = window.__mp, C = window.PLAN_DATA.classes, out = {};
+    for (const k of Object.keys(C)) { const ph = Object.values(C[k].units).filter(u => u.ka).length, old = Object.values(C[k].units).filter(u => u.lb === 'test' && !u.ka).length;
+      const ds = M.kaDates(k, M.cal()); out[k] = [ph, old, ds.length, ds.every((d, i) => !i || M.cal() && d > ds[i - 1])]; }
+    return { bad: Object.entries(out).filter(([, v]) => v[0] !== 4 || v[1] !== 0 || v[2] !== 4 || !v[3]).map(([k]) => k), kl8: M.kaDates('kl8', M.cal()), g12: M.kaDates('gym12gk', M.cal()) }; });
+  ok(kaD.bad.length === 0 && kaD.kl8[0] < '2026-10-12' && kaD.kl8[1] > '2027-01-02' && kaD.kl8[1] < '2027-02-08' && kaD.kl8[2] < '2027-03-26' && kaD.kl8[3] > '2027-05-18' && kaD.g12[3] < '2027-03-26',
+    'Vier Klassenarbeits-Platzhalter je Klasse: vor den Herbstferien, nach Weihnachten, vor Ostern, nach Pfingsten; GYM 12 vor Ostern ' + JSON.stringify(kaD));
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
+  const addOpts = await p.evaluate(() => [...document.querySelectorAll('#addcode option')].map(o => o.value));
+  const nLn0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
+  await p.selectOption('#addcode', '__ln'); await p.fill('#addhrs', '2'); await p.click('[data-act="addrow"]'); await p.waitForTimeout(200);
+  const addLnRes = await p.evaluate(() => { const C = window.__mp.S.cls.kl8, r = C.seq[C.seq.length - 1]; return [C.seq.length, r.code, r.hours, C.ln[r.code] && C.ln[r.code].stunden.join('/')]; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  ok(addOpts[0] === '__ln' && addOpts.includes('P') && !addOpts.some(v => /KA/.test(v)) && addLnRes[0] === nLn0 + 1 && addLnRes[1] === 'KA5' && addLnRes[2] === 2 && addLnRes[3] === 'Klassenarbeit/Rückgabe und Berichtigung',
+    'Zeile hinzufügen: nur allgemein Leistungsnachweis/Puffer, keine einzelnen Klassenarbeiten; Leistungsnachweis legt einen neuen Platzhalter an ' + JSON.stringify([addOpts.slice(0, 4), addLnRes]));
+  // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
+  const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
+    const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });
+    delete old.kaV; old.groups.forEach(G => { G.pin = {}; });
+    M.applyDoc('kl6', old); const C = M.S.cls.kl6, codes = C.seq.filter(r => /KA/.test(r.code)).map(r => r.code + '/' + r.strand).join(' ');
+    const pins = Object.keys(C.groups[0].pin).length, kaV = C.kaV; M.S.cls.kl6 = keep; M.touch(); return { codes, pins, kaV }; });
+  ok(kaMig.codes === 'KA1/A KA3/A KA2/B KA4/B' && kaMig.pins === 4 && kaMig.kaV === 1, 'Alter Plan: Klassenarbeiten auf Platzhalter mit Standardterminen umgestellt ' + JSON.stringify(kaMig));
   // Leistungsnachweis per Datum festlegen: Hauptstunde am Termin, der übrige Plan läuft darum herum; lösen gibt ihn frei
   await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const pin0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA1'); return { date: x.date, row: x.row, t5: M.schedule('kl8.a').rows.find(r => r.code === 'T5').start }; });
@@ -430,12 +452,12 @@ function serve(dir) {
     for (const id in C) { if (C[id].source !== 'lehrplan') continue;
       const sc = M.schedule(id + '.a'), seq = C[id].seq, stoff = seq.filter(r => /^\d/.test(r[0])).reduce((a, r) => a + r[2], 0);
       const zrw = Object.values(C[id].zrw).reduce((a, x) => a + x, 0), ka = seq.filter(r => /^KA/.test(r[0])).length;
-      if (sc.cap.A !== sc.planned.A || stoff < zrw || ka !== (C[id].grade >= 11 ? 2 : 4)) bad.push([id, sc.cap.A, sc.planned.A, stoff, zrw, ka].join(':')); }
+      if (sc.cap.A !== sc.planned.A || stoff < zrw || ka !== 4) bad.push([id, sc.cap.A, sc.planned.A, stoff, zrw, ka].join(':')); }
     const g9 = C.gym9.seq.map(r => r[0]);
     const end12 = M.schedule('gym12gk.a').slots.reduce((a, s) => s.date > a ? s.date : a, '');
     const end10 = M.schedule('os10rs.a').slots.reduce((a, s) => s.date > a ? s.date : a, '');
     return { bad, g9: g9.includes('KA1') && g9.includes('KA4') && g9.includes('W1') && g9[g9.length - 1] === 'JA', end12, end10, ka: C.gym9.units.KA1.title }; });
-  ok(fill.bad.length === 0 && fill.g9, 'Lehrplan-Sequenzen füllen das Schuljahr (Stoff ≥ Zeitrichtwert, 4 KA bzw. 2 Klausuren, Wahlbereich, Jahresabschluss) ' + JSON.stringify(fill));
+  ok(fill.bad.length === 0 && fill.g9, 'Lehrplan-Sequenzen füllen das Schuljahr (Stoff ≥ Zeitrichtwert, 4 Klassenarbeiten bzw. Klausuren, Wahlbereich, Jahresabschluss) ' + JSON.stringify(fill));
   ok(fill.end12 < '2027-03-26' && fill.end12 >= '2027-03-15' && fill.end10 < '2027-05-15' && fill.end10 >= '2027-05-01', 'Abschlussklassen: GYM 12 bis vor Ostern, OS 10 bis vor Pfingsten ' + fill.end12 + ' ' + fill.end10);
   // alte, unveränderte Lehrplan-Sequenz (nur Zeitrichtwerte) wird beim Laden durch die neue Vorlage ersetzt
   const lpMig = await p.evaluate(() => { const M = window.__mp, C = window.PLAN_DATA.classes.os9hs, cur = M.S.cls.os9hs;

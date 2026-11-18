@@ -168,8 +168,18 @@ def capacity(cal, weekdays, until=None):
 
 
 def ka_count(school, grade):
-    """Klassenarbeiten je Schuljahr (Vorschlag wie in GYM 6/8: zwei je Halbjahr; Oberstufe eine Klausur je Halbjahr)."""
-    return 2 if grade >= 11 else 4
+    """Klassenarbeiten bzw. Klausuren je Schuljahr: vier allgemeine Platzhalter, zwei je Halbjahr. Die Termine setzt die App
+    aus den Ferien (Ende des 1. und 3. Quartals, 2–3 Wochen nach Weihnachts- und Pfingstferien)."""
+    return 4
+
+
+def ka_unit(code, n, word, hours):
+    """Allgemeiner Platzhalter für eine Klassenarbeit (ohne Bezug zu bestimmten Einheiten); main = Index der Arbeitsstunde."""
+    st = ([f"Wiederholung"] if hours >= 3 else []) + [word] * max(1, hours - (2 if hours >= 3 else 1 if hours >= 2 else 0)) + (["Rückgabe und Berichtigung"] if hours >= 2 else [])
+    return dict(code=code, lb="test", title=f"{word} {n}", ka=n, main=1 if hours >= 3 else 0,
+                inhalte=["Stoff seit der letzten Arbeit wiederholen", word, "Rückgabe, Berichtigung, Fehlerschwerpunkte"], tiefe=[], vorwissen=[],
+                begriffe=[], hinweise=["Platzhalter: Termin per Datum festlegen, Inhalt und Umfang nach den Vorgaben der Schule."],
+                material=[], stunden=st, atoms=[])
 
 
 def place_tests(rows, n):
@@ -243,22 +253,16 @@ def build(lehrplan, cal, weeks=25):
                         units[r["code"]] = unit_from(r["lz"], r["code"], r["lb"], r["h"])
                 # 4. Sequenz mit Klassenarbeiten
                 word = "Klausur" if grade >= 11 else "Klassenarbeit"
-                seq, prev = [], 0
+                seq = []
                 stops = set(place_tests(rows, nka))
                 kn = 0
                 for i, r in enumerate(rows):
                     seq.append([r["code"], "A", r["h"]])
                     if i in stops:
                         kn += 1
-                        cov = [x["code"] for x in rows[prev:i + 1] if x["code"] != "P"]
-                        span = cov[0] + ("–" + cov[-1] if len(cov) > 1 else "") if cov else ""
                         code = f"KA{kn}"
-                        units[code] = dict(code=code, lb="test", title=f"{word} {kn} · {span}",
-                                           inhalte=[f"Wiederholung {span}", word, "Rückgabe, Berichtigung, Fehlerschwerpunkte"], tiefe=[],
-                                           vorwissen=cov, begriffe=[], hinweise=["Vorschlag: Termin und Umfang an die Vorgaben der Schule anpassen."],
-                                           material=[], stunden=[f"Wiederholung {span}", f"{word} {kn}", "Rückgabe und Berichtigung"], atoms=[])
+                        units[code] = ka_unit(code, kn, word, ka_h)
                         seq.append([code, "A", ka_h])
-                        prev = i + 1
                 for lb in wahl:
                     code = f"W{lb['nr']}"
                     lz_all = dict(text=lb["title"], bem=[b for lz in lb["lernziele"] for b in lz["bem"]], refs=[r for lz in lb["lernziele"] for r in lz["refs"]],

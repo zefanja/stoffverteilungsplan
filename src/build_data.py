@@ -72,6 +72,21 @@ for k,c in build_lehrplan(LP,CAL).items():
     out['classes'][k]=c
     print(k,c['label'],'Std.',sum(r[2] for r in c['seq']),'cap',c['cap'],'Stoff',sum(r[2] for r in c['seq'] if r[0][0].isdigit()),'zrw',sum(c['zrw'].values()),'KA',sum(1 for r in c['seq'] if r[0].startswith('KA')),'Ende',c['endRule'])
 for k in META: out['classes'][k].update(variant=None,variantLabel="",source="stoffverteilung")
+# GYM 6/8: die inhaltsbezogenen Klassenarbeiten der Excel-Pläne durch vier allgemeine Platzhalter KA1–KA4 ersetzen (Stunden
+# bleiben). Bei zwei Strängen wechseln sie sich ab (KA1 A, KA2 B, …), damit jeder Strang zwei Arbeiten trägt.
+from from_lehrplan import ka_unit
+for k in META:
+    c=out['classes'][k]; old=[code for code,u in c['units'].items() if u.get('lb')=='test']
+    rows=[r for r in c['seq'] if r[0] in old]
+    rank={}; order=[]
+    for r in rows: rank[id(r)]=sum(1 for x in rows[:rows.index(r)] if x[1]==r[1]); order.append(r)
+    order.sort(key=lambda r:(rank[id(r)],r[1]))
+    for code in old: del c['units'][code]
+    for n,r in enumerate(order,1):
+        r[0]=f"KA{n}"; c['units'][r[0]]=ka_unit(r[0],n,"Klassenarbeit",r[2])
+    c['unitOrder']=[x for x in c['unitOrder'] if x not in old]+[f"KA{n}" for n in range(1,len(order)+1)]
+    c['oldKA']=old
+    assert len(order)==4,(k,len(order))
 # Aufgabengeneratoren (Anemo) je Atom: Feld "g" = Generator-ID oder Liste; ohne Eintrag bleiben die festen Fragen.
 GMAP=json.load(open('src/generator_map.json')); GIDS=set(json.load(open('src/anemo/labels.json')))
 ng=0

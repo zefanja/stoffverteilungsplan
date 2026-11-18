@@ -65,6 +65,13 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   Knöpfe „gehalten“, „Einheit braucht 1 Std. mehr“, „fällt aus“ (kürzt automatisch den nächsten Puffer).
 - **Jahresplan**: Wochenübersicht je Strang, FIL-Stunden (Spur „FIL“, nur Klasse 7–9) mit Formatvorschlägen.
 - **Sequenz**: Reihenfolge, Stunden, Strang, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je Strang.
+- **Klassenarbeits-Platzhalter**: Jede Klasse hat in der Vorlage vier allgemeine Platzhalter „Klassenarbeit 1–4“
+  (Oberstufe „Klausur 1–4“), zwei je Halbjahr, ohne Bezug zu bestimmten Einheiten. Ihre Termine setzt die App aus den Ferien
+  des Schuljahres als feste Termine: KA 1 kurz vor den Herbstferien (Ende 1. Quartal), KA 2 2–3 Wochen nach den Weihnachtsferien,
+  KA 3 kurz vor den Osterferien (Ende 3. Quartal), KA 4 2–3 Wochen nach den Pfingstferien; endet die Klasse früher (GYM 12,
+  OS 10), verteilen sich die letzten bis eine Woche vor dem letzten Unterrichtstag. Gespeicherte Pläne werden einmal
+  umgestellt (alte Klassenarbeiten → Platzhalter, Standardtermine, sofern kein eigener Termin gesetzt ist). In „Zeile
+  hinzufügen“ stehen nur allgemeine Einträge (Leistungsnachweis, Puffer, Jahresabschluss) und noch nicht eingeplante Einheiten.
 - **Leistungsnachweise** (Sequenz → Leistungsnachweise): Klassenarbeit, Klausur, Test/Leistungskontrolle, Präsentation und
   Komplexe Leistung/Projekt anlegen und hinter einer beliebigen Zeile der Sequenz einfügen. Sie bekommen eigene Stunden
   (Arbeit, wahlweise Wiederholungsstunde davor und Rückgabe danach), der Plan rückt nach. Kürzel KA, KL, LK, PR, PJ mit
@@ -78,8 +85,8 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   zeitlich passende Stelle. Feste Termine gelten je Parallelklasse (`groups[].pin`, Zeilen-ID → Datum); „lösen“ gibt den
   Termin frei. Kontrollen in einer Stunde wandern per Datum in die erste Stunde dieses Tages.
   Löschen: × in der Übersicht oder „Leistungsnachweis löschen“ in der Termin-Karte der Einheit (mit Rückfrage, rückgängig
-  machbar). Selbst angelegte verschwinden ganz, Klassenarbeiten der Vorlage verlassen nur die Sequenz und lassen sich über
-  „Zeile hinzufügen“ zurückholen.
+  machbar). Selbst angelegte verschwinden ganz, Platzhalter der Vorlage verlassen die Sequenz; neu einfügen über
+  „Zeile hinzufügen“ → Leistungsnachweis.
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit geplanten Terminen, Atome bearbeitbar. Fallen zwei Stunden einer
   Einheit laut Stundenplan in eine Doppelstunde, stehen sie als ein Block („Stunde 2–3 · Doppelstunde“) mit Termin und
   Schulstunden; eine Doppelstunde, die zwei Einheiten teilt, ist als „Doppelstunde, 1./2. Teil“ markiert. Atome lassen
