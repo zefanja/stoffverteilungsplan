@@ -92,11 +92,13 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
 - `atomsOf(k, code)`: Atome der Vorlage bzw. eigene (`C.atoms[code]`), ergänzt um Stufenfelder und Generator `g`.
 - Leistungsnachweise = Einheiten mit `lb: "test"`. Platzhalter der Vorlage haben `ka: 1…4` und `main`. Arten in
   `LN_KINDS` (Präfixe KA, KL, LK, PR, PJ – **nicht „T“**, das kollidiert mit den Terme-Einheiten T1–T5 in GYM 8),
-  Dauern in `LN_DURS`, Kontrollen in `CHECK_KINDS` (`C.checks[]`: `kind`, `title`, `code`, `n`, `dur`, ggf. `row`).
+  Dauern in `LN_DURS`, Kontrollen in `CHECK_KINDS` (`C.checks[]`: `kind`, `title`, `dur` und entweder `date` = fest am Tag
+  oder `code`/`n`/ggf. `row` = an einer Stunde der Einheit). Lage immer über `checkPos(g, x)` bestimmen (nie direkt
+  `x.code`/`x.n`); `checksAt(g, …)` braucht den Gruppenschlüssel. `unpinCheck` wandelt feste in stundengebundene um.
 - Wichtige Funktionen: `addLn`, `addShortTest` (Test 20/30 min als Kontrolle), `setLnDate`, `setLnDur`, `setCheckDate`,
   `removeLn`, `lnDates(g)` (Liste aller Termine), `kaDates(k, Y)`/`kaPins` (Standardtermine aus den Ferien).
 - Termine wählt man im eigenen Kalender (`dpButton`, `dpOpen`, `renderDp`, `dpPick`; Element `#dpop` am `body`, Zustand
-  `UI.dp`), nicht mehr im Browser-Datumsfeld. Im Formular trägt `dpPick` das Datum in das versteckte `#lndate` ein.
+  `UI.dp`), nicht mehr im Browser-Datumsfeld; Ziel `t`: `ln`, `chk`, `form` oder `today` (Datumsleiste der Heute-Seite). Im Formular trägt `dpPick` das Datum in das versteckte `#lndate` ein.
   Tests nutzen `pickDp(selektor, datum)` (öffnet, springt per `__mp.dpMove(0)` zum Monat, klickt `[data-d=…]`).
 - Generatoren: `genTask`/`shownTask`; LaTeX in `\( … \)` rendert `gx()`, normaler Text läuft durch `mx()`.
   SVG-Skizzen der Generatoren haben nur `viewBox` → Container braucht feste Breite (`.gsvg`).

@@ -561,6 +561,31 @@ function serve(dir) {
   }
   await p.evaluate(([c, t]) => { const M = window.__mp; M.UI.cls = c; M.UI.type = t; location.hash = 'heute'; }, uiKeep); await p.waitForTimeout(150);
   ok(strandUi.every(x => !x), 'Leistungsnachweise ohne Strangauswahl in der Sequenz ' + JSON.stringify(strandUi));
+  // Heute: Kalender statt Datumsfeld; Tag wählen springt dorthin, bei „Alle meine Klassen“ gelten alle Klassen
+  const dKeep = await p.evaluate(() => [window.__mp.UI.date, window.__mp.UI.todayAll]);
+  await p.evaluate(() => { const M = window.__mp; M.UI.todayAll = false; location.hash = 'heute'; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p.waitForTimeout(150);
+  const noNative = await p.evaluate(() => !document.getElementById('pickdate') && !!document.querySelector('.datebar .dpbtn[data-t="today"]'));
+  await pickDp('.datebar .dpbtn[data-t="today"]', '2026-12-01');
+  const dToday = await p.evaluate(() => [window.__mp.UI.date, document.querySelector('.datebar .dname').textContent]);
+  await p.evaluate(() => { window.__mp.UI.todayAll = true; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p.waitForTimeout(150);
+  await p.click('.datebar .dpbtn[data-t="today"]'); await p.waitForTimeout(100);
+  const dAll = await p.evaluate(() => document.querySelector('#dpop .dpl').textContent.includes('alle meine Klassen') && document.querySelectorAll('#dpop .dpc.math').length > 0);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(80);
+  await p.evaluate(k => { const M = window.__mp; M.UI.date = k[0]; M.UI.todayAll = k[1]; window.dispatchEvent(new HashChangeEvent('hashchange')); }, dKeep); await p.waitForTimeout(120);
+  ok(noNative && dToday[0] === '2026-12-01' && /Dezember 2026/.test(dToday[1]) && dAll, 'Heute: Kalender statt Datumsfeld, Tag wählen springt dorthin, „Alle meine Klassen“ markiert alle Klassen ' + JSON.stringify([noNative, dToday, dAll]));
+  // Kurzer Test mit Datum: fest am Tag, wandert nicht, wenn sich Stunden der Sequenz ändern; ohne Einheit in der Liste
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.type = 'gym'; M.UI.gid.kl8 = 'a'; location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  await p.selectOption('#lnkind', 'test'); await p.selectOption('#lndur', '20'); await p.fill('#lntopic', 'Bruchterme');
+  await pickDp('.dpbtn[data-t="form"]', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  const fx0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.inLesson && y.title === 'Bruchterme'); return x ? { id: x.id, date: x.date, pinned: x.pinned } : null; });
+  const fxUi = await p.evaluate(id => { const tr = [...document.querySelectorAll('.lnlist tr')].find(r => r.querySelector(`[data-id="${id}"]`)); return tr ? { fest: !!tr.querySelector('.pill.lnp'), unit: !!tr.querySelector('a[href^="#u-"]') } : null; }, fx0 && fx0.id);
+  const fx1 = await p.evaluate(id => { const M = window.__mp, C = M.S.cls.kl8, r = C.seq.find(y => y.code === 'T2'); r.hours += 2; M.touch();
+    const x = M.lnDates('kl8.a').find(y => y.id === id); r.hours -= 2; M.touch(); return x.date; }, fx0 && fx0.id);
+  await p.click(`.lnlist [data-act="chkunpin"][data-id="${fx0 && fx0.id}"]`); await p.waitForTimeout(200);
+  const fx2 = await p.evaluate(id => { const x = window.__mp.S.cls.kl8.checks.find(y => y.id === id); return x ? [x.date || null, !!x.code, x.n] : null; }, fx0 && fx0.id);
+  await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
+  ok(!!fx0 && fx0.date === '2026-12-08' && fx0.pinned === '2026-12-08' && fxUi && fxUi.fest && !fxUi.unit && fx1 === '2026-12-08' && fx2 && fx2[0] === null && fx2[1],
+    'Kurzer Test mit Datum: „fest“, ohne Einheit, bleibt am Tag trotz mehr Stunden davor; „lösen“ hängt ihn an die Stunde ' + JSON.stringify([fx0, fxUi, fx1, fx2]));
   // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
   const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
     const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });

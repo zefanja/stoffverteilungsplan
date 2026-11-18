@@ -1109,9 +1109,13 @@ function addShortTest(k, { topic, dur, date, afterIdx, g }) {
   const sc = schedule(g);
   let code, n, row = null, when = "";
   if (date) {
-    const s = sc.slots.find(y => y.date >= date && y.lesson && !y.cancelled);
+    const s = dateSlot(g, date);
     if (!s) { toast("Ab diesem Datum ist keine Stunde mehr geplant."); return null; }
-    code = s.lesson.row.code; n = s.lesson.n; row = s.lesson.row.id; when = `${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std.`;
+    const x = { id: uid(), kind: "test", title: topic, dur, date };
+    C.checks = C.checks || []; C.checks.push(x);
+    undoStack = snap; commit(k);
+    toast(`Test (${dur} min) fest am ${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std.${s.date !== date ? " (am gewählten Tag keine Mathestunde)" : ""}. Er kostet keine eigene Stunde.`, true);
+    return x.id;
   } else {
     const next = C.seq[afterIdx + 1] || C.seq[afterIdx]; if (!next) return null;
     code = next.code; n = next === C.seq[afterIdx + 1] ? 1 : Math.max(1, +next.hours || 1); row = next.id;
@@ -1195,8 +1199,8 @@ function lnDates(g) {
     out.push({ date: s ? s.date : null, period: s ? s.period : null, code: r.code, row: r.id, pinned: r.pinned || null, title: u.title, kind: u.kind ? LN_KINDS[u.kind].short : "Klassenarbeit", inLesson: false, dur: lnDurOf(k, r.code) });
   });
   (S.cls[k].checks || []).forEach(x => {
-    const r = (x.row && sc.rows.find(y => y.id === x.row)) || sc.rows.find(y => y.code === x.code), s = r && r.slots[Math.min(x.n, r.hours) - 1];
-    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: x.code, title: x.title || CHECK_KINDS[x.kind], kind: CHECK_KINDS[x.kind], inLesson: true, id: x.id, n: x.n, dur: checkMin(x) });
+    const pos = checkPos(g, x), s = pos.slot;
+    out.push({ date: s ? s.date : null, period: s ? s.period : null, code: pos.code, title: x.title || CHECK_KINDS[x.kind], kind: CHECK_KINDS[x.kind], inLesson: true, id: x.id, n: pos.n, dur: checkMin(x), pinned: x.date || null });
   });
   return out.sort((a, b) => (a.date || "9") < (b.date || "9") ? -1 : (a.date || "9") > (b.date || "9") ? 1 : (a.period || 0) - (b.period || 0));
 }
@@ -1224,18 +1228,34 @@ function setLnDate(g, rowId, date, snap0, prefix = "") {
   }
   undoStack = snap; commit(k); toast(prefix + msg, true);
 }
-/* Kontrolle in einer Stunde per Datum verlegen: in die erste Stunde mit Stoff an diesem Tag (oder danach). */
+/* Erste Unterrichtsstunde mit Stoff ab einem Datum (nicht FIL, nicht ausgefallen) */
+const dateSlot = (g, date) => schedule(g).slots.find(y => y.date >= date && y.lesson && !y.cancelled && y.track !== "SOL");
+/* Wo eine Kontrolle liegt: mit Datum (x.date) fest in der ersten Stunde ab diesem Tag – unabhängig von Änderungen der
+   Sequenz –, sonst an Einheit und Stunde (code, n; bei Puffer/Jahresabschluss zusätzlich row). */
+function checkPos(g, x) {
+  if (x.date) { const s = dateSlot(g, x.date); return s ? { code: s.lesson.row.code, n: s.lesson.n, rowId: s.lesson.row.id, slot: s } : { code: null, n: 0, rowId: null, slot: null }; }
+  const sc = schedule(g), r = (x.row && sc.rows.find(y => y.id === x.row)) || sc.rows.find(y => y.code === x.code);
+  return { code: x.code, n: x.n, rowId: r ? r.id : x.row || null, slot: r ? r.slots[Math.min(x.n, r.hours) - 1] || null : null };
+}
+/* Kontrolle per Datum festlegen: liegt dann fest am Tag (erste Mathestunde ab dem Datum). */
 function setCheckDate(g, id, date) {
   const k = ck(g), C = S.cls[k], x = (C.checks || []).find(y => y.id === id); if (!x || !date) return;
-  const s = schedule(g).slots.find(y => y.date >= date && y.lesson && !y.cancelled);
+  const s = dateSlot(g, date);
   if (!s) { toast("Ab diesem Datum ist keine Stunde mehr geplant."); render(); return; }
-  const snap = snapshotFor(k); x.code = s.lesson.row.code; x.n = s.lesson.n;
-  // Puffer und Jahresabschluss gibt es mehrfach: dann die Sequenzzeile merken
-  if (["P", "JA"].includes(x.code)) x.row = s.lesson.row.id; else delete x.row;
+  const snap = snapshotFor(k); x.date = date; delete x.code; delete x.n; delete x.row;
   undoStack = snap; commit(k);
-  toast(`${CHECK_KINDS[x.kind]}: ${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std. (${x.code}, Stunde ${x.n})${s.date !== date ? " – am gewählten Tag keine Stunde" : ""}.`, true);
+  toast(`${CHECK_KINDS[x.kind]} fest am ${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std.${s.date !== date ? " (am gewählten Tag keine Mathestunde)" : ""}.`, true);
 }
-const checksAt = (k, code, ns, rowId) => (S.cls[ck(k)].checks || []).filter(x => (x.row ? x.row === rowId : x.code === code) && ns.includes(x.n));
+/* Festen Termin einer Kontrolle lösen: sie hängt dann an der Stunde, in der sie gerade liegt, und wandert mit der Sequenz. */
+function unpinCheck(g, id) {
+  const k = ck(g), C = S.cls[k], x = (C.checks || []).find(y => y.id === id); if (!x || !x.date) return;
+  const pos = checkPos(g, x), snap = snapshotFor(k);
+  if (pos.code) { x.code = pos.code; x.n = pos.n; if (["P", "JA"].includes(pos.code)) x.row = pos.rowId; }
+  delete x.date; undoStack = snap; commit(k);
+  toast(`${CHECK_KINDS[x.kind]}: fester Termin gelöst, sie hängt jetzt an ${x.code}, Stunde ${x.n}.`, true);
+}
+const checksAt = (g, code, ns, rowId) => (S.cls[ck(g)].checks || []).map(x => { const pos = checkPos(g, x); return Object.assign({}, x, { n: pos.n, code: pos.code, rowId: pos.rowId }); })
+  .filter(x => x.code && (rowId ? x.rowId === rowId : x.code === code) && ns.includes(x.n));
 
 /* ---------------- Ferien Sachsen & Schuljahre ---------------- */
 /* Aus Ferien- und Feiertagslisten ein Schuljahr bauen: Beginn = erster Werktag nach den Sommerferien,
@@ -1440,7 +1460,7 @@ function viewToday() {
       <div class="dt"><div class="dname">${esc(fmtLong(d))}</div><div class="dsub mono">KW ${isoWeek(d)}${isToday ? " · heute" : ""}</div></div>
       <button type="button" class="iconbtn" data-act="day" data-n="1" aria-label="Nächster Tag">›</button>
       ${isToday ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
-      <input type="date" id="pickdate" value="${d}" aria-label="Datum wählen">
+      <button type="button" class="dpbtn" data-act="dp" data-t="today" data-v="${d}" aria-haspopup="dialog" aria-label="Kalender: Tag wählen"><span class="dpico" aria-hidden="true">▦</span>Kalender</button>
       <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
     ${show.length === 1 ? todayTiles(show[0], d) : ""}
@@ -1649,7 +1669,7 @@ function viewSeq() {
 function lnDateInput(k, x) {
   const Y = cal(), v = x.date || "";
   const inp = x.inLesson ? dpButton({ t: "chk", id: x.id }, v) : dpButton({ t: "ln", row: x.row }, v);
-  return `<span class="lndate">${inp}<span class="mono small muted">${x.date ? `${DAYS[dow(x.date)]}, ${x.period}. Std.` : `<span class="neg">nicht eingeplant</span>`}</span>${x.pinned ? `<span class="pill lnp" title="Fester Termin für ${esc(groupName(k))}">fest</span><button type="button" class="linkbtn small" data-act="lnunpin" data-row="${esc(x.row)}" data-k="${k}">lösen</button>` : ""}</span>`;
+  return `<span class="lndate">${inp}<span class="mono small muted">${x.date ? `${DAYS[dow(x.date)]}, ${x.period}. Std.` : `<span class="neg">nicht eingeplant</span>`}</span>${x.pinned ? `<span class="pill lnp" title="${x.inLesson ? "Fester Termin: liegt in der ersten Mathestunde dieses Tages" : `Fester Termin für ${esc(groupName(k))}`}">fest</span>${x.inLesson ? `<button type="button" class="linkbtn small" data-act="chkunpin" data-id="${esc(x.id)}" data-k="${k}">lösen</button>` : `<button type="button" class="linkbtn small" data-act="lnunpin" data-row="${esc(x.row)}" data-k="${k}">lösen</button>`}` : ""}</span>`;
 }
 /* ---------------- Kalender für Termine ----------------
    Eigener Monatskalender statt des Browser-Datumsfelds: markiert Ferien und schulfreie Tage, Tage mit Mathe-Unterricht
@@ -1673,17 +1693,23 @@ function renderDp() {
   let el = document.getElementById("dpop");
   if (!UI.dp) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement("div"); el.id = "dpop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Termin wählen"); document.body.appendChild(el); }
-  const g = curG(), Y = cal(), sc = schedule(g), dp = UI.dp, [yy, mm] = dp.month.split("-").map(Number);
+  // Auf der Heute-Seite mit „Alle meine Klassen“ zählen Mathe-Tage und Leistungsnachweise aller eigenen (Parallel-)Klassen
+  const dp = UI.dp, all = dp.t === "today" && UI.todayAll, gs = all ? myGroups() : curG() ? [curG()] : [];
+  const Y = cal(), scs = gs.map(schedule), [yy, mm] = dp.month.split("-").map(Number);
   const first = `${dp.month}-01`, days = new Date(Date.UTC(yy, mm, 0)).getUTCDate(), lead = (dow(first) + 6) % 7;
   const own = dp.t === "ln" ? dp.row : dp.t === "chk" ? dp.id : null;
-  const lnOn = {}; lnDates(g).forEach(x => { if (x.date && (x.inLesson ? x.id : x.row) !== own) (lnOn[x.date] = lnOn[x.date] || []).push(`${x.kind}${x.inLesson ? "" : " " + x.code}`); });
+  const lnOn = {}; gs.forEach(g => lnDates(g).forEach(x => { if (x.date && (x.inLesson ? x.id : x.row) !== own) (lnOn[x.date] = lnOn[x.date] || []).push(`${gs.length > 1 ? groupName(g) + ": " : ""}${x.kind}${x.inLesson ? "" : " " + x.code}`); }));
+  const holi = d => { for (const h of Y.holidays || []) if (h.frm && h.to && h.frm <= d && d <= h.to) return h.name || "Ferien"; const f = (Y.free || []).find(x => x.date === d); return f ? f.name || "unterrichtsfrei" : null; };
   let cells = "";
   for (let i = 0; i < lead; i++) cells += `<span class="dpc pad"></span>`;
   for (let n = 1; n <= days; n++) {
-    const d = `${dp.month}-${String(n).padStart(2, "0")}`, w = dow(d), info = sc.dayInfo[d], inYear = d >= Y.start && d <= Y.end;
-    const math = (sc.byDate[d] || []).filter(x => x.track !== "SOL" && !x.cancelled), dbl = math.some((x, i) => math.some(y => y.period === x.period + 1));
+    const d = `${dp.month}-${String(n).padStart(2, "0")}`, w = dow(d), inYear = d >= Y.start && d <= Y.end;
+    const hn = holi(d), info = scs.length === 1 ? scs[0].dayInfo[d] : hn ? { school: false, note: hn } : (inYear && w <= 5 ? { school: true } : null);
+    const per = scs.map(sc => (sc.byDate[d] || []).filter(x => x.track !== "SOL" && !x.cancelled)), math = per.flat();
+    const dbl = per.some(m => m.some(x => m.some(y => y.period === x.period + 1)));
     const off = w > 5 || (info && !info.school), cls = ["dpc", w > 5 ? "we" : "", info && !info.school ? "off" : "", math.length ? "math" : "", d === dp.v ? "sel" : "", d === todayIso() ? "today" : ""].filter(Boolean).join(" ");
-    const tip = [fmtDp(d), info && !info.school ? info.note : "", math.length ? `Mathe: ${math.map(x => x.period + ".").join(", ")} Std.` : (!off && inYear ? "keine Mathestunde" : ""), ...(lnOn[d] || [])].filter(Boolean).join(" · ");
+    const mtxt = gs.length > 1 ? per.map((m, i) => m.length ? `${groupName(gs[i])} ${m.map(x => x.period + ".").join(", ")} Std.` : "").filter(Boolean).join(", ") : math.map(x => x.period + ".").join(", ") + " Std.";
+    const tip = [fmtDp(d), info && !info.school ? info.note : "", math.length ? `Mathe: ${mtxt}` : (!off && inYear ? "keine Mathestunde" : ""), ...(lnOn[d] || [])].filter(Boolean).join(" · ");
     cells += inYear ? `<button type="button" class="${cls}" data-act="dpday" data-d="${d}" title="${esc(tip)}" aria-label="${esc(tip)}">${n}${dbl ? `<i class="dp2">2</i>` : ""}${lnOn[d] ? `<i class="dpdot"></i>` : ""}</button>`
       : `<span class="${cls} out" title="${esc(fmtDp(d))}: außerhalb des Schuljahres">${n}</span>`;
   }
@@ -1693,13 +1719,14 @@ function renderDp() {
       <button type="button" class="mini" data-act="dpmove" data-n="1" ${can(1) ? "" : "disabled"} aria-label="Nächster Monat">›</button>
       <button type="button" class="iconbtn sm" data-act="dpclose" aria-label="Schließen">×</button></div>
     <div class="dpg">${["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(x => `<span class="dpw">${x}</span>`).join("")}${cells}</div>
-    <div class="dpl small"><span><i class="lg math"></i>Mathe (${esc(groupName(g))})</span><span><i class="dp2">2</i> Doppelstunde</span><span><i class="lg off"></i>Ferien / frei</span><span><i class="dpdot"></i> Leistungsnachweis</span></div>`;
+    <div class="dpl small"><span><i class="lg math"></i>Mathe (${esc(all ? "alle meine Klassen" : gs.length ? groupName(gs[0]) : "keine Klasse")})</span><span><i class="dp2">2</i> Doppelstunde</span><span><i class="lg off"></i>Ferien / frei</span><span><i class="dpdot"></i> Leistungsnachweis</span></div>`;
   const w = Math.min(300, window.innerWidth - 16), x = Math.max(8, Math.min(dp.x, window.scrollX + window.innerWidth - w - 8));
   el.style.left = x + "px"; el.style.top = dp.y + "px"; el.style.width = w + "px";
 }
 function dpPick(d) {
   const dp = UI.dp; if (!dp) return; UI.dp = null; renderDp();
-  if (dp.t === "ln") setLnDate(curG(), dp.row, d);
+  if (dp.t === "today") { UI.date = d; render(); }
+  else if (dp.t === "ln") setLnDate(curG(), dp.row, d);
   else if (dp.t === "chk") setCheckDate(curG(), dp.id, d);
   else { const inp = document.getElementById("lndate"), b = document.querySelector('.dpbtn[data-t="form"]'); if (inp) inp.value = d; if (b) { b.dataset.v = d; b.innerHTML = `${esc(fmtDp(d))}<span class="dpico" aria-hidden="true">▦</span>`; } }
 }
@@ -1713,7 +1740,7 @@ function lnCard(k) {
   let defAfter = C.seq.length - 1; if (cur) { const j = C.seq.map(r => r.code).lastIndexOf(cur); if (j >= 0) defAfter = j; }
   const K0 = LN_KINDS.ka;
   const list = lnDates(k).map(x => `<tr><td class="nowrap">${lnDateInput(k, x)}</td>
-    <td><span class="pill">${esc(x.kind)} · ${x.dur} min</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
+    <td><span class="pill">${esc(x.kind)} · ${x.dur} min</span></td><td>${x.inLesson && x.pinned ? esc(x.title) : `${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ${esc(x.title)}` : ""}`}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
   return `<div class="card lncard"><h3>Leistungsnachweise</h3>
     <div class="lnform"><div class="lnformh">Leistungsnachweis anlegen</div>
       <label>Art <select id="lnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
@@ -1783,7 +1810,7 @@ function viewUnit(kc, idx) {
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
-    ${(() => { const m = (S.cls[ck(k)].checks || []).filter(x => x.code === code).reduce((a, x) => a + checkMin(x), 0);
+    ${(() => { const m = (S.cls[ck(k)].checks || []).filter(x => checkPos(k, x).code === code).reduce((a, x) => a + checkMin(x), 0);
       return m >= 45 && r && !u.custom && u.lb !== "test" ? `<div class="warn small">Kontrollen belegen in dieser Einheit ${m} min, also etwa ${Math.floor(m / 45)} Unterrichtsstunde${m >= 90 ? "n" : ""}. <button type="button" class="linkbtn" data-act="unitplus" data-code="${esc(code)}" data-n="${Math.floor(m / 45)}">Einheit um ${Math.floor(m / 45)} Std. verlängern</button></div>` : ""; })()}
     <h2>Stunden und Atome</h2>
     ${atomsNewer(k, code) ? `<div class="card tplnote"><h3>Die Fachschaft hat die Atome dieser Einheit geändert</h3>
@@ -2334,6 +2361,7 @@ document.addEventListener("click", ev => {
       break;
     }
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
+    case "chkunpin": unpinCheck(curG(), b.dataset.id); break;
     case "dp": if (UI.dp && UI.dp.t === b.dataset.t && UI.dp.row === b.dataset.row && UI.dp.id === b.dataset.id) dpClose(); else dpOpen(b); break;
     case "dpday": dpPick(b.dataset.d); break;
     case "dpmove": dpMove(+b.dataset.n); break;
@@ -2493,7 +2521,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
