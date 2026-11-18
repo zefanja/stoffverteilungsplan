@@ -2020,7 +2020,14 @@ function viewOnboarding() {
 /* ---------------- quiz & SOL overlay ---------------- */
 function renderOverlay() {
   const el = document.getElementById("overlay");
-  if (UI.ob) { el.hidden = false; el.innerHTML = viewOnboarding(); return; }
+  if (UI.ob) {
+    // Neuzeichnen im selben Schritt (z. B. Klick ins Wochenraster) hält die Scrollposition; ein neuer Schritt beginnt oben
+    const same = !el.hidden && el.dataset.obstep === String(UI.ob.step);
+    const keep = same ? ["", ".ov-card", ".obbody"].map(sel => { const n = sel ? el.querySelector(sel) : el; return n ? n.scrollTop : 0; }) : null;
+    el.hidden = false; el.innerHTML = viewOnboarding(); el.dataset.obstep = String(UI.ob.step);
+    if (keep) ["", ".ov-card", ".obbody"].forEach((sel, i) => { const n = sel ? el.querySelector(sel) : el; if (n) n.scrollTop = keep[i]; });
+    return;
+  }
   if (UI.solOpen) {
     el.hidden = false;
     el.innerHTML = `<div class="ov-card" role="dialog" aria-label="FIL-Formate"><header><h2>FIL-Stunde: die fünf Formate</h2><button type="button" class="iconbtn" data-act="ovclose" aria-label="Schließen">×</button></header>

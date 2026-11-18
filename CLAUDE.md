@@ -51,6 +51,8 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   `change`-Switch. Neue Aktionen dort ergänzen.
 - `render()`/`renderNow()`: baut `main` als HTML-String neu. `render.keepScroll` hält die Position bei Aktionen; ein
   Seitenwechsel (`hashchange`) scrollt nach oben.
+- `renderOverlay()` (Assistent, Quiz) ersetzt das Overlay per `innerHTML`. Der Assistent merkt sich dabei die
+  Scrollposition von `#overlay`, `.ov-card` und `.obbody` im selben Schritt (sonst springt er auf dem Handy nach oben).
 - Routen: `#heute`, `#plan`, `#sequenz`, `#einheiten`, `#lernuebersicht`, `#einstellungen`, `#u-<klasse>-<index>`
   (Index in `unitOrderOf(k)`; eigene Leistungsnachweise hängen hinten an, damit Indizes der Vorlage stabil bleiben).
 - Test-Hilfen: `window.__mp` stellt interne Funktionen bereit (`schedule`, `lnDates`, `addLn`, `setLnDate`, `kaDates`,

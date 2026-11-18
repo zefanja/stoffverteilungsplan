@@ -46,6 +46,18 @@ function serve(dir) {
   const ttMid = await p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length);
   ok(ttMid === ttBefore + 1, 'Klick ins Raster legt eine Stunde an (Di, 7. Std.)');
   await p.screenshot({ path: path.join(OUT, 's_assistent_zeiten.png') });
+  // Handy: Klick in eine untere Stunde des Rasters lässt die Scrollposition stehen
+  const vpKeep = p.viewportSize();
+  await p.setViewportSize({ width: 430, height: 800 }); await p.waitForTimeout(150);
+  const obSc = await p.evaluate(() => { const el = document.getElementById('overlay'), c = [el, el.querySelector('.ov-card'), el.querySelector('.obbody')].find(n => n && n.scrollHeight > n.clientHeight + 50);
+    if (!c) return null; c.scrollTop = c.scrollHeight; return { sel: c === el ? '' : c.classList.contains('obbody') ? '.obbody' : '.ov-card', top: c.scrollTop }; });
+  await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(150);
+  const obSc2 = await p.evaluate(sel => { const el = document.getElementById('overlay'), c = sel ? el.querySelector(sel) : el; return c.scrollTop; }, obSc && obSc.sel);
+  await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(80);
+  const obSc3 = await p.evaluate(sel => { const el = document.getElementById('overlay'), c = sel ? el.querySelector(sel) : el; return c.scrollTop; }, obSc && obSc.sel);
+  if (await p.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.some(v => v.lessons.some(l => +l.day === 1 && +l.period === 8)))) { await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(80); }
+  await p.setViewportSize(vpKeep); await p.waitForTimeout(100);
+  ok(!!obSc && obSc.top > 100 && Math.abs(obSc2 - obSc.top) < 5 && Math.abs(obSc3 - obSc.top) < 5, 'Assistent auf dem Handy: Klick ins Raster springt nicht nach oben ' + JSON.stringify([obSc, obSc2, obSc3]));
   // kl6 läuft in Strängen: Spur A → B → frei
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
