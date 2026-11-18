@@ -242,8 +242,58 @@ function defaultClass(k, y) {
   const tt = y.start === D.calendar.start
     ? c.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))
     : [{ id: uid(), frm: y.start, lessons: cloneLessons(c.tt[c.tt.length - 1].lessons) }];
-  return { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })), atoms: {},
-    groups: [newGroup("a", "", tt)], ln: {}, checks: [] };
+  const C = { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })), atoms: {},
+    groups: [newGroup("a", "", tt)], ln: {}, checks: [], kaV: 1 };
+  C.groups[0].pin = kaPins(k, C.seq, y);
+  return C;
+}
+/* Allgemeine Klassenarbeits-Platzhalter der Vorlage (Einheiten mit Feld ka = 1…4): Standardtermine aus den Ferien des
+   Schuljahres, zwei je Halbjahr. KA1 kurz vor den Herbstferien (Ende 1. Quartal), KA2 2–3 Wochen nach den Weihnachtsferien,
+   KA3 kurz vor den Osterferien (Ende 3. Quartal), KA4 2–3 Wochen nach den Pfingstferien. Endet die Klasse früher
+   (GYM 12, OS 10), verteilen sich die übrigen Arbeiten bis eine Woche vor dem letzten Unterrichtstag. Ohne Ferien: nach Anteilen
+   des Schuljahres. Liegt ein Termin nicht auf einer Mathestunde, nimmt der Plan die nächste. */
+function kaDates(k, Y) {
+  Y = Y || cal(); if (!Y.start || !Y.end) return [];
+  const hol = re => (Y.holidays || []).find(h => h.frm && h.to && re.test(h.name || "") && h.frm > Y.start && h.to < Y.end);
+  const he = hol(/herbst/i), we = hol(/weihnacht/i), os = hol(/oster/i), pf = hol(/pfingst/i);
+  const frac = f => addDays(Y.start, Math.round(diffDays(Y.start, Y.end) * f));
+  let ds = [he ? addDays(he.frm, -10) : frac(0.2), we ? addDays(we.to, 16) : frac(0.45), os ? addDays(os.frm, -10) : frac(0.7), pf ? addDays(pf.to, 17) : frac(0.9)];
+  const last = (S.cls && S.cls[k] && S.cls[k].lastDay) || ruleLastDay(k, Y) || Y.end, limit = addDays(last, -7);
+  const ok = ds.filter(d => d <= limit), m = ds.length - ok.length;
+  if (m > 0) {
+    let from = ok.length ? addDays(ok[ok.length - 1], 21) : addDays(Y.start, 21); if (from > limit) from = ok.length ? addDays(ok[ok.length - 1], 7) : Y.start;
+    const span = Math.max(0, diffDays(from, limit));
+    for (let i = 1; i <= m; i++) ok.push(addDays(from, Math.round(span * (m === 1 ? 1 : (i - 1) / (m - 1)))));
+    // Liegen die letzten beiden zu dicht (unter 3 Wochen), beide gleichmäßig zwischen KA2 + 4 Wochen und dem Ende verteilen
+    if (ok.length === 4 && diffDays(ok[2], ok[3]) < 21) {
+      const a = addDays(ok[1], 28), b2 = limit;
+      if (a < b2) { ok[2] = addDays(a, Math.round(diffDays(a, b2) / 3)); ok[3] = b2; }
+    }
+  }
+  return ok;
+}
+/* Feste Termine für die Platzhalter einer Sequenz: Zeilen-ID -> Datum (KA n -> n-ter Termin). */
+function kaPins(k, seq, Y) {
+  const ds = kaDates(k, Y), pin = {};
+  seq.forEach(r => { const u = D.classes[k].units[r.code]; if (u && u.ka && ds[u.ka - 1]) pin[r.id] = ds[u.ka - 1]; });
+  return pin;
+}
+/* Gespeicherte Pläne einmal auf die Platzhalter umstellen: Zeilen alter Klassenarbeiten (Kürzel nicht mehr in der Vorlage)
+   bekommen der Reihe nach die freien Platzhalter-Kürzel, dann erhalten alle Parallelklassen die Standardtermine,
+   sofern dort noch kein eigener Termin steht. */
+function migrateKa(k, C) {
+  const units = D.classes[k].units, phs = Object.keys(units).filter(x => units[x].ka).sort((a, b) => units[a].ka - units[b].ka);
+  const used = new Set(C.seq.map(r => r.code)), free = phs.filter(x => !used.has(x));
+  const old = new Set(D.classes[k].oldKA || []);
+  // alte Zeilen wie in der Vorlage ordnen: je Strang die erste, dann je Strang die zweite …, damit sich die Stränge abwechseln
+  const oldRows = C.seq.filter(r => !units[r.code] && !(C.ln || {})[r.code] && (old.has(r.code) || /KA\d/.test(r.code)));
+  const rank = r => oldRows.filter(x => x.strand === r.strand && oldRows.indexOf(x) < oldRows.indexOf(r)).length;
+  oldRows.slice().sort((a, b) => rank(a) - rank(b) || (a.strand < b.strand ? -1 : a.strand > b.strand ? 1 : 0)).forEach(r => {
+    if (!free.length) return; const nc = free.shift(); if (C.atoms[r.code]) { C.atoms[nc] = C.atoms[r.code]; delete C.atoms[r.code]; } r.code = nc;
+  });
+  const pins = kaPins(k, C.seq, cal());
+  C.groups.forEach(G => { G.pin = G.pin || {}; Object.entries(pins).forEach(([id, d]) => { if (!G.pin[id]) G.pin[id] = d; }); });
+  C.kaV = 1;
 }
 /* Parallelklassen (höchstens 2): Sequenz, Modus und Atome teilen sie sich; jede Gruppe hat eigenen Stundenplan,
    eigene Ausfälle, Häkchen, Lernstand und Abweichungen von der Sequenz (adj: Zeilen-ID -> zusätzliche Stunden). */
@@ -628,6 +678,7 @@ function applyDoc(name, data) {
     ["tt", "off", "cancelled", "done"].forEach(f => { delete c[f]; });
     c.groups = c.groups.filter(G => G && GIDS.includes(G.id)).map(G => { const x = Object.assign(newGroup(G.id), G); sortTT(x.tt); return x; });
     if (!c.groups.length) c.groups = [newGroup("a", "", defaultClass(name).groups[0].tt)];
+    if (!data.kaV) migrateKa(name, c);
     S.cls[name] = c;
   } else if (isEngDoc(name) && CLASSES.includes(ck(clsOfDoc(name)))) {
     S.eng[clsOfDoc(name)] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
@@ -852,7 +903,7 @@ function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx }) {
   return code;
 }
 /* Leistungsnachweis löschen: Kontrolle (id) oder Sequenzzeile (row). Eine selbst angelegte Einheit verschwindet mit ihrer
-   letzten Zeile; eine Klassenarbeit der Vorlage verlässt nur die Sequenz und lässt sich über „Zeile hinzufügen“ zurückholen. */
+   letzten Zeile; ein Platzhalter der Vorlage verlässt die Sequenz (rückgängig machbar). */
 function removeLn(k, { id, row, code }) {
   const C = S.cls[k], snap = snapshotFor(k); let msg = "";
   if (id) {
@@ -866,7 +917,7 @@ function removeLn(k, { id, row, code }) {
     if (C.ln && C.ln[code] && !C.seq.some(y => y.code === code)) {
       delete C.ln[code]; delete C.atoms[code]; C.checks = (C.checks || []).filter(y => y.code !== code);
       msg = `${title} gelöscht.`;
-    } else msg = `${title} aus der Sequenz entfernt. Über „Zeile hinzufügen“ lässt sie sich wieder einfügen.`;
+    } else msg = `${title} aus der Sequenz entfernt. Neu einfügen: „Zeile hinzufügen“ → Leistungsnachweis.`;
     if (/^#u-/.test(location.hash)) location.hash = "#sequenz";
   }
   UI.confirm = null; undoStack = snap; commit(k); toast(msg, true);
@@ -1000,6 +1051,7 @@ async function createYear(id, copySeq, copyTT) {
       const last = PG.tt && PG.tt.length ? sortTT(PG.tt.slice())[PG.tt.length - 1] : null;
       return newGroup(PG.id, PG.name, copyTT && last ? [{ id: uid(), frm: Y.start, lessons: cloneLessons(last.lessons) }] : clone(C.groups[0].tt).map(v => Object.assign(v, { id: uid() })));
     });
+    const pins = kaPins(k, C.seq, Y); C.groups.forEach(G => { G.pin = clone(pins); });
     save(k); GIDS.forEach(gid => save(engDoc(gkey(k, gid))));
   });
   touch(); render();
@@ -1241,7 +1293,9 @@ function viewPlan() {
 function viewSeq() {
   const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
   const used = new Set(C.seq.map(r => r.code));
-  const avail = unitOrderOf(k).filter(code => !used.has(code) || code === "P" || code === "JA");
+  const isLn = code => (unitOf(k, code) || {}).lb === "test";
+  const avail = unitOrderOf(k).filter(code => !isLn(code) && code !== "P" && code !== "JA" && !used.has(code));
+  const generic = [["__ln", "Leistungsnachweis (Klassenarbeit, neuer Platzhalter)"], ["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
   const lbh = lbHours(k);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
@@ -1270,7 +1324,7 @@ function viewSeq() {
     </div>
     <div class="tscroll"><table class="seq"><thead><tr><th>#</th><th>Kürzel</th><th>Einheit</th><th>Strang</th><th>Stunden</th><th>Zeitraum</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="addrow card">
-      <label>Zeile hinzufügen <select id="addcode">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</select></label>
+      <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
       <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
       <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
       <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
@@ -1710,7 +1764,7 @@ function addGroup(k) {
   const C = S.cls[k]; if (C.groups.length >= GIDS.length) return;
   const id = GIDS.find(x => !C.groups.some(G => G.id === x)), base = C.groups[0];
   const snap = snapshotFor(k);
-  C.groups.push(newGroup(id, "", base.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))));
+  C.groups.push(Object.assign(newGroup(id, "", base.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))), { pin: clone(base.pin || {}) }));
   S.eng[gkey(k, id)] = defaultEngine();
   UI.gid[k] = id; try { localStorage.setItem("mp-gid", JSON.stringify(UI.gid)); } catch (e) {}
   undoStack = snap; commit(k, { eng: true }); toast("Parallelklasse angelegt. Der Stundenplan ist kopiert, bitte anpassen.", true);
@@ -1791,10 +1845,16 @@ document.addEventListener("click", ev => {
     case "del": { const snap = snapshotFor(k); const code = S.cls[k].seq[i].code; S.cls[k].seq.splice(i, 1); undoStack = snap; commit(k); toast(`${code} aus der Sequenz entfernt.`, true); break; }
     case "addrow": {
       const code = document.getElementById("addcode").value, strand = document.getElementById("addstrand").value, h = Math.max(0, +document.getElementById("addhrs").value || 0);
+      if (code === "__ln") {
+        // allgemeiner Leistungsnachweis am Ende: 1 Std. = nur die Arbeit, 2 = mit Rückgabe, 3 und mehr = mit Wiederholung davor
+        const hh = Math.max(1, h), rueck = hh >= 2, wdh = hh >= 3, c2 = addLn(k, { kind: "ka", topic: "", hours: Math.max(1, hh - (rueck ? 1 : 0) - (wdh ? 1 : 0)), wdh, rueck, afterIdx: S.cls[k].seq.length - 1 });
+        if (c2 && S.cls[k].mode !== "nacheinander") { S.cls[k].seq[S.cls[k].seq.length - 1].strand = strand; commit(k); }
+        break;
+      }
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
-    case "reset": S.cls[k] = Object.assign(defaultClass(k), { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {} })) }); UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "reset": { const d0 = defaultClass(k); S.cls[k] = Object.assign(d0, { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {}, pin: kaPins(k, d0.seq, cal()) })) }); } UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
     case "resetall": { resetYearState(); CLASSES.forEach(c => { save(c); GIDS.forEach(gid => save(engDoc(gkey(c, gid)))); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
@@ -1956,7 +2016,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, kaDates, migrateKa, defaultClass, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
