@@ -119,8 +119,11 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
 - `from_lehrplan.py`: Klassen aus `lehrplan.json`; Klassenarbeiten über `ka_unit()` als vier Platzhalter (`ka_count = 4`).
 - `build_data.py`: GYM 6/8 aus `plan.json` + `atoms*.py`, ersetzt deren Klassenarbeiten durch KA1–KA4 (bei zwei Strängen
   abwechselnd A/B, `oldKA` merkt die alten Kürzel für die Migration), hängt `g` aus `generator_map.json` an die Atome.
+- `atoms_lehrplan/<id>.json`: rund ein Atom je Stunde mit neuem Stoff (GYM 5–12, OS 5–10), nach Stunde sortiert; die
+  Atom-ID ist die Position in der Einheit (`<Einheit>.<n>`). Wer Atome einfügt, muss `generator_map.json` mit umnummerieren.
 - `generator_map.json`: Zuordnung prüfen, wenn Generatoren schwierigere Varianten mischen (z. B. negative Zahlen auf Stufe 3
-  bei `algebra__gleichungen_inhaltlich_loesen` – deshalb nicht in OS 5). Stufenzuordnung `GEN_STAGE = {1:0, 2:1, 3:3}`.
+  bei `algebra__gleichungen_inhaltlich_loesen` – deshalb nicht in OS 5). Ebenso ab Stufe 2 negative Koordinaten bei
+  `geometrie__koordinatensystem` (nicht in Kl. 5) und ℤ/negative Zahlen bei `logik__mengen_zahlbereiche` (nicht in OS 6). Stufenzuordnung `GEN_STAGE = {1:0, 2:1, 3:3}`.
 
 ## Tests (`src/test.js`)
 
