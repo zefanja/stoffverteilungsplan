@@ -291,6 +291,34 @@ details.ziele p{margin:0;font-size:14px}
 .lnlist td:first-child{width:1%}
 .lnlist td.right{text-align:right;width:1%}
 .lnterm{display:grid;gap:8px;justify-items:start}
+.dpbtn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--sheet);color:var(--ink);cursor:pointer;white-space:nowrap}
+.dpbtn:hover{border-color:var(--accent)}
+.dpico{color:var(--muted);font-size:12px}
+.dpwrap{display:block}
+#dpop{position:absolute;z-index:30;background:var(--sheet);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:10px;display:grid;gap:8px}
+.dph{display:flex;align-items:center;gap:6px}
+.dph b{flex:1;text-align:center;font-size:14px}
+.dph .iconbtn.sm{width:26px;height:26px;font-size:16px}
+.dpg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dpw{font-size:11px;color:var(--muted);text-align:center;font-weight:600}
+.dpc{position:relative;height:32px;border:1px solid transparent;border-radius:6px;background:none;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+button.dpc:hover{border-color:var(--accent)}
+.dpc.pad{cursor:default}
+.dpc.we{color:var(--muted)}
+.dpc.off{background:repeating-linear-gradient(135deg,var(--soft),var(--soft) 4px,transparent 4px,transparent 8px);color:var(--muted)}
+.dpc.math{background:var(--accent-bg);font-weight:600}
+.dpc.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.dpc.today{border-color:var(--muted)}
+.dpc.out{opacity:.3;cursor:not-allowed}
+.dp2{position:absolute;top:1px;right:3px;font-size:9px;font-style:normal;font-weight:700;color:var(--accent)}
+.dpc.sel .dp2{color:var(--accent-ink)}
+.dpdot{position:absolute;bottom:3px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--warn)}
+.dpl{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted)}
+.dpl span{display:inline-flex;align-items:center;gap:5px}
+.dpl .dp2,.dpl .dpdot{position:static;margin:0}
+.lg{display:inline-block;width:14px;height:12px;border-radius:3px}
+.lg.math{background:var(--accent-bg);border:1px solid var(--accent)}
+.lg.off{background:repeating-linear-gradient(135deg,var(--line),var(--line) 3px,transparent 3px,transparent 6px)}
 .lndurl{display:flex;align-items:center;gap:8px;font-size:13px}
 .chkdursel{font:inherit;font-size:12px;padding:1px 4px}
 .lnlist td{vertical-align:middle}

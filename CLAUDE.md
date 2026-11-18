@@ -95,6 +95,9 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   Dauern in `LN_DURS`, Kontrollen in `CHECK_KINDS` (`C.checks[]`: `kind`, `title`, `code`, `n`, `dur`, ggf. `row`).
 - Wichtige Funktionen: `addLn`, `addShortTest` (Test 20/30 min als Kontrolle), `setLnDate`, `setLnDur`, `setCheckDate`,
   `removeLn`, `lnDates(g)` (Liste aller Termine), `kaDates(k, Y)`/`kaPins` (Standardtermine aus den Ferien).
+- Termine wählt man im eigenen Kalender (`dpButton`, `dpOpen`, `renderDp`, `dpPick`; Element `#dpop` am `body`, Zustand
+  `UI.dp`), nicht mehr im Browser-Datumsfeld. Im Formular trägt `dpPick` das Datum in das versteckte `#lndate` ein.
+  Tests nutzen `pickDp(selektor, datum)` (öffnet, springt per `__mp.dpMove(0)` zum Monat, klickt `[data-d=…]`).
 - Generatoren: `genTask`/`shownTask`; LaTeX in `\( … \)` rendert `gx()`, normaler Text läuft durch `mx()`.
   SVG-Skizzen der Generatoren haben nur `viewBox` → Container braucht feste Breite (`.gsvg`).
 

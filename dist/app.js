@@ -1648,9 +1648,60 @@ function viewSeq() {
 /* Datumsfeld eines Leistungsnachweises: Datum eingeben genügt, der Plan passt sich an. */
 function lnDateInput(k, x) {
   const Y = cal(), v = x.date || "";
-  const inp = x.inLesson ? `<input type="date" data-act="chkdate" data-id="${esc(x.id)}" data-k="${k}" value="${esc(v)}" min="${esc(Y.start)}" max="${esc(Y.end)}" aria-label="Datum">`
-    : `<input type="date" data-act="lndate" data-row="${esc(x.row)}" data-k="${k}" value="${esc(v)}" min="${esc(Y.start)}" max="${esc(Y.end)}" aria-label="Datum">`;
+  const inp = x.inLesson ? dpButton({ t: "chk", id: x.id }, v) : dpButton({ t: "ln", row: x.row }, v);
   return `<span class="lndate">${inp}<span class="mono small muted">${x.date ? `${DAYS[dow(x.date)]}, ${x.period}. Std.` : `<span class="neg">nicht eingeplant</span>`}</span>${x.pinned ? `<span class="pill lnp" title="Fester Termin für ${esc(groupName(k))}">fest</span><button type="button" class="linkbtn small" data-act="lnunpin" data-row="${esc(x.row)}" data-k="${k}">lösen</button>` : ""}</span>`;
+}
+/* ---------------- Kalender für Termine ----------------
+   Eigener Monatskalender statt des Browser-Datumsfelds: markiert Ferien und schulfreie Tage, Tage mit Mathe-Unterricht
+   der gewählten (Parallel-)Klasse (Doppelstunden mit „2“) und Tage mit anderen Leistungsnachweisen. Jeder Tag im
+   Schuljahr ist wählbar; liegt dort keine Mathestunde, nimmt der Plan wie bisher die nächste.
+   Ziel (t): "ln" = fester Termin einer Sequenzzeile (row), "chk" = Kontrolle (id), "form" = Formular „Leistungsnachweis anlegen“. */
+const fmtDp = d => d ? fmt(d, { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+const dpData = o => Object.entries(o).map(([a, b]) => `data-${a}="${esc(b)}"`).join(" ");
+function dpButton(target, value) {
+  return `<button type="button" class="dpbtn" data-act="dp" ${dpData(target)} data-v="${esc(value || "")}" aria-haspopup="dialog">${value ? esc(fmtDp(value)) : "Datum wählen"}<span class="dpico" aria-hidden="true">▦</span></button>`;
+}
+function dpOpen(b) {
+  const Y = cal(), v = b.dataset.v || "", r = b.getBoundingClientRect();
+  const start = v || (UI.date >= Y.start && UI.date <= Y.end ? UI.date : Y.start);
+  UI.dp = { t: b.dataset.t, row: b.dataset.row, id: b.dataset.id, v, month: start.slice(0, 7), x: r.left + window.scrollX, y: r.bottom + window.scrollY + 4 };
+  renderDp();
+}
+function dpClose() { UI.dp = null; renderDp(); }
+function dpMove(n) { const [y, m] = UI.dp.month.split("-").map(Number), d = new Date(Date.UTC(y, m - 1 + n, 1)); UI.dp.month = d.toISOString().slice(0, 7); renderDp(); }
+function renderDp() {
+  let el = document.getElementById("dpop");
+  if (!UI.dp) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "dpop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Termin wählen"); document.body.appendChild(el); }
+  const g = curG(), Y = cal(), sc = schedule(g), dp = UI.dp, [yy, mm] = dp.month.split("-").map(Number);
+  const first = `${dp.month}-01`, days = new Date(Date.UTC(yy, mm, 0)).getUTCDate(), lead = (dow(first) + 6) % 7;
+  const own = dp.t === "ln" ? dp.row : dp.t === "chk" ? dp.id : null;
+  const lnOn = {}; lnDates(g).forEach(x => { if (x.date && (x.inLesson ? x.id : x.row) !== own) (lnOn[x.date] = lnOn[x.date] || []).push(`${x.kind}${x.inLesson ? "" : " " + x.code}`); });
+  let cells = "";
+  for (let i = 0; i < lead; i++) cells += `<span class="dpc pad"></span>`;
+  for (let n = 1; n <= days; n++) {
+    const d = `${dp.month}-${String(n).padStart(2, "0")}`, w = dow(d), info = sc.dayInfo[d], inYear = d >= Y.start && d <= Y.end;
+    const math = (sc.byDate[d] || []).filter(x => x.track !== "SOL" && !x.cancelled), dbl = math.some((x, i) => math.some(y => y.period === x.period + 1));
+    const off = w > 5 || (info && !info.school), cls = ["dpc", w > 5 ? "we" : "", info && !info.school ? "off" : "", math.length ? "math" : "", d === dp.v ? "sel" : "", d === todayIso() ? "today" : ""].filter(Boolean).join(" ");
+    const tip = [fmtDp(d), info && !info.school ? info.note : "", math.length ? `Mathe: ${math.map(x => x.period + ".").join(", ")} Std.` : (!off && inYear ? "keine Mathestunde" : ""), ...(lnOn[d] || [])].filter(Boolean).join(" · ");
+    cells += inYear ? `<button type="button" class="${cls}" data-act="dpday" data-d="${d}" title="${esc(tip)}" aria-label="${esc(tip)}">${n}${dbl ? `<i class="dp2">2</i>` : ""}${lnOn[d] ? `<i class="dpdot"></i>` : ""}</button>`
+      : `<span class="${cls} out" title="${esc(fmtDp(d))}: außerhalb des Schuljahres">${n}</span>`;
+  }
+  const can = n => { const [y2, m2] = dp.month.split("-").map(Number), d = new Date(Date.UTC(y2, m2 - 1 + n, 1)).toISOString().slice(0, 7); return n < 0 ? d >= Y.start.slice(0, 7) : d <= Y.end.slice(0, 7); };
+  el.innerHTML = `<div class="dph"><button type="button" class="mini" data-act="dpmove" data-n="-1" ${can(-1) ? "" : "disabled"} aria-label="Vormonat">‹</button>
+      <b>${esc(new Date(Date.UTC(yy, mm - 1, 1)).toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" }))}</b>
+      <button type="button" class="mini" data-act="dpmove" data-n="1" ${can(1) ? "" : "disabled"} aria-label="Nächster Monat">›</button>
+      <button type="button" class="iconbtn sm" data-act="dpclose" aria-label="Schließen">×</button></div>
+    <div class="dpg">${["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(x => `<span class="dpw">${x}</span>`).join("")}${cells}</div>
+    <div class="dpl small"><span><i class="lg math"></i>Mathe (${esc(groupName(g))})</span><span><i class="dp2">2</i> Doppelstunde</span><span><i class="lg off"></i>Ferien / frei</span><span><i class="dpdot"></i> Leistungsnachweis</span></div>`;
+  const w = Math.min(300, window.innerWidth - 16), x = Math.max(8, Math.min(dp.x, window.scrollX + window.innerWidth - w - 8));
+  el.style.left = x + "px"; el.style.top = dp.y + "px"; el.style.width = w + "px";
+}
+function dpPick(d) {
+  const dp = UI.dp; if (!dp) return; UI.dp = null; renderDp();
+  if (dp.t === "ln") setLnDate(curG(), dp.row, d);
+  else if (dp.t === "chk") setCheckDate(curG(), dp.id, d);
+  else { const inp = document.getElementById("lndate"), b = document.querySelector('.dpbtn[data-t="form"]'); if (inp) inp.value = d; if (b) { b.dataset.v = d; b.innerHTML = `${esc(fmtDp(d))}<span class="dpico" aria-hidden="true">▦</span>`; } }
 }
 /* Kurzer Test: Wiederholungs- und Rückgabestunde entfallen, die Felder werden ausgegraut. */
 function lnFormSync() {
@@ -1670,7 +1721,7 @@ function lnCard(k) {
       <label>Dauer <select id="lndur">${durOptions("ka", K0.dur)}</select></label>
       <label class="chk"><input type="checkbox" id="lnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
       <label class="chk"><input type="checkbox" id="lnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
-      <label>Termin <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
+      <label>Termin <span class="dpwrap"><input type="hidden" id="lndate" value="">${dpButton({ t: "form" }, "")}</span></label>
       <label class="wide">ohne Termin: einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
       <button type="button" class="btn" data-act="lnadd">Anlegen</button>
     </div>
@@ -2162,7 +2213,7 @@ function renderNow() {
 }
 let lastRoute = null;
 window.addEventListener("hashchange", () => {
-  UI.editAtom = null; UI.chkForm = null; UI.confirm = null; render.keepScroll = false; render();
+  UI.editAtom = null; UI.chkForm = null; UI.confirm = null; UI.dp = null; renderDp(); render.keepScroll = false; render();
   if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }
 });
 
@@ -2198,6 +2249,8 @@ function closeOverlay() { leaveQuizFullscreen(); UI.quiz = null; UI.solOpen = fa
 const ttVersion = (g, id) => (grp(g).tt || []).find(v => v.id === id);
 function setSeq(k, fn) { const C = S.cls[k]; fn(C.seq); commit(k); }
 document.addEventListener("click", ev => {
+  // Kalender: Klick daneben schließt ihn
+  if (UI.dp && !ev.target.closest("#dpop") && !ev.target.closest('[data-act="dp"]')) dpClose();
   // Klick auf die gerade offene Seite in der Navigation: nach oben (es gibt kein hashchange)
   const nl = ev.target.closest("#nav a"); if (nl && nl.getAttribute("href") === location.hash) { window.scrollTo(0, 0); return; }
   const b = ev.target.closest("[data-act]"); if (!b) return;
@@ -2281,6 +2334,10 @@ document.addEventListener("click", ev => {
       break;
     }
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
+    case "dp": if (UI.dp && UI.dp.t === b.dataset.t && UI.dp.row === b.dataset.row && UI.dp.id === b.dataset.id) dpClose(); else dpOpen(b); break;
+    case "dpday": dpPick(b.dataset.d); break;
+    case "dpmove": dpMove(+b.dataset.n); break;
+    case "dpclose": dpClose(); break;
     case "lnremove": removeLn(k, { id: b.dataset.id, row: b.dataset.row, code: b.dataset.code }); break;
     case "chknew": UI.chkForm = { code: b.dataset.code, n: +b.dataset.l }; render(); break;
     case "chkcancel": UI.chkForm = null; render(); break;
@@ -2424,6 +2481,7 @@ document.addEventListener("drop", ev => {
   ev.preventDefault(); const d = dragAtom; dragAtom = null; moveAtom(UI.cls, d.code, d.id, +t.dataset.drop);
 });
 document.addEventListener("keydown", ev => {
+  if (UI.dp && ev.key === "Escape") { dpClose(); return; }
   if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
   if (!UI.quiz && !UI.solOpen) return;
   if (ev.key === "Escape") { closeOverlay(); return; }
@@ -2435,7 +2493,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
