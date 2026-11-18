@@ -75,14 +75,15 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   KA 3 kurz vor den Osterferien (Ende 3. Quartal), KA 4 2–3 Wochen nach den Pfingstferien; endet die Klasse früher (GYM 12,
   OS 10), verteilen sich die letzten bis eine Woche vor dem letzten Unterrichtstag. Gespeicherte Pläne werden einmal
   umgestellt (alte Klassenarbeiten → Platzhalter, Standardtermine, sofern kein eigener Termin gesetzt ist). In „Zeile
-  hinzufügen“ stehen nur allgemeine Einträge (Leistungsnachweis, Puffer, Jahresabschluss) und noch nicht eingeplante Einheiten.
+  hinzufügen“ stehen nur Puffer, Jahresabschluss und noch nicht eingeplante Einheiten; Leistungsnachweise legt man ausschließlich
+  im Formular „Leistungsnachweis anlegen“ über der Liste der Leistungsnachweise an.
   Dauer: Klassenarbeiten, Klausuren, Tests usw. dauern 45 oder 90 min (beim Anlegen und in der Termin-Karte einstellbar,
   `S.cls[k].lnDur`); 90 min belegen zwei Unterrichtsstunden, die Sequenzzeile wächst bzw. schrumpft entsprechend, und die
   Termin-Karte warnt, wenn am Termin keine Doppelstunde liegt. Kurzkontrollen dauern 20 oder 30 min; die Stunde zeigt die
   verbleibende Unterrichtszeit, ab 45 min Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern.
   Rückgabe und Berichtigung liegen nie in derselben (Doppel-)Stunde wie die Arbeit, sondern frühestens in der nächsten Stunde
   desselben Strangs an einem späteren Tag; die freie Hälfte der Doppelstunde bekommt der nachfolgende Stoff.
-  Beim Anlegen (Formular oder „Zeile hinzufügen“ → Leistungsnachweis) lässt sich gleich ein Termin eingeben. Die Einheitenübersicht
+  Beim Anlegen lässt sich gleich ein Termin eingeben (ohne Termin: Einfügen hinter einer Zeile der Sequenz). Die Einheitenübersicht
   zeigt keine Leistungsnachweise; ihre Seite erreicht man über die Übersicht „Leistungsnachweise“.
 - **Leistungsnachweise** (Sequenz → Leistungsnachweise): Klassenarbeit, Klausur, Test/Leistungskontrolle, Präsentation und
   Komplexe Leistung/Projekt anlegen und hinter einer beliebigen Zeile der Sequenz einfügen. Sie bekommen eigene Stunden

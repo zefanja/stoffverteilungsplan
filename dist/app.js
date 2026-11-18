@@ -1550,7 +1550,7 @@ function viewSeq() {
   const used = new Set(C.seq.map(r => r.code));
   const isLn = code => (unitOf(k, code) || {}).lb === "test";
   const avail = unitOrderOf(k).filter(code => !isLn(code) && code !== "P" && code !== "JA" && !used.has(code));
-  const generic = [["__ln", "Leistungsnachweis"], ["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
+  const generic = [["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
   const lbh = lbHours(k);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
@@ -1583,7 +1583,6 @@ function viewSeq() {
       <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
       <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
       <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
-      <label id="adddatebox">Termin (optional) <input type="date" id="adddate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
       <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
     </div>
     ${lnCard(k)}
@@ -1608,17 +1607,17 @@ function lnCard(k) {
   const list = lnDates(k).map(x => `<tr><td class="nowrap">${lnDateInput(k, x)}</td>
     <td><span class="pill">${esc(x.kind)} · ${x.dur} min</span></td><td>${unitLink(k, x.code)} ${x.inLesson ? `<span class="small muted">Stunde ${x.n}</span> ` : ""}${x.inLesson ? esc(x.title) : ""}</td><td class="nowrap right">${lnDelBtn(k, x)}</td></tr>`).join("");
   return `<div class="card lncard"><h3>Leistungsnachweise</h3>
-    ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
-    <div class="lnform">
+    <div class="lnform"><div class="lnformh">Leistungsnachweis anlegen</div>
       <label>Art <select id="lnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
       <label class="wide">Thema <input id="lntopic" placeholder="z. B. Lineare Funktionen"></label>
       <label>Dauer <select id="lndur"><option value="45" ${K0.dur === 45 ? "selected" : ""}>45 min (1 Stunde)</option><option value="90" ${K0.dur === 90 ? "selected" : ""}>90 min (2 Stunden)</option></select></label>
       <label class="chk"><input type="checkbox" id="lnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
       <label class="chk"><input type="checkbox" id="lnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
-      <label>Termin (optional) <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
-      <label class="wide">Einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
-      <button type="button" class="btn" data-act="lnadd">Anlegen und einfügen</button>
+      <label>Termin <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
+      <label class="wide">ohne Termin: einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
+      <button type="button" class="btn" data-act="lnadd">Anlegen</button>
     </div>
+    ${list ? `<div class="tscroll"><table class="form lnlist"><tbody>${list}</tbody></table></div>` : `<p class="small muted">Noch keine Leistungsnachweise in der Sequenz.</p>`}
     <p class="small muted">Mit Termin liegt der neue Leistungsnachweis fest an diesem Tag, ohne Termin hinter der gewählten Zeile. Termin ändern: einfach ein Datum eingeben. Die Arbeit liegt dann fest an diesem Tag${S.cls[ck(k)].groups.length > 1 ? ` (für ${esc(groupName(k))})` : ""}, der übrige Plan läuft darum herum; „lösen“ gibt den Termin wieder frei. Klassenarbeit, Klausur, Test, Präsentation und Projekt bekommen eigene Stunden in der Sequenz, der Plan rückt nach. Kurzkontrollen und andere Bewertungen in einer Stunde legst du in der Einheit bei der jeweiligen Stunde an („+ Kontrolle“).</p></div>`;
 }
 
@@ -2133,14 +2132,6 @@ document.addEventListener("click", ev => {
     case "del": { const snap = snapshotFor(k); const code = S.cls[k].seq[i].code; S.cls[k].seq.splice(i, 1); undoStack = snap; commit(k); toast(`${code} aus der Sequenz entfernt.`, true); break; }
     case "addrow": {
       const code = document.getElementById("addcode").value, strand = document.getElementById("addstrand").value, h = Math.max(0, +document.getElementById("addhrs").value || 0);
-      if (code === "__ln") {
-        // allgemeiner Leistungsnachweis am Ende: 1 Std. = nur die Arbeit, 2 = mit Rückgabe, 3 und mehr = mit Wiederholung davor
-        const hh = Math.max(1, h), rueck = hh >= 2, wdh = hh >= 3, C2 = S.cls[k];
-        const before = C2.seq.length, c2 = addLn(k, { kind: "ka", topic: "", hours: Math.max(1, hh - (rueck ? 1 : 0) - (wdh ? 1 : 0)), wdh, rueck, afterIdx: before - 1, date: document.getElementById("adddate").value, g: curG() });
-        const nr = c2 && C2.seq.find(r => r.code === c2);
-        if (nr && C2.mode !== "nacheinander" && nr.strand !== strand) { nr.strand = strand; commit(k); }
-        break;
-      }
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
@@ -2237,7 +2228,6 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
-  if (t.id === "addcode") { const bx = document.getElementById("adddatebox"); if (bx) bx.hidden = t.value !== "__ln"; return; }
   if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lndur").value = String(K.dur); v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; } return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;

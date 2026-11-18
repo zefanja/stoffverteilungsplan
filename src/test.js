@@ -419,7 +419,7 @@ function serve(dir) {
   const del0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA2'); return { n: M.S.cls.kl8.seq.length, row: x.row }; });
   await p.click(`.lncard [data-act="confirm"][data-v="lnx-${del0.row}"]`); await p.waitForTimeout(100);
   await p.click(`.lncard [data-act="lnremove"][data-row="${del0.row}"]`); await p.waitForTimeout(200);
-  const del1 = await p.evaluate(() => { const M = window.__mp; return { n: M.S.cls.kl8.seq.length, ka2: M.lnDates('kl8.a').some(y => y.code === 'KA2'), avail: [...document.querySelectorAll('#addcode option')].some(o => o.value === '__ln') }; });
+  const del1 = await p.evaluate(() => { const M = window.__mp; return { n: M.S.cls.kl8.seq.length, ka2: M.lnDates('kl8.a').some(y => y.code === 'KA2'), avail: !!document.querySelector('.lncard #lnkind') }; });
   await p.click('.lncard [data-act="confirm"][data-v="lnx-cdel"]'); await p.waitForTimeout(100);
   await p.click('.lncard [data-act="lnremove"][data-id="cdel"]'); await p.waitForTimeout(200);
   const del2 = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
@@ -436,25 +436,18 @@ function serve(dir) {
     'Vier Klassenarbeits-Platzhalter je Klasse: vor den Herbstferien, nach Weihnachten, vor Ostern, nach Pfingsten; GYM 12 vor Ostern ' + JSON.stringify(kaD));
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   const addOpts = await p.evaluate(() => [...document.querySelectorAll('#addcode option')].map(o => o.value));
-  const nLn0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
-  await p.selectOption('#addcode', '__ln'); await p.fill('#addhrs', '2'); await p.click('[data-act="addrow"]'); await p.waitForTimeout(200);
-  const addLnRes = await p.evaluate(() => { const C = window.__mp.S.cls.kl8, r = C.seq[C.seq.length - 1]; return [C.seq.length, r.code, r.hours, C.ln[r.code] && C.ln[r.code].stunden.join('/')]; });
-  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
-  ok(addOpts[0] === '__ln' && addOpts.includes('P') && !addOpts.some(v => /KA/.test(v)) && addLnRes[0] === nLn0 + 1 && addLnRes[1] === 'KA5' && addLnRes[2] === 2 && addLnRes[3] === 'Klassenarbeit/Rückgabe und Berichtigung',
-    'Zeile hinzufügen: nur allgemein Leistungsnachweis/Puffer, keine einzelnen Klassenarbeiten; Leistungsnachweis legt einen neuen Platzhalter an ' + JSON.stringify([addOpts.slice(0, 4), addLnRes]));
-  // Leistungsnachweis mit Termin anlegen (Zeile hinzufügen und Formular); ein Rückgängig entfernt alles
+  const formFirst = await p.evaluate(() => { const c = document.querySelector('.lncard'), f = c.querySelector('.lnform'), l = c.querySelector('.lnlist'); return !!f && (!l || !!(f.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING)); });
+  ok(!addOpts.includes('__ln') && addOpts.includes('P') && !addOpts.some(v => /KA/.test(v)) && formFirst,
+    'Zeile hinzufügen: nur Puffer/Jahresabschluss und Einheiten; Leistungsnachweise nur über das Formular über der Liste ' + JSON.stringify([addOpts.slice(0, 4), formFirst]));
+  // Leistungsnachweis mit Termin über das Formular anlegen; ein Rückgängig entfernt alles
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   const lnT0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
-  await p.selectOption('#addcode', '__ln'); await p.fill('#addhrs', '1'); await p.fill('#adddate', '2026-12-08'); await p.click('[data-act="addrow"]'); await p.waitForTimeout(250);
-  const lnT1 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA5'); return x ? [x.date, x.pinned] : null; });
+  await p.selectOption('#lnkind', 'ka'); await p.selectOption('#lndur', '45'); await p.fill('#lndate', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  const lnT1 = await p.evaluate(() => { const x = window.__mp.lnDates('kl8.a').find(y => y.code === 'KA5'); return x ? [x.date, x.pinned] : null; });
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
   const lnT2 = await p.evaluate(() => [window.__mp.S.cls.kl8.seq.length, Object.keys(window.__mp.S.cls.kl8.ln || {}).length]);
-  await p.selectOption('#lnkind', 'test'); await p.fill('#lndate', '2027-02-23'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
-  const lnT3 = await p.evaluate(() => { const x = window.__mp.lnDates('kl8.a').find(y => y.code === 'LK1'); return x ? [x.date, x.pinned] : null; });
-  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
-  const boxHidden = await p.evaluate(() => { const sel = document.getElementById('addcode'); sel.value = 'P'; sel.dispatchEvent(new Event('change', { bubbles: true })); return document.getElementById('adddatebox').hidden; });
-  ok(lnT1 && lnT1[0] >= '2026-12-08' && lnT1[0] <= '2026-12-11' && lnT1[1] === '2026-12-08' && lnT2[0] === lnT0 && lnT2[1] === 0 && lnT3 && lnT3[1] === '2027-02-23' && boxHidden,
-    'Leistungsnachweis mit Termin anlegen: fest am Datum, ein Rückgängig entfernt ihn, Terminfeld nur bei Leistungsnachweis ' + JSON.stringify([lnT1, lnT2, lnT3, boxHidden]));
+  ok(lnT1 && lnT1[0] >= '2026-12-08' && lnT1[0] <= '2026-12-11' && lnT1[1] === '2026-12-08' && lnT2[0] === lnT0 && lnT2[1] === 0,
+    'Leistungsnachweis mit Termin anlegen: fest am Datum, ein Rückgängig entfernt ihn ' + JSON.stringify([lnT1, lnT2]));
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
   const unitsNoLn = await p.evaluate(() => ({ ln: [...document.querySelectorAll('.ucard .chip b')].some(b => /^KA\d|^LK\d/.test(b.textContent)), head: [...document.querySelectorAll('.lbh')].some(h => /Leistungsnachweis|Klassenarbeit/.test(h.textContent)) }));
   ok(!unitsNoLn.ln && !unitsNoLn.head, 'Einheitenübersicht ohne Leistungsnachweise ' + JSON.stringify(unitsNoLn));
