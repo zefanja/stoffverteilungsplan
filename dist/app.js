@@ -1941,13 +1941,47 @@ function tplCard(g) {
 /* ---------------- Einrichtungsassistent ----------------
    Schritte: 0 Willkommen/Schuljahr · 1 Meine Klassen · 2 Unterrichtszeiten · 3 Fertig.
    Startet von selbst, solange im Schuljahr keine Klassen festgelegt sind und der Assistent nicht beendet wurde. */
-const OB_STEPS = ["Schuljahr", "Klassen", "Unterrichtszeiten", "Fertig"];
+const OB_STEPS = ["Schuljahr", "Klassen", "Planung", "Unterrichtszeiten", "Fertig"];
 const OB_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 function obVersion(g) {
   const vs = sortTT(grp(g).tt);
   return vs.filter(v => v.frm <= UI.date).pop() || vs[0];
 }
-function obTracks(k) { const c = D.classes[k]; return ["A"].concat(c.mode === "Stränge" || (S.cls[k] && S.cls[k].mode === "Stränge") ? ["B"] : [], c.sol ? ["SOL"] : []); }
+function obTracks(k) { const c = D.classes[k]; return ["A"].concat(S.cls[k] && S.cls[k].mode === "Stränge" ? ["B"] : [], c.sol ? ["SOL"] : []); }
+/* Planung je Klasse: „nacheinander“ (ein Strang, Standard) oder „in Strängen“ mit Lernbereichen in Strang A oder B.
+   Der Stundenplan bleibt beim Umschalten unverändert; im Modus „nacheinander“ zählen B-Stunden als A-Stunden. */
+const isUnitRow = (k, r) => { const u = unitOf(k, r.code); return !!u && r.code !== "P" && r.code !== "JA" && u.lb !== "test"; };
+function obLbs(k) {
+  const C = S.cls[k], c = D.classes[k], out = [];
+  C.seq.forEach(r => { if (!isUnitRow(k, r)) return; const lb = unitOf(k, r.code).lb; if (!out.includes(lb)) out.push(lb); });
+  return out.map(lb => ({ lb, name: c.lbnames[lb] || lb }));
+}
+const obLbStrand = (k, lb) => { const rs = S.cls[k].seq.filter(r => isUnitRow(k, r) && unitOf(k, r.code).lb === lb); return rs.filter(r => r.strand === "B").length > rs.length / 2 ? "B" : "A"; };
+/* Puffer folgen dem Strang der Einheit davor */
+function obFixBuffers(k) { let last = "A"; S.cls[k].seq.forEach(r => { if (isUnitRow(k, r)) last = r.strand === "B" ? "B" : "A"; else if (r.code === "P") r.strand = last; }); }
+function setLbStrand(k, lb, strand) {
+  S.cls[k].seq.forEach(r => { if (isUnitRow(k, r) && unitOf(k, r.code).lb === lb) r.strand = strand; });
+  obFixBuffers(k); commit(k);
+}
+function setClassMode(k, mode, quiet) {
+  const C = S.cls[k]; C.mode = mode; C.obMode = 1;
+  // Erstmals in Strängen und noch alles in A: Lernbereiche abwechselnd A, B, A … verteilen
+  if (mode === "Stränge" && !C.seq.some(r => isUnitRow(k, r) && r.strand === "B")) {
+    obLbs(k).forEach(({ lb }, i) => C.seq.forEach(r => { if (isUnitRow(k, r) && unitOf(k, r.code).lb === lb) r.strand = i % 2 ? "B" : "A"; }));
+    obFixBuffers(k);
+  }
+  if (quiet) { touch(); save(k); } else commit(k);
+}
+function obPlanCard(k) {
+  const C = S.cls[k], str = C.mode === "Stränge", hrs = { A: 0, B: 0 };
+  if (str) C.seq.forEach(r => { if (r.code !== "JA" && (unitOf(k, r.code) || {}).lb !== "test") hrs[r.strand === "B" ? "B" : "A"] += +r.hours || 0; });
+  return `<div class="card obplan"><div class="obh"><b>${esc(((TYPES[D.classes[k].type] || {}).short || "") + " · " + D.classes[k].label)}</b></div>
+    <div class="seg small" role="group" aria-label="Planung">${[["nacheinander", "Nacheinander"], ["Stränge", "In Strängen"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="obmode" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>
+    ${str ? `<table class="form oblbs"><tbody>${obLbs(k).map(({ lb, name }) => `<tr><td>${esc(name)}</td><td><select data-act="oblb" data-k="${k}" data-lb="${esc(lb)}" aria-label="Strang für ${esc(name)}">${["A", "B"].map(t => `<option ${obLbStrand(k, lb) === t ? "selected" : ""}>${t}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table>
+      <p class="small muted">Strang A: ${hrs.A} Std. · Strang B: ${hrs.B} Std. Puffer folgen dem Lernbereich davor. Im nächsten Schritt gehört jede Stunde zu Strang A oder B.</p>` : `<p class="small muted">Alle Einheiten nacheinander in der Reihenfolge der Sequenz.</p>`}</div>`;
+}
+/* Beim ersten Betreten des Schritts „Planung“ gilt für jede gewählte Klasse „nacheinander“. */
+function obDefaults() { mineList().forEach(k => { if (S.cls[k] && !S.cls[k].obMode) setClassMode(k, "nacheinander", true); }); }
 function obGrid(g) {
   const k = ck(g), v = obVersion(g);
   if (!v) return "";
@@ -1957,7 +1991,8 @@ function obGrid(g) {
     <table><thead><tr><th></th>${[1, 2, 3, 4, 5].map(d => `<th>${DAYS[d]}</th>`).join("")}</tr></thead><tbody>
     ${OB_PERIODS.map(p => `<tr><th class="mono">${p}.</th>${[1, 2, 3, 4, 5].map(d => { const l = at(d, p);
       const part = l && lessonLen(l) === 2 ? (p === +l.period ? " dtop" : " dbot") : "";
-      return `<td><button type="button" class="obcell ${l ? "on" : ""}${part}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde${part ? ", Doppelstunde" : ""}">${l ? (multi ? esc(l.track === "SOL" ? "FIL" : l.track) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
+      const tl = l && (obTracks(k).includes(l.track) ? l.track : "A");
+      return `<td><button type="button" class="obcell ${l ? "on" : ""}${part}" data-act="obcell" data-g="${g}" data-d="${d}" data-p="${p}" aria-pressed="${!!l}" aria-label="${DAYS[d]}, ${p}. Stunde${part ? ", Doppelstunde" : ""}">${l ? (multi ? esc(tl === "SOL" ? "FIL" : tl) : "✓") : ""}</button></td>`; }).join("")}</tr>`).join("")}
     </tbody></table><p class="small muted">${multi ? `Mehrfach klicken wechselt die Spur (${obTracks(k).map(t => t === "SOL" ? "FIL" : t).join(" → ")} → frei). ` : ""}Zwei Stunden direkt nacheinander${multi ? " in derselben Spur" : ""} gelten als Doppelstunde.</p></div>`;
 }
 /* Doppelstunden im Assistenten: zwei direkt aufeinanderfolgende Stunden am selben Tag mit derselben Spur werden zu einem
@@ -1965,11 +2000,12 @@ function obGrid(g) {
 function obSingles(lessons) {
   return lessons.flatMap(l => lessonLen(l) === 2 ? [0, 1].map(n => { const x = Object.assign({}, l, { id: n ? uid() : l.id, period: +l.period + n }); delete x.len; return x; }) : [l]);
 }
-function obPairDoubles(lessons) {
+function obPairDoubles(lessons, oneStrand) {
+  const key = t => oneStrand && t === "B" ? "A" : t;
   const ls = obSingles(lessons).sort((a, b) => a.day - b.day || a.period - b.period), out = [];
   for (let i = 0; i < ls.length; i++) {
     const a = ls[i], b = ls[i + 1];
-    if (b && +b.day === +a.day && +b.period === +a.period + 1 && b.track === a.track) { out.push(Object.assign({}, a, { len: 2 })); i++; }
+    if (b && +b.day === +a.day && +b.period === +a.period + 1 && key(b.track) === key(a.track)) { out.push(Object.assign({}, a, { len: 2 })); i++; }
     else out.push(a);
   }
   return out;
@@ -1979,8 +2015,8 @@ function obToggle(g, d, p) {
   const ls = obSingles(v.lessons);
   const i = ls.findIndex(l => +l.day === d && +l.period === p), tracks = obTracks(k);
   if (i < 0) ls.push({ id: uid(), day: d, period: p, track: "A" });
-  else { const n = tracks.indexOf(ls[i].track) + 1; if (n > 0 && n < tracks.length) ls[i].track = tracks[n]; else ls.splice(i, 1); }
-  v.lessons = obPairDoubles(ls);
+  else { const cur = tracks.includes(ls[i].track) ? ls[i].track : "A", n = tracks.indexOf(cur) + 1; if (n < tracks.length) ls[i].track = tracks[n]; else ls.splice(i, 1); }
+  v.lessons = obPairDoubles(ls, S.cls[k].mode !== "Stränge");
   touch(); save(k); renderOverlay();
 }
 function obOpen(step) { UI.ob = { step: step || 0 }; renderOverlay(); }
@@ -1997,18 +2033,21 @@ function viewOnboarding() {
   const dots = `<ol class="obsteps">${OB_STEPS.map((s, i) => `<li class="${i === st ? "cur" : i < st ? "done" : ""}">${esc(s)}</li>`).join("")}</ol>`;
   let body = "";
   if (st === 0) body = `<h2>Willkommen im Matheplaner</h2>
-    <p>In drei kurzen Schritten richtest du das Schuljahr ein: welche Klassen du unterrichtest und wann. Danach zeigt die Heute-Seite deine Stunden, und die App plant Stoff und Wiederholungen.</p>
+    <p>In wenigen Schritten richtest du das Schuljahr ein: welche Klassen du unterrichtest, wie du die Themen planst und wann du Unterricht hast. Danach zeigt die Heute-Seite deine Stunden, und die App plant Stoff und Wiederholungen.</p>
     <div class="card"><b>Schuljahr ${esc(yearLabel(Y.id))}</b><span class="small muted">${esc(fmt(Y.start, { day: "2-digit", month: "2-digit", year: "numeric" }))} – ${esc(fmt(Y.end, { day: "2-digit", month: "2-digit", year: "numeric" }))} · ${Y.holidays.length} Ferienabschnitte · ${Y.free.length} freie Tage</span>
     ${Y.holidays.length ? `<span class="small muted">Ferien und Feiertage für Sachsen sind eingetragen.</span>` : `<button type="button" class="btn ghost sm" data-act="ferien">Ferien Sachsen importieren</button>`}</div>`;
   else if (st === 1) body = `<h2>Welche Klassen unterrichtest du?</h2>
     <p class="small">Hake deine Klassen an. Gibt es zwei Parallelklassen (z. B. 8a und 8b), wähle „2 Parallelklassen“: Du planst dann einmal, jede Klasse hat aber eigene Stunden und eigenen Lernstand. In der Oberschule gibt es ab Klasse 7 Haupt- (HS) und Realschulbildungsgang (RS), im Gymnasium in 11/12 Grund- (GK) und Leistungskurs (LK).</p>
     ${Object.entries(TYPES).map(([t, T]) => `<h3 class="obtype">${esc(T.label)}</h3><table class="form obclasses"><tbody>${T.grades.flatMap(g => classesFor(t, g)).map(k => myClassRow(k, mine)).join("")}</tbody></table>`).join("")}`;
-  else if (st === 2) body = `<h2>Wann hast du Unterricht?</h2>
+  else if (st === 2) body = `<h2>Wie planst du die Themen?</h2>
+    <p class="small"><b>Nacheinander</b>: Alle Einheiten laufen in einer Reihe, eine nach der anderen. <b>In Strängen</b>: Zwei Themenstränge laufen parallel, z. B. Zahlen und Gleichungen in Strang A, Geometrie in Strang B; jede Stunde im Stundenplan gehört dann zu einem der beiden Stränge. Leistungsnachweise gehören zu keinem Strang.</p>
+    ${mine.length ? `<div class="obplans">${mine.map(obPlanCard).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
+  else if (st === 3) body = `<h2>Wann hast du Unterricht?</h2>
     <p class="small">Klicke für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), lege das später unter Einstellungen → Stundenplan an.</p>
     ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else body = `<h2>Fertig</h2>
     <p>Dein Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
-    <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? weekHours(obVersion(g).lessons) : 0} Stunden pro Woche</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
+    <ul>${mine.flatMap(groupsOf).map(g => `<li>${esc(fullLabel(g))}: ${obVersion(g) ? weekHours(obVersion(g).lessons) : 0} Stunden pro Woche, ${S.cls[ck(g)].mode === "Stränge" ? "in Strängen" : "nacheinander"}</li>`).join("") || "<li>keine Klasse gewählt</li>"}</ul>
     <p class="small muted">Die Sequenz jeder Klasse folgt dem Lehrplan; Reihenfolge und Stunden passt du unter „Sequenz“ an. Alle Angaben lassen sich unter „Einstellungen“ ändern, den Assistenten startest du dort erneut.</p>`;
   return `<div class="ov-card onboard" role="dialog" aria-label="Einrichtung">
     <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
@@ -2166,7 +2205,8 @@ document.addEventListener("click", ev => {
     case "solinfo": UI.solOpen = true; renderOverlay(); break;
     case "ovclose": closeOverlay(); break;
     case "obopen": obOpen(0); break;
-    case "obstep": UI.ob = { step: Math.max(0, Math.min(OB_STEPS.length - 1, +b.dataset.v)) }; renderOverlay(); break;
+    case "obstep": { const to = Math.max(0, Math.min(OB_STEPS.length - 1, +b.dataset.v)); if (to >= 2 && UI.ob && UI.ob.step < 2) obDefaults(); UI.ob = { step: to }; renderOverlay(); break; }
+    case "obmode": setClassMode(b.dataset.k, b.dataset.v); break;
     case "obskip": UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); break;
     case "obdone": obFinish(); break;
     case "obcell": obToggle(b.dataset.g, +b.dataset.d, +b.dataset.p); break;
@@ -2280,6 +2320,7 @@ document.addEventListener("change", ev => {
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
+    case "oblb": setLbStrand(t.dataset.k, t.dataset.lb, t.value); break;
     case "lndate": if (t.value) setLnDate(curG(), t.dataset.row, t.value); break;
     case "lndur": setLnDur(ck(curG()), t.dataset.code, +t.value); break;
     case "chkdur": { const C = S.cls[ck(curG())], x = (C.checks || []).find(y => y.id === t.dataset.id); if (x) { const snap = snapshotFor(ck(curG())); x.dur = +t.value; undoStack = snap; commit(ck(curG())); toast(`${CHECK_KINDS[x.kind]}: ${x.dur} min.`, true); } break; }
@@ -2358,7 +2399,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

@@ -33,8 +33,13 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
   (Strang A/B, in Klasse 7–9 auch FIL). Dazu Zeiträume ohne Unterricht (Praktikum, Klassenfahrt) und der letzte
   Unterrichtstag (GYM 12 vor Ostern, OS 10 vor Pfingsten, änderbar).
 - **Einrichtungsassistent**: öffnet sich, solange im Schuljahr keine Klassen festgelegt sind (oder über Einstellungen →
-  Schuljahre). Keine Klasse ist vorausgewählt. Im Wochenraster werden zwei direkt aufeinanderfolgende Stunden derselben Spur
-  zur Doppelstunde (bei drei Stunden die ersten beiden).
+  Schuljahre). Schritte: Schuljahr, Klassen (keine vorausgewählt), Planung, Unterrichtszeiten, Fertig.
+  Im Schritt **Planung** wählt man je Klasse „Nacheinander“ (Standard in allen Klassen) oder „In Strängen“ und ordnet bei
+  Strängen jeden Lernbereich Strang A oder B zu. Vorbelegt ist die Aufteilung der Vorlage, sonst abwechselnd A, B, A …;
+  Puffer folgen dem Lernbereich davor, die Stunden je Strang werden angezeigt. Der Schritt **Unterrichtszeiten** richtet
+  sich danach: nacheinander nur Spur A (Klasse 7–9 dazu FIL), in Strängen A und B. Der Stundenplan bleibt beim
+  Umschalten erhalten; im Modus „nacheinander“ zählen B-Stunden als A-Stunden. Im Wochenraster werden zwei direkt
+  aufeinanderfolgende Stunden derselben Spur zur Doppelstunde (bei drei Stunden die ersten beiden).
 
 ### Planung
 
