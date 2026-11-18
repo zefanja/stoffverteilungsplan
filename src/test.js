@@ -39,13 +39,42 @@ function serve(dir) {
   const obPick = [(await p.$$('#overlay [data-act="mine"]:checked')).length, await p.evaluate(() => JSON.stringify(window.__mp.cal().classes))];
   ok(obNone[0] === 19 && obNone[1] === 0 && obNone[2] === true && obPick[0] === 2 && obPick[1] === '["kl6","kl8"]', 'Schritt Klassen: 19 Klassen, keine vorausgewählt, Weiter erst nach Auswahl ' + JSON.stringify([obNone, obPick]));
   await p.screenshot({ path: path.join(OUT, 's_assistent_klassen.png') });
+  // Schritt Planung: Standard „nacheinander“; in Strängen lassen sich Lernbereiche A/B zuordnen, der Stundenplan bietet dann B an
   await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(100);
+  const obPL0 = await p.evaluate(() => [...document.querySelectorAll('#overlay .obplan')].map(c => (c.querySelector('[data-act="obmode"][aria-selected="true"]') || {}).dataset.v));
+  const kl8Keep = await p.evaluate(() => JSON.stringify(window.__mp.S.cls.kl8.seq));
+  await p.click('#overlay [data-act="obmode"][data-k="kl8"][data-v="Stränge"]'); await p.waitForTimeout(100);
+  const obPL1 = await p.evaluate(() => ({ mode: window.__mp.S.cls.kl8.mode, sel: [...document.querySelectorAll('#overlay [data-act="oblb"][data-k="kl8"]')].map(x => x.value).join('') }));
+  await p.selectOption('#overlay [data-act="oblb"][data-k="kl8"][data-lb="LB2"]', 'A'); await p.waitForTimeout(100);
+  const obPL2 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.filter(r => /^Z\d/.test(r.code)).every(r => r.strand === 'A'));
+  await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(100);
+  const obPL3 = await p.evaluate(() => [...document.querySelectorAll('#overlay .obgrid')].map(g => g.querySelector('p.small').textContent));
+  await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(100);
+  await p.click('#overlay [data-act="obmode"][data-k="kl8"][data-v="nacheinander"]'); await p.waitForTimeout(80);
+  await p.click('#overlay [data-act="obmode"][data-k="kl6"][data-v="Stränge"]'); await p.waitForTimeout(80);
+  const obPL4 = await p.evaluate(() => { const M = window.__mp; return { kl6: M.S.cls.kl6.mode, kl8: M.S.cls.kl8.mode, lbs6: [...document.querySelectorAll('#overlay [data-act="oblb"][data-k="kl6"]')].length }; });
+  await p.evaluate(k => { window.__mp.S.cls.kl8.seq = JSON.parse(k); window.__mp.touch(); }, kl8Keep);
+  ok(obPL0.length === 2 && obPL0.every(v => v === 'nacheinander') && obPL1.mode === 'Stränge' && obPL1.sel.length > 3 && /A/.test(obPL1.sel) && /B/.test(obPL1.sel) && obPL2 && !/B/.test(obPL3[0].split('.')[0]) && /A → B → FIL/.test(obPL3[1]) && obPL4.kl6 === 'Stränge' && obPL4.kl8 === 'nacheinander' && obPL4.lbs6 > 1,
+    'Schritt Planung: nacheinander vorausgewählt, Lernbereiche einem Strang zuordnen, Stundenplan bietet B nur in Strängen ' + JSON.stringify([obPL0, obPL1, obPL2, obPL3, obPL4]));
+  await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(100);
   ok((await p.$$('#overlay .obgrid')).length === 2, 'Schritt Unterrichtszeiten: ein Wochenraster je Klasse');
   const ttBefore = await p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length);
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(80);
   const ttMid = await p.evaluate(() => window.__mp.S.cls.kl6.groups[0].tt[0].lessons.length);
   ok(ttMid === ttBefore + 1, 'Klick ins Raster legt eine Stunde an (Di, 7. Std.)');
   await p.screenshot({ path: path.join(OUT, 's_assistent_zeiten.png') });
+  // Handy: Klick in eine untere Stunde des Rasters lässt die Scrollposition stehen
+  const vpKeep = p.viewportSize();
+  await p.setViewportSize({ width: 430, height: 800 }); await p.waitForTimeout(150);
+  const obSc = await p.evaluate(() => { const el = document.getElementById('overlay'), c = [el, el.querySelector('.ov-card'), el.querySelector('.obbody')].find(n => n && n.scrollHeight > n.clientHeight + 50);
+    if (!c) return null; c.scrollTop = c.scrollHeight; return { sel: c === el ? '' : c.classList.contains('obbody') ? '.obbody' : '.ov-card', top: c.scrollTop }; });
+  await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(150);
+  const obSc2 = await p.evaluate(sel => { const el = document.getElementById('overlay'), c = sel ? el.querySelector(sel) : el; return c.scrollTop; }, obSc && obSc.sel);
+  await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(80);
+  const obSc3 = await p.evaluate(sel => { const el = document.getElementById('overlay'), c = sel ? el.querySelector(sel) : el; return c.scrollTop; }, obSc && obSc.sel);
+  if (await p.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.some(v => v.lessons.some(l => +l.day === 1 && +l.period === 8)))) { await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="8"]'); await p.waitForTimeout(80); }
+  await p.setViewportSize(vpKeep); await p.waitForTimeout(100);
+  ok(!!obSc && obSc.top > 100 && Math.abs(obSc2 - obSc.top) < 5 && Math.abs(obSc3 - obSc.top) < 5, 'Assistent auf dem Handy: Klick ins Raster springt nicht nach oben ' + JSON.stringify([obSc, obSc2, obSc3]));
   // kl6 läuft in Strängen: Spur A → B → frei
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
   await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="2"][data-p="7"]'); await p.waitForTimeout(50);
@@ -61,9 +90,16 @@ function serve(dir) {
   for (const pp of [8, 7, 6]) { await cell(2, pp); await cell(2, pp); }
   const ob5 = await di();
   ok(ob1 === '6A×2' && ob1ui.every(Boolean) && ob2 === '6A,7B' && ob3 === '6A' && ob4 === '6A×2,8A' && ob5 === '', 'Assistent: zwei Stunden nacheinander in derselben Spur werden zur Doppelstunde ' + JSON.stringify([ob1, ob1ui, ob2, ob3, ob4, ob5]));
-  await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(80);
+  await p.click('#overlay [data-act="obstep"][data-v="4"]'); await p.waitForTimeout(80);
   await p.click('#overlay [data-act="obdone"]'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => document.getElementById('overlay').hidden && window.__mp.S.settings.onboarded && JSON.stringify(window.__mp.cal().classes) === '["kl6","kl8"]'), 'Assistent beendet: Klassen festgelegt');
+  // Lehrplan-Klasse (bisher alles Strang A): in Strängen werden die Lernbereiche abwechselnd A, B, A … vorbelegt
+  const g9 = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.gym9, keep = JSON.stringify(C);
+    M.setClassMode('gym9', 'Stränge', true); const lbs = M.obLbs('gym9').map(x => x.lb);
+    const st = lbs.map(lb => { const r = C.seq.find(y => (window.PLAN_DATA.classes.gym9.units[y.code] || {}).lb === lb); return r ? r.strand : '?'; }).join('');
+    const pBuf = C.seq.every((r, i) => r.code !== 'P' || i === 0 || r.strand === C.seq.slice(0, i).reverse().find(y => window.PLAN_DATA.classes.gym9.units[y.code] && y.code !== 'P' && window.PLAN_DATA.classes.gym9.units[y.code].lb !== 'test').strand);
+    M.S.cls.gym9 = JSON.parse(keep); M.touch(); return { st, pBuf }; });
+  ok(/^ABAB/.test(g9.st) && g9.pBuf, 'In Strängen: Lernbereiche abwechselnd vorbelegt, Puffer folgen dem Lernbereich davor ' + JSON.stringify(g9));
   await p.evaluate(() => { window.__mp.UI.date = '2026-11-17'; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p.waitForTimeout(150);
 
   // Ausgangsplan: Kapazitäten wie bisher
