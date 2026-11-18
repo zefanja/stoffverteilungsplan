@@ -1983,6 +1983,23 @@ function obPlanCard(k) {
     ${str ? `<table class="form oblbs"><tbody>${obLbs(k).map(({ lb, name }) => `<tr><td>${esc(name)}</td><td><select data-act="oblb" data-k="${k}" data-lb="${esc(lb)}" aria-label="Strang für ${esc(name)}">${["A", "B"].map(t => `<option ${obLbStrand(k, lb) === t ? "selected" : ""}>${t}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table>
       <p class="small muted">Strang A: ${hrs.A} Std. · Strang B: ${hrs.B} Std. Puffer folgen dem Lernbereich davor. Im nächsten Schritt gehört jede Stunde zu Strang A oder B.</p>` : `<p class="small muted">Alle Einheiten nacheinander in der Reihenfolge der Sequenz.</p>`}</div>`;
 }
+/* Beim ersten Betreten des Schritts „Unterrichtszeiten“ ist das Raster leer: Ein Stundenplan, der noch genau der Vorlage
+   entspricht, wird durch einen leeren Zeitraum ab Schuljahresbeginn ersetzt (Merker obTT je Parallelklasse). Selbst
+   eingetragene Stundenpläne bleiben stehen. */
+const ttKey = tt => JSON.stringify((tt || []).map(v => (v.lessons || []).map(l => [+l.day, +l.period, l.track, lessonLen(l)]).sort()));
+function obClearTT() {
+  mineList().forEach(k => {
+    const tpl = ttKey(defaultClass(k).groups[0].tt);
+    (S.cls[k] ? S.cls[k].groups : []).forEach(G => {
+      if (G.obTT) return;
+      G.obTT = 1;
+      if (ttKey(G.tt) === tpl) G.tt = [{ id: uid(), frm: cal().start, lessons: [] }];
+    });
+    if (S.cls[k]) { touch(); save(k); }
+  });
+}
+/* „Weiter“ im Schritt „Unterrichtszeiten“ erst, wenn jede (Parallel-)Klasse mindestens eine Stunde hat */
+const obTTMissing = () => mineList().flatMap(groupsOf).filter(g => { const v = obVersion(g); return !v || !v.lessons.length; });
 /* Beim ersten Betreten des Schritts „Planung“ gilt für jede gewählte Klasse „nacheinander“. */
 function obDefaults() { mineList().forEach(k => { if (S.cls[k] && !S.cls[k].obMode) setClassMode(k, "nacheinander", true); }); }
 function obGrid(g) {
@@ -2046,7 +2063,7 @@ function viewOnboarding() {
     <p class="small"><b>Nacheinander</b>: Alle Einheiten laufen in einer Reihe, eine nach der anderen. <b>In Strängen</b>: Zwei Themenstränge laufen parallel, z. B. Zahlen und Gleichungen in Strang A, Geometrie in Strang B; jede Stunde im Stundenplan gehört dann zu einem der beiden Stränge. Leistungsnachweise gehören zu keinem Strang.</p>
     ${mine.length ? `<div class="obplans">${mine.map(obPlanCard).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else if (st === 3) body = `<h2>Wann hast du Unterricht?</h2>
-    <p class="small">Klicke für jede Klasse die Stunden im Wochenplan an. Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), lege das später unter Einstellungen → Stundenplan an.</p>
+    <p class="small">Klicke für jede Klasse die Stunden im Wochenplan an (mindestens eine je Klasse). Ändert sich der Stundenplan im Laufe des Jahres oder fällt Unterricht über längere Zeit aus (Praktikum, Klassenfahrt), lege das später unter Einstellungen → Stundenplan an.</p>
     ${myGroups().length ? `<div class="obgrids">${mine.flatMap(groupsOf).map(obGrid).join("")}</div>` : `<p class="muted">Du hast noch keine Klasse gewählt. <button type="button" class="linkbtn" data-act="obstep" data-v="1">Zurück zu den Klassen</button></p>`}`;
   else body = `<h2>Fertig</h2>
     <p>Dein Schuljahr ${esc(yearLabel(Y.id))} ist eingerichtet:</p>
@@ -2056,7 +2073,7 @@ function viewOnboarding() {
     <header><span class="lbl">Einrichtung · Schritt ${st + 1} von ${OB_STEPS.length}</span><button type="button" class="iconbtn" data-act="obskip" aria-label="Assistent schließen">×</button></header>
     ${dots}<div class="obbody">${body}</div>
     <footer class="acts">${st > 0 ? `<button type="button" class="btn ghost" data-act="obstep" data-v="${st - 1}">Zurück</button>` : `<button type="button" class="btn ghost" data-act="obskip">Später</button>`}
-      <span class="sp"></span>${st < OB_STEPS.length - 1 ? `<button type="button" class="btn" data-act="obstep" data-v="${st + 1}" ${st === 1 && !mine.length ? "disabled" : ""}>Weiter</button>` : `<button type="button" class="btn" data-act="obdone">Los geht's</button>`}</footer></div>`;
+      <span class="sp"></span>${st === 3 && obTTMissing().length ? `<span class="small muted obneed">Noch ohne Stunden: ${esc(obTTMissing().map(fullLabel).join(", "))}</span>` : ""}${st < OB_STEPS.length - 1 ? `<button type="button" class="btn" data-act="obstep" data-v="${st + 1}" ${(st === 1 && !mine.length) || (st === 3 && obTTMissing().length) ? "disabled" : ""}>Weiter</button>` : `<button type="button" class="btn" data-act="obdone">Los geht's</button>`}</footer></div>`;
 }
 
 /* ---------------- quiz & SOL overlay ---------------- */
@@ -2208,7 +2225,7 @@ document.addEventListener("click", ev => {
     case "solinfo": UI.solOpen = true; renderOverlay(); break;
     case "ovclose": closeOverlay(); break;
     case "obopen": obOpen(0); break;
-    case "obstep": { const to = Math.max(0, Math.min(OB_STEPS.length - 1, +b.dataset.v)); if (to >= 2 && UI.ob && UI.ob.step < 2) obDefaults(); UI.ob = { step: to }; renderOverlay(); break; }
+    case "obstep": { const to = Math.max(0, Math.min(OB_STEPS.length - 1, +b.dataset.v)); if (to >= 2 && UI.ob && UI.ob.step < 2) obDefaults(); if (to === 3) obClearTT(); UI.ob = { step: to }; renderOverlay(); break; }
     case "obmode": setClassMode(b.dataset.k, b.dataset.v); break;
     case "obskip": UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); break;
     case "obdone": obFinish(); break;
