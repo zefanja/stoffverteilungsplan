@@ -64,6 +64,8 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   verteilt. **Feste Termine** (`G.pin[zeilenId] = Datum`) belegen zuerst ihre Slots, und zwar **strangunabhängig** über alle
   Nicht-FIL-Slots (Hauptstunde `lnMain()` in der ersten Stunde ab dem Termin). Der Rest füllt die freien Slots seines
   Strangs der Reihe nach. `planned` je Strang zählt fest terminierte Stunden dort, wo sie tatsächlich liegen.
+  Leistungsnachweise ohne Termin bekommen in `schedule()` den Strang der Zeile davor (`lastTrack`), ihr gespeichertes
+  `strand` wird ignoriert; die Sequenz zeigt bei allen Leistungsnachweisen keine Strangauswahl.
 - Die Lehrkraft will: Leistungsnachweise haben keinen Strang, Einheiten „fließen drum herum“, das Datum bestimmt den
   Termin. `build_data.py` (`ka_track_hours`) rechnet deshalb die Standardtermine der KA-Platzhalter beim Pufferausgleich
   von GYM 6 mit – Regel identisch zu `kaDates()` halten, sonst geht „Kl. 6 geht auf“ kaputt.

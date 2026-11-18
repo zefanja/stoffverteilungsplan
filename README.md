@@ -77,8 +77,9 @@ der gewählten (Parallel-)Klasse.
   Einheit auch über den Termin hinweg. Feste Termine gelten je Parallelklasse; „lösen“ gibt den Termin frei.
 - **Kein Strang**: Ein Leistungsnachweis mit Termin gehört zu keinem Strang. Er belegt am Termin die erste Mathestunde des
   Tages, egal ob aus Strang A oder B (nie FIL); die Einheiten dieses Strangs laufen darum herum. Seine Inhalte legt die
-  Lehrkraft fest, sie können aus beiden Strängen stammen. In der Sequenz steht statt der Strangauswahl „–“. Nur ein
-  Leistungsnachweis ohne Termin läuft im Strang der Zeile, hinter der er eingefügt wurde.
+  Lehrkraft fest, sie können aus beiden Strängen stammen. In der Sequenz haben Leistungsnachweise keine Strangauswahl
+  („–“). Ein Leistungsnachweis ohne Termin läuft im Strang der Einheit davor, auch nachdem er verschoben wurde. Das gilt
+  in allen Klassen; außer GYM 6 laufen alle Klassen der Vorlage ohnehin „nacheinander“ in einem Strang.
 - **Kontrollen in einer Stunde** („+ Kontrolle“ bei einer Stunde der Einheit): Kurzkontrolle, Test, mündliche Kontrolle,
   Hausaufgabenkontrolle, sonstige Bewertung, 20 oder 30 min. Die Stunde zeigt die verbleibende Unterrichtszeit; ab 45 min
   Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern. Per Datum wandern sie in die erste Stunde
