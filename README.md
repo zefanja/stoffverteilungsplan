@@ -116,7 +116,8 @@ der gewählten (Parallel-)Klasse.
 ## Speicherung
 
 Im Claude-Artefakt speichert die App in der Datenbank des Artefakts, auf GitHub Pages im Browser (`localStorage`, gleiche
-Pfade mit Präfix `mp-doc:`, nur in diesem Browser; zum Übertragen Einstellungen → Sicherung).
+Pfade mit Präfix `mp-doc:`, nur in diesem Browser; zum Übertragen Einstellungen → Sicherung). Darauf weist die Fußzeile hin;
+oben erscheinen nur Hinweise, die etwas verlangen (Laden, Speicherfehler, Speicher voll, fällige Sicherung).
 
 | Pfad | Inhalt |
 |---|---|
