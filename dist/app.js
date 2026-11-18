@@ -1057,16 +1057,18 @@ function lnCode(k, kind) {
   return pre + n;
 }
 /* Neuen Leistungsnachweis anlegen und in der Sequenz hinter Zeile afterIdx einfügen (-1 = am Anfang). */
-function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx }) {
+function addLn(k, { kind, topic, hours, wdh, rueck, afterIdx, date, g }) {
   const C = S.cls[k], K = LN_KINDS[kind]; if (!K) return null;
   const code = lnCode(k, kind), stunden = lnStunden(kind, hours, wdh, rueck);
   const snap = snapshotFor(k);
   C.ln = C.ln || {};
   C.ln[code] = { kind, title: K.short + (topic ? ": " + topic : ""), lb: "test", custom: true, stunden, main: wdh ? 1 : 0, inhalte: [], begriffe: [], hinweise: [] };
-  const after = C.seq[afterIdx], strand = C.mode === "nacheinander" ? "A" : after ? after.strand : "A";
-  C.seq.splice(afterIdx + 1, 0, { id: uid(), code, strand, hours: stunden.length });
+  const after = C.seq[afterIdx], strand = C.mode === "nacheinander" ? "A" : after ? after.strand : "A", row = { id: uid(), code, strand, hours: stunden.length };
+  C.seq.splice(afterIdx + 1, 0, row);
+  const Y = cal();
+  if (date && date >= Y.start && date <= Y.end) { setLnDate(g || curG() || gkey(k, "a"), row.id, date, snap, `${C.ln[code].title} (${code}) angelegt. `); return code; }
   undoStack = snap; commit(k);
-  toast(`${C.ln[code].title} (${code}) mit ${stunden.length} Std. eingefügt.`, true);
+  toast(`${C.ln[code].title} (${code}) mit ${stunden.length} Std. eingefügt.${date ? " Das Datum liegt außerhalb des Schuljahres, der Termin folgt der Sequenz." : ""}`, true);
   return code;
 }
 /* Leistungsnachweis löschen: Kontrolle (id) oder Sequenzzeile (row). Eine selbst angelegte Einheit verschwindet mit ihrer
@@ -1118,10 +1120,10 @@ function lnDates(g) {
 }
 /* Leistungsnachweis per Datum festlegen (nur für diese Parallelklasse); leeres Datum löst den Termin. Die Zeile wandert in der
    Sequenz an die zeitlich passende Stelle, damit die Liste der Reihenfolge im Kalender entspricht. */
-function setLnDate(g, rowId, date) {
+function setLnDate(g, rowId, date, snap0, prefix = "") {
   const k = ck(g), C = S.cls[k], G = grp(g), Y = cal(), row = C.seq.find(r => r.id === rowId); if (!row) return;
   if (date && (date < Y.start || date > Y.end)) { toast(`Das Datum liegt außerhalb des Schuljahres ${yearLabel(Y.id)}.`); render(); return; }
-  const snap = snapshotFor(k);
+  const snap = snap0 || snapshotFor(k);
   G.pin = G.pin || {};
   if (date) G.pin[rowId] = date; else delete G.pin[rowId];
   touch();
@@ -1138,7 +1140,7 @@ function setLnDate(g, rowId, date) {
         : `Am ${fmt(date, { weekday: "short", day: "2-digit", month: "2-digit" })} hat ${groupName(g)} keine passende Stunde. ${row.code} liegt in der nächsten: ${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std.`;
     }
   }
-  undoStack = snap; commit(k); toast(msg, true);
+  undoStack = snap; commit(k); toast(prefix + msg, true);
 }
 /* Kontrolle in einer Stunde per Datum verlegen: in die erste Stunde mit Stoff an diesem Tag (oder danach). */
 function setCheckDate(g, id, date) {
@@ -1532,6 +1534,7 @@ function viewSeq() {
       <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
       <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
       <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
+      <label id="adddatebox">Termin (optional) <input type="date" id="adddate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
       <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
     </div>
     ${lnCard(k)}
@@ -1563,10 +1566,11 @@ function lnCard(k) {
       <label>Stunden für die Arbeit <input id="lnhrs" class="num" type="number" min="1" max="6" value="${K0.hours}"></label>
       <label class="chk"><input type="checkbox" id="lnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
       <label class="chk"><input type="checkbox" id="lnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
+      <label>Termin (optional) <input type="date" id="lndate" min="${esc(cal().start)}" max="${esc(cal().end)}"></label>
       <label class="wide">Einfügen nach <select id="lnafter">${sc.rows.map((r, i) => `<option value="${i}" ${i === defAfter ? "selected" : ""}>${i + 1}. ${esc(r.code)} · ${esc(titleOf(k, r.code))}${r.end ? ` (bis ${fmt(r.end)})` : ""}</option>`).join("")}</select></label>
       <button type="button" class="btn" data-act="lnadd">Anlegen und einfügen</button>
     </div>
-    <p class="small muted">Termin ändern: einfach ein Datum eingeben. Die Arbeit liegt dann fest an diesem Tag${S.cls[ck(k)].groups.length > 1 ? ` (für ${esc(groupName(k))})` : ""}, der übrige Plan läuft darum herum; „lösen“ gibt den Termin wieder frei. Klassenarbeit, Klausur, Test, Präsentation und Projekt bekommen eigene Stunden in der Sequenz, der Plan rückt nach. Kurzkontrollen und andere Bewertungen in einer Stunde legst du in der Einheit bei der jeweiligen Stunde an („+ Kontrolle“).</p></div>`;
+    <p class="small muted">Mit Termin liegt der neue Leistungsnachweis fest an diesem Tag, ohne Termin hinter der gewählten Zeile. Termin ändern: einfach ein Datum eingeben. Die Arbeit liegt dann fest an diesem Tag${S.cls[ck(k)].groups.length > 1 ? ` (für ${esc(groupName(k))})` : ""}, der übrige Plan läuft darum herum; „lösen“ gibt den Termin wieder frei. Klassenarbeit, Klausur, Test, Präsentation und Projekt bekommen eigene Stunden in der Sequenz, der Plan rückt nach. Kurzkontrollen und andere Bewertungen in einer Stunde legst du in der Einheit bei der jeweiligen Stunde an („+ Kontrolle“).</p></div>`;
 }
 
 /* ---------------- views: Einheiten ---------------- */
@@ -1574,7 +1578,7 @@ function viewUnits() {
   const k = curG(), c = D.classes[ck(k)], sc = schedule(k);
   const rowOf = {}; sc.rows.forEach(r => { if (!rowOf[r.code]) rowOf[r.code] = r; });
   const groups = {};
-  unitOrderOf(k).filter(code => code !== "P" && code !== "JA").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
+  unitOrderOf(k).filter(code => code !== "P" && code !== "JA" && (unitOf(k, code) || {}).lb !== "test").forEach(code => { const lb = lbOf(k, code); (groups[lb] || (groups[lb] = [])).push(code); });
   const order = ["start", "LB1", "LB2", "LB3", "LB4", "LB5", "LB6", "LB7", "LB8", "LB9", "WB", "test"];
   return `<section><div class="vhead"><h1>Einheiten</h1>${clsTabs()}</div>
     ${c.ziele && c.ziele.length ? `<details class="card ziele"><summary><b>Ziele der Klassenstufe</b> <span class="small muted">Lehrplan Sachsen${c.variantLabel ? " · " + esc(c.variantLabel) : ""}</span></summary>${c.ziele.map(([h, t]) => `<p><b>${esc(h)}</b><br>${mx(t)}</p>`).join("")}</details>` : ""}
@@ -2074,8 +2078,10 @@ document.addEventListener("click", ev => {
       const code = document.getElementById("addcode").value, strand = document.getElementById("addstrand").value, h = Math.max(0, +document.getElementById("addhrs").value || 0);
       if (code === "__ln") {
         // allgemeiner Leistungsnachweis am Ende: 1 Std. = nur die Arbeit, 2 = mit Rückgabe, 3 und mehr = mit Wiederholung davor
-        const hh = Math.max(1, h), rueck = hh >= 2, wdh = hh >= 3, c2 = addLn(k, { kind: "ka", topic: "", hours: Math.max(1, hh - (rueck ? 1 : 0) - (wdh ? 1 : 0)), wdh, rueck, afterIdx: S.cls[k].seq.length - 1 });
-        if (c2 && S.cls[k].mode !== "nacheinander") { S.cls[k].seq[S.cls[k].seq.length - 1].strand = strand; commit(k); }
+        const hh = Math.max(1, h), rueck = hh >= 2, wdh = hh >= 3, C2 = S.cls[k];
+        const before = C2.seq.length, c2 = addLn(k, { kind: "ka", topic: "", hours: Math.max(1, hh - (rueck ? 1 : 0) - (wdh ? 1 : 0)), wdh, rueck, afterIdx: before - 1, date: document.getElementById("adddate").value, g: curG() });
+        const nr = c2 && C2.seq.find(r => r.code === c2);
+        if (nr && C2.mode !== "nacheinander" && nr.strand !== strand) { nr.strand = strand; commit(k); }
         break;
       }
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
@@ -2101,7 +2107,7 @@ document.addEventListener("click", ev => {
     case "atommove": moveAtom(k, b.dataset.code, b.dataset.id, +b.dataset.l); break;
     case "lnadd": {
       const v = id => document.getElementById(id), kind = v("lnkind").value;
-      const code = addLn(k, { kind, topic: v("lntopic").value.trim(), hours: Math.max(1, Math.min(6, +v("lnhrs").value || 1)), wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value });
+      const code = addLn(k, { kind, topic: v("lntopic").value.trim(), hours: Math.max(1, Math.min(6, +v("lnhrs").value || 1)), wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value, date: v("lndate").value, g: curG() });
       break;
     }
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
@@ -2173,6 +2179,7 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
+  if (t.id === "addcode") { const bx = document.getElementById("adddatebox"); if (bx) bx.hidden = t.value !== "__ln"; return; }
   if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lnhrs").value = K.hours; v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; } return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
