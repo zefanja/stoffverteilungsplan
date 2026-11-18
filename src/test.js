@@ -414,6 +414,22 @@ function serve(dir) {
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
   ok(addOpts[0] === '__ln' && addOpts.includes('P') && !addOpts.some(v => /KA/.test(v)) && addLnRes[0] === nLn0 + 1 && addLnRes[1] === 'KA5' && addLnRes[2] === 2 && addLnRes[3] === 'Klassenarbeit/Rückgabe und Berichtigung',
     'Zeile hinzufügen: nur allgemein Leistungsnachweis/Puffer, keine einzelnen Klassenarbeiten; Leistungsnachweis legt einen neuen Platzhalter an ' + JSON.stringify([addOpts.slice(0, 4), addLnRes]));
+  // Leistungsnachweis mit Termin anlegen (Zeile hinzufügen und Formular); ein Rückgängig entfernt alles
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
+  const lnT0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
+  await p.selectOption('#addcode', '__ln'); await p.fill('#addhrs', '1'); await p.fill('#adddate', '2026-12-08'); await p.click('[data-act="addrow"]'); await p.waitForTimeout(250);
+  const lnT1 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA5'); return x ? [x.date, x.pinned] : null; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const lnT2 = await p.evaluate(() => [window.__mp.S.cls.kl8.seq.length, Object.keys(window.__mp.S.cls.kl8.ln || {}).length]);
+  await p.selectOption('#lnkind', 'test'); await p.fill('#lndate', '2027-02-23'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  const lnT3 = await p.evaluate(() => { const x = window.__mp.lnDates('kl8.a').find(y => y.code === 'LK1'); return x ? [x.date, x.pinned] : null; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const boxHidden = await p.evaluate(() => { const sel = document.getElementById('addcode'); sel.value = 'P'; sel.dispatchEvent(new Event('change', { bubbles: true })); return document.getElementById('adddatebox').hidden; });
+  ok(lnT1 && lnT1[0] >= '2026-12-08' && lnT1[0] <= '2026-12-11' && lnT1[1] === '2026-12-08' && lnT2[0] === lnT0 && lnT2[1] === 0 && lnT3 && lnT3[1] === '2027-02-23' && boxHidden,
+    'Leistungsnachweis mit Termin anlegen: fest am Datum, ein Rückgängig entfernt ihn, Terminfeld nur bei Leistungsnachweis ' + JSON.stringify([lnT1, lnT2, lnT3, boxHidden]));
+  await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
+  const unitsNoLn = await p.evaluate(() => ({ ln: [...document.querySelectorAll('.ucard .chip b')].some(b => /^KA\d|^LK\d/.test(b.textContent)), head: [...document.querySelectorAll('.lbh')].some(h => /Leistungsnachweis|Klassenarbeit/.test(h.textContent)) }));
+  ok(!unitsNoLn.ln && !unitsNoLn.head, 'Einheitenübersicht ohne Leistungsnachweise ' + JSON.stringify(unitsNoLn));
   // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
   const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
     const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });

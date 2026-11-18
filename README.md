@@ -76,6 +76,8 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
   OS 10), verteilen sich die letzten bis eine Woche vor dem letzten Unterrichtstag. Gespeicherte Pläne werden einmal
   umgestellt (alte Klassenarbeiten → Platzhalter, Standardtermine, sofern kein eigener Termin gesetzt ist). In „Zeile
   hinzufügen“ stehen nur allgemeine Einträge (Leistungsnachweis, Puffer, Jahresabschluss) und noch nicht eingeplante Einheiten.
+  Beim Anlegen (Formular oder „Zeile hinzufügen“ → Leistungsnachweis) lässt sich gleich ein Termin eingeben. Die Einheitenübersicht
+  zeigt keine Leistungsnachweise; ihre Seite erreicht man über die Übersicht „Leistungsnachweise“.
 - **Leistungsnachweise** (Sequenz → Leistungsnachweise): Klassenarbeit, Klausur, Test/Leistungskontrolle, Präsentation und
   Komplexe Leistung/Projekt anlegen und hinter einer beliebigen Zeile der Sequenz einfügen. Sie bekommen eigene Stunden
   (Arbeit, wahlweise Wiederholungsstunde davor und Rückgabe danach), der Plan rückt nach. Kürzel KA, KL, LK, PR, PJ mit
