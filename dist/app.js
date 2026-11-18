@@ -624,9 +624,12 @@ function schedule(g) {
     }
   }
   slots.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.period - b.period);
+  /* Zuteilung der Stunden; extra: zusätzliche Stunden je Zeile (von 30-min-Kontrollen belegte Stunden) */
+  const assign = extra => {
+  slots.forEach(s => { s.lesson = null; });
   let lastTrack = "A";
   const isLnCode = code => (unitOf(k, code) || {}).lb === "test";
-  const rows = C.seq.map((r, i) => Object.assign({}, r, { base: r.hours, adj: (G.adj || {})[r.id] || 0, hours: Math.max(0, r.hours + ((G.adj || {})[r.id] || 0)), idx: i, track: seqMode ? "A" : isLnCode(r.code) ? lastTrack : (lastTrack = r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
+  const rows = C.seq.map((r, i) => Object.assign({}, r, { base: r.hours, adj: (G.adj || {})[r.id] || 0, extra: extra[r.id] || 0, hours: Math.max(0, r.hours + ((G.adj || {})[r.id] || 0) + (extra[r.id] || 0)), idx: i, track: seqMode ? "A" : isLnCode(r.code) ? lastTrack : (lastTrack = r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
   const tracks = { A: [], B: [] };
   rows.forEach(r => { for (let n = 1; n <= r.hours; n++) tracks[r.track].push({ row: r, n }); });
   const cap = { A: 0, B: 0, SOL: 0 }, planned = { A: tracks.A.length, B: tracks.B.length };
@@ -673,16 +676,52 @@ function schedule(g) {
   // Geplante Stunden je Strang: fest terminierte Leistungsnachweise zählen dort, wo sie tatsächlich liegen
   planned.A = 0; planned.B = 0;
   rows.forEach(r => { if (r.pinned) { r.slots.forEach(s => { planned[s.track] = (planned[s.track] || 0) + 1; }); planned[r.track] += r.overflow; } else planned[r.track] += r.hours; });
+  return { rows, cap, planned };
+  };
+  /* Kontrollen in einer Stunde: Lage bestimmen (mit Datum: erste Mathestunde ab dem Tag; sonst Einheit/Stunde).
+     Eine Stunde mit mindestens 30 min Kontrollen ist belegt: keine neuen Atome, die Einheit bekommt eine Stunde dazu.
+     Mit mindestens 20 min wird dort höchstens ein Atom eingeführt. */
+  const checks = C.checks || [];
+  const resolve = rows => { const out = {}; checks.forEach(x => {
+    if (x.date) { const s = slots.find(y => y.date >= x.date && y.lesson && !y.cancelled && y.track !== "SOL"); out[x.id] = s ? { code: s.lesson.row.code, n: s.lesson.n, rowId: s.lesson.row.id, slot: s } : { code: null, n: 0, rowId: null, slot: null }; return; }
+    const r = (x.row && rows.find(y => y.id === x.row)) || rows.find(y => y.code === x.code);
+    out[x.id] = { code: x.code, n: x.n, rowId: r ? r.id : x.row || null, slot: r ? r.slots[Math.min(x.n, r.hours) - 1] || null : null };
+  }); return out; };
+  const minutesAt = chk => { const m = {}; checks.forEach(x => { const p = chk[x.id]; if (p && p.rowId && p.n) { const key = p.rowId + "|" + p.n; m[key] = (m[key] || 0) + checkMin(x); } }); return m; };
+  let res = assign({}), chk = resolve(res.rows);
+  const extra = {}; Object.entries(minutesAt(chk)).forEach(([key, m]) => { if (m >= 30) { const id = key.split("|")[0]; extra[id] = (extra[id] || 0) + 1; } });
+  if (Object.keys(extra).length) { res = assign(extra); chk = resolve(res.rows); }
+  const { rows, cap, planned } = res;
+  const mins = minutesAt(chk);
+  rows.forEach(r => {
+    const blocked = {}; Object.entries(mins).forEach(([key, m]) => { const [id, n] = key.split("|"); if (id === r.id && (m >= 20)) blocked[+n] = m >= 30 ? 0 : 1; });
+    if (Object.keys(blocked).length && unitOf(k, r.code)) { r.blocked = blocked; r.atomN = atomPlan(atomsOf(k, r.code), r.hours, blocked); }
+  });
   cap.SOL = slots.filter(s => s.track === "SOL" && !s.cancelled).length;
   let solN = 0; slots.forEach(s => { if (s.track === "SOL" && !s.cancelled) s.solIdx = solN++; });
   const intro = {};
   rows.forEach(r => {
     if (!unitOf(k, r.code)) return;
-    atomsOf(k, r.code).forEach(a => { const n = Math.min(a.l, r.hours); const s = r.slots[n - 1]; if (s && !intro[a.id]) intro[a.id] = { date: s.date, code: r.code }; });
+    atomsOf(k, r.code).forEach(a => { const n = atomLesson(r, a); const s = r.slots[n - 1]; if (s && !intro[a.id]) intro[a.id] = { date: s.date, code: r.code }; });
   });
   const byDate = {}; slots.forEach(s => { (byDate[s.date] || (byDate[s.date] = [])).push(s); });
-  return (cache[g] = { ver, slots, rows, cap, planned, intro, byDate, dayInfo, seqMode });
+  return (cache[g] = { ver, slots, rows, cap, planned, intro, byDate, dayInfo, seqMode, chk });
 }
+/* Atome auf die Stunden einer Zeile verteilen, wenn Kontrollen Stunden belegen. blocked: Stunde -> höchstens so viele neue
+   Atome (0 bei 30 min, 1 bei 20 min). Wegen der zusätzlichen Stunde rücken Atome ab einer belegten Stunde um eine Stunde
+   weiter; was über die Grenze geht, kommt in die nächste Stunde (in der letzten Stunde alles Übrige). */
+function atomPlan(atoms, hours, blocked) {
+  const full = Object.keys(blocked).map(Number).filter(n => blocked[n] === 0).sort((a, b) => a - b), out = {};
+  const target = a => { let t = a.l; full.forEach(m => { if (t >= m) t++; }); return Math.max(1, Math.min(hours, t)); };
+  const by = {}; atoms.slice().sort((a, b) => a.l - b.l).forEach(a => { (by[target(a)] = by[target(a)] || []).push(a); });
+  let carry = [];
+  for (let n = 1; n <= hours; n++) {
+    const list = carry.concat(by[n] || []), capN = blocked[n] ?? Infinity, take = n === hours ? list : list.slice(0, capN);
+    take.forEach(a => { out[a.id] = n; }); carry = list.slice(take.length);
+  }
+  return out;
+}
+const atomLesson = (r, a) => r.atomN && r.atomN[a.id] ? r.atomN[a.id] : Math.min(a.l, r.hours);
 function lessonInfo(k, L) {
   const r = L.row, u = unitOf(k, r.code), st = u ? u.stunden : [];
   let title;
@@ -691,7 +730,7 @@ function lessonInfo(k, L) {
   else if (!st.length) title = titleOf(k, r.code);
   else if (L.n <= st.length) title = (L.n === r.hours && r.hours < st.length) ? st.slice(L.n - 1).join(" · ") : st[L.n - 1];
   else title = "Übung und Vertiefung (zusätzliche Stunde)";
-  const atoms = u ? atomsOf(k, r.code).filter(a => Math.min(a.l, r.hours) === L.n) : [];
+  const atoms = u ? atomsOf(k, r.code).filter(a => atomLesson(r, a) === L.n) : [];
   return { title, atoms };
 }
 function lbHours(k) {
@@ -1233,6 +1272,7 @@ const dateSlot = (g, date) => schedule(g).slots.find(y => y.date >= date && y.le
 /* Wo eine Kontrolle liegt: mit Datum (x.date) fest in der ersten Stunde ab diesem Tag – unabhängig von Änderungen der
    Sequenz –, sonst an Einheit und Stunde (code, n; bei Puffer/Jahresabschluss zusätzlich row). */
 function checkPos(g, x) {
+  const c = schedule(g).chk; if (c && c[x.id]) return c[x.id];
   if (x.date) { const s = dateSlot(g, x.date); return s ? { code: s.lesson.row.code, n: s.lesson.n, rowId: s.lesson.row.id, slot: s } : { code: null, n: 0, rowId: null, slot: null }; }
   const sc = schedule(g), r = (x.row && sc.rows.find(y => y.id === x.row)) || sc.rows.find(y => y.code === x.code);
   return { code: x.code, n: x.n, rowId: r ? r.id : x.row || null, slot: r ? r.slots[Math.min(x.n, r.hours) - 1] || null : null };
@@ -1632,7 +1672,7 @@ function viewSeq() {
       <td class="ttl">${r.pinned ? `<span class="pill lnp" title="Fester Termin">fest ${esc(fmt(r.pinned))}</span> ` : ""}${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${unitOrderOf(k).indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
       <td>${(unitOf(k, r.code) || {}).lb === "test" ? `<span class="muted" title="${r.pinned ? "Leistungsnachweise mit Termin gehören zu keinem Strang: Sie liegen am Termin, die Einheiten laufen darum herum." : "Ohne Termin läuft der Leistungsnachweis im Strang der Einheit davor."}">–</span>` : `<select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select>`}</td>
       <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
-        ${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
+        ${r.extra ? `<span class="soll small adj" title="Kontrollen mit 30 min belegen Stunden (${esc(groupName(k))})">+${r.extra} für Kontrolle</span>` : ""}${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
       <td class="mono small nowrap">${when}</td>
       <td class="nowrap"><div class="rowacts"><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="-1" aria-label="Nach oben" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="1" aria-label="Nach unten" ${i === sc.rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" class="mini" data-act="addp" data-i="${i}" title="Puffer darunter einfügen">+P</button><button type="button" class="mini del" data-act="del" data-i="${i}" aria-label="Zeile löschen">×</button></div></td>
     </tr>`;
@@ -1783,12 +1823,14 @@ function viewUnit(kc, idx) {
   blocks.forEach((ns, bi) => {
     const n = ns[0], nz = ns[ns.length - 1], dbl = ns.length > 1, slots = ns.map(x => r && r.slots[x - 1]).filter(Boolean), s0 = slots[0];
     const when = s0 ? fmt(s0.date, { weekday: "short", day: "2-digit", month: "2-digit" }) + ` · ${s0.period}.${dbl ? `–${slots[slots.length - 1].period}.` : ""} Std.` + (!dbl && dblPart(k, s0) ? ` (Doppelstunde, ${dblPart(k, s0)}. Teil)` : "") + (slots.every(x => grp(k).done[x.key]) ? " ✓" : "") : r && n > r.hours ? "nicht eingeplant" : "";
+    const capNote = r && r.blocked ? ns.filter(x => r.blocked[x] !== undefined).map(x => r.blocked[x] === 0 ? `Stunde ${x}: Kontrolle (30 min) – keine neuen Atome` : `Stunde ${x}: Kontrolle (20 min) – höchstens ein neues Atom`) : [];
     const la = atoms.filter(a => ns.includes(a.l)), nav = { up: bi > 0 ? blocks[bi - 1][0] : 0, down: bi < blocks.length - 1 ? blocks[bi + 1][0] : 0 };
     lessons += `<div class="lesson${dbl ? " dbl" : ""}" data-drop="${n}" data-code="${esc(code)}"><div class="lhead"><span class="mono muted">Stunde ${dbl ? `${n}–${nz}` : n}${dbl ? `<br><span class="pill">Doppelstunde</span>` : ""}</span><span class="ltitle">${dbl ? ns.map(x => `<span class="lsub"><span class="mono muted small">${x}</span> ${mx(titleOfN(x))}</span>`).join("") : mx(titleOfN(n))}</span><span class="mono small muted">${when}</span></div>
       ${checksAt(k, code, ns).map(x => `<div class="lcheck"><span class="pill lnp">${esc(CHECK_KINDS[x.kind])}</span>${x.title ? ` ${mx(x.title)}` : ""}<span class="small muted">${dbl ? ` · Stunde ${x.n}` : ""}</span>
         <select class="chkdursel" data-act="chkdur" data-id="${esc(x.id)}" aria-label="Dauer">${CHECK_DUR.map(d => `<option value="${d}" ${checkMin(x) === d ? "selected" : ""}>${d} min</option>`).join("")}</select>
         <span class="small muted">· noch ${Math.max(0, 45 * (dbl ? ns.length : 1) - checksAt(k, code, dbl ? ns : [x.n]).reduce((m, y) => m + checkMin(y), 0))} min Unterricht</span><button type="button" class="mini del" data-act="chkdel" data-id="${esc(x.id)}" aria-label="Kontrolle löschen">×</button></div>`).join("")}
-      <ul class="alist">${la.map(a => atomRow(k, code, a, E.cards[a.id], nav)).join("") || `<li class="adrop small muted">Atome hierher ziehen</li>`}</ul>
+      ${capNote.map(t => `<p class="small muted capnote">${esc(t)}</p>`).join("")}
+      <ul class="alist">${la.map(a => { const en = r ? atomLesson(r, a) : a.l; return atomRow(k, code, a, E.cards[a.id], nav).replace('<li class="atom"', en !== a.l ? `<li class="atom moved" data-moved="${en}"` : '<li class="atom"'); }).join("") || `<li class="adrop small muted">Atome hierher ziehen</li>`}</ul>
       ${UI.chkForm && UI.chkForm.code === code && UI.chkForm.n === n ? `<div class="chkform"><label>Art <select id="chkkind">${Object.entries(CHECK_KINDS).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
         <label>Dauer <select id="chkdur">${CHECK_DUR.map(d => `<option value="${d}">${d} min</option>`).join("")}</select></label>
         ${dbl ? `<label>Stunde <select id="chkn">${ns.map(x => `<option>${x}</option>`).join("")}</select></label>` : ""}<label class="wide">Thema <input id="chktitle" placeholder="z. B. Bruchrechnung"></label>
@@ -1810,8 +1852,7 @@ function viewUnit(kc, idx) {
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
-    ${(() => { const m = (S.cls[ck(k)].checks || []).filter(x => checkPos(k, x).code === code).reduce((a, x) => a + checkMin(x), 0);
-      return m >= 45 && r && !u.custom && u.lb !== "test" ? `<div class="warn small">Kontrollen belegen in dieser Einheit ${m} min, also etwa ${Math.floor(m / 45)} Unterrichtsstunde${m >= 90 ? "n" : ""}. <button type="button" class="linkbtn" data-act="unitplus" data-code="${esc(code)}" data-n="${Math.floor(m / 45)}">Einheit um ${Math.floor(m / 45)} Std. verlängern</button></div>` : ""; })()}
+    ${r && r.extra ? `<p class="small muted">Kontrollen mit 30 min belegen ${r.extra} Stunde${r.extra > 1 ? "n" : ""}: Die Einheit ist dafür ${r.extra} Std. länger, ihr Stoff läuft danach weiter.</p>` : ""}
     <h2>Stunden und Atome</h2>
     ${atomsNewer(k, code) ? `<div class="card tplnote"><h3>Die Fachschaft hat die Atome dieser Einheit geändert</h3>
       <p class="small">Du hast hier eigene Atome. Die ${esc(tplSource(ck(k)))} enthält inzwischen eine andere Fassung (${atomsOf(k, code).length} eigene, ${((D.classes[ck(k)].units[code] || {}).atoms || []).length} in der Vorlage).</p>
@@ -2521,7 +2562,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
