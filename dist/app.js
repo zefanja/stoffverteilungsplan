@@ -1581,7 +1581,23 @@ function tplBox(g) {
   return `<div class="tplstate small"><span class="pill">eigene Fassung</span><span>Deine Sequenz weicht von der ${esc(src)} ab. Ändert die Fachschaft die Vorlage, erscheint hier ein Hinweis und du entscheidest selbst.</span>
     <details class="tplsum"><summary>Unterschiede zur Vorlage</summary>${tplDiffList(tplDiff(k, C))}</details></div>`;
 }
+/* Fest terminierte Leistungsnachweise in der Sequenz nach Termin einordnen: jeweils hinter die letzte Zeile, die vorher
+   beginnt. Rein für die Anzeige – ihre Stunden hängen am Termin, nicht an der Position; die übrigen Zeilen behalten ihre
+   Reihenfolge, der Plan bleibt gleich. Gibt true zurück, wenn sich etwas geändert hat. */
+function sortPinnedRows(g) {
+  const k = ck(g), C = S.cls[k], sc = schedule(g), before = C.seq.map(r => r.id).join();
+  const pinned = sc.rows.filter(r => r.pinned && r.start && (unitOf(k, r.code) || {}).lb === "test").sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0);
+  if (!pinned.length) return false;
+  const ids = new Set(pinned.map(r => r.id)), rest = C.seq.filter(r => !ids.has(r.id)), startOf = id => (sc.rows.find(y => y.id === id) || {}).start;
+  pinned.forEach(p => {
+    let at = 0; rest.forEach((x, j) => { const st = startOf(x.id); if (st && st < p.start) at = j + 1; });
+    rest.splice(at, 0, C.seq.find(r => r.id === p.id));
+  });
+  if (rest.map(r => r.id).join() === before) return false;
+  C.seq = rest; touch(); save(k); return true;
+}
 function viewSeq() {
+  sortPinnedRows(curG());
   const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
   const used = new Set(C.seq.map(r => r.code));
   const isLn = code => (unitOf(k, code) || {}).lb === "test";
@@ -2419,7 +2435,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

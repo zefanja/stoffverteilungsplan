@@ -134,6 +134,15 @@ function serve(dir) {
     }
     return bad; });
   ok(allCls.length === 0, 'Alle 19 Klassen: Klassenarbeiten am Termin, Rückgabe später, keine Lücken ' + JSON.stringify(allCls));
+  // Sequenz: fest terminierte Klassenarbeiten stehen nach Datum (KA1 … KA4), der Plan bleibt dabei gleich
+  const kaOrder = await p.evaluate(() => { const M = window.__mp, out = {};
+    for (const k of ['kl6', 'kl8', 'gym9']) {
+      const g = k + '.a', fp = () => M.schedule(g).slots.map(s => s.lesson ? s.lesson.row.code + s.lesson.n : '-').join(',');
+      const f0 = fp(); M.sortPinnedRows(g); const f1 = fp();
+      out[k] = { order: M.S.cls[k].seq.filter(r => /^KA\d$/.test(r.code)).map(r => r.code).join(' '), same: f0 === f1, mode: M.S.cls[k].mode };
+    }
+    return out; });
+  ok(Object.values(kaOrder).every(x => x.order === 'KA1 KA2 KA3 KA4' && x.same), 'Sequenz: Klassenarbeiten nach Termin geordnet (in Strängen und nacheinander), Plan unverändert ' + JSON.stringify(kaOrder));
 
   // Formelsatz: Formeln werden als <span class="m" data-tex> ausgezeichnet und mit MathJax als SVG gesetzt
   ok(await p.evaluate(() => { const h = document.createElement('div'); h.innerHTML = window.__mp.mx('2 1/4 + x² = 0,3̅'); const m = h.querySelector('span.m'); return m && m.dataset.tex === '2\\frac{1}{4} + x^{2} = 0{,}\\overline{3}'; }), 'Formel-Erkennung: gemischte Zahl, Hochzahl, Periode');
@@ -556,7 +565,7 @@ function serve(dir) {
     delete old.kaV; old.groups.forEach(G => { G.pin = {}; });
     M.applyDoc('kl6', old); const C = M.S.cls.kl6, codes = C.seq.filter(r => /KA/.test(r.code)).map(r => r.code + '/' + r.strand).join(' ');
     const pins = Object.keys(C.groups[0].pin).length, kaV = C.kaV; M.S.cls.kl6 = keep; M.touch(); return { codes, pins, kaV }; });
-  ok(kaMig.codes === 'KA1/A KA3/A KA2/B KA4/B' && kaMig.pins === 4 && kaMig.kaV === 1, 'Alter Plan: Klassenarbeiten auf Platzhalter mit Standardterminen umgestellt ' + JSON.stringify(kaMig));
+  ok(kaMig.codes.split(' ').sort().join(' ') === 'KA1/A KA2/B KA3/A KA4/B' && kaMig.pins === 4 && kaMig.kaV === 1, 'Alter Plan: Klassenarbeiten auf Platzhalter mit Standardterminen umgestellt ' + JSON.stringify(kaMig));
   // Leistungsnachweis per Datum festlegen: Hauptstunde am Termin, der übrige Plan läuft darum herum; lösen gibt ihn frei
   await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const pin0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA1'); return { date: x.date, row: x.row, t5: M.schedule('kl8.a').rows.find(r => r.code === 'T5').start }; });
