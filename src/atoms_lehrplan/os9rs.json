@@ -1,450 +1,100 @@
 {
 "1.1": [
-[
-1,
-"Satz des Pythagoras: a² + b² = c² (c ist die Hypotenuse)",
-"Katheten 6 cm und 8 cm. Hypotenuse?",
-"10 cm",
-"Hypotenuse 10 cm, eine Kathete 6 cm. Andere Kathete?",
-"8 cm",
-"Wie lang ist die Diagonale eines Rechtecks 12 cm × 5 cm?",
-"13 cm"
-],
-[
-5,
-"Hypotenuse und Katheten erkennen",
-"Welche Seite liegt dem rechten Winkel gegenüber?",
-"die Hypotenuse",
-"Ist die Hypotenuse immer die längste Seite?",
-"ja",
-"In einem Dreieck mit γ = 90°: welche Seiten sind die Katheten?",
-"a und b"
-],
-[
-9,
-"Sinus: sin α = Gegenkathete : Hypotenuse",
-"sin 30° = ?",
-"0,5",
-"Gegenkathete 3 cm, Hypotenuse 6 cm. Winkel α?",
-"30°",
-"Hypotenuse 10 cm, α = 30°. Gegenkathete?",
-"5 cm"
-],
-[
-10,
-"Kosinus und Tangens im rechtwinkligen Dreieck",
-"cos α = ?",
-"Ankathete : Hypotenuse",
-"tan α = ?",
-"Gegenkathete : Ankathete",
-"Ankathete 4 cm, Gegenkathete 3 cm. tan α und α?",
-"tan α = 0,75, α ≈ 36,9°"
-]
-],
+ [1, "Satz des Pythagoras: a² + b² = c² (c ist die Hypotenuse)", "Katheten 6 cm und 8 cm. Hypotenuse?", "10 cm", "Hypotenuse 10 cm, eine Kathete 6 cm. Andere Kathete?", "8 cm", "Wie lang ist die Diagonale eines Rechtecks 12 cm × 5 cm?", "13 cm"],
+ [2, "Hypotenuse berechnen: c = √(a² + b²)", "a = 6 cm, b = 8 cm. c?", "10 cm", "a = 5 cm, b = 12 cm. c?", "13 cm", "a = 3 cm, b = 4 cm. c?", "5 cm"],
+ [3, "Pythagoras für beliebige Bezeichnungen aufschreiben", "Rechter Winkel bei A. Wie lautet der Satz?", "b² + c² = a²", "Rechter Winkel bei B?", "a² + c² = b²", "Im Dreieck PQR ist der rechte Winkel bei Q. Hypotenuse?", "PR"],
+ [4, "Kathete berechnen: a = √(c² − b²)", "c = 10 cm, b = 6 cm. a?", "8 cm", "c = 13 m, a = 5 m. b?", "12 m", "c = 25 cm, b = 24 cm. a?", "7 cm"],
+ [5, "Hypotenuse und Katheten erkennen", "Welche Seite liegt dem rechten Winkel gegenüber?", "die Hypotenuse", "Ist die Hypotenuse immer die längste Seite?", "ja", "In einem Dreieck mit γ = 90°: welche Seiten sind die Katheten?", "a und b"],
+ [5, "Diagonalen in Rechteck und Quadrat", "Rechteck 9 cm × 12 cm. Diagonale?", "15 cm", "Quadrat a = 5 cm. Diagonale?", "5√2 ≈ 7,07 cm", "Ein Fernseher hat 80 cm × 60 cm. Diagonale?", "100 cm"],
+ [7, "Höhe im gleichschenkligen und gleichseitigen Dreieck", "Gleichschenklig: Basis 10 cm, Schenkel 13 cm. Höhe?", "12 cm", "Gleichseitig, a = 6 cm. Höhe?", "3√3 ≈ 5,2 cm", "Fläche des gleichseitigen Dreiecks mit a = 6 cm?", "ca. 15,6 cm²"],
+ [8, "Abstand zweier Punkte im Koordinatensystem", "Abstand von (1|1) und (4|5)?", "5", "Abstand von (−2|0) und (4|8)?", "10", "Länge der Strecke von (0|0) nach (3|3)?", "3√2 ≈ 4,24"],
+ [9, "Sinus: sin α = Gegenkathete : Hypotenuse", "sin 30° = ?", "0,5", "Gegenkathete 3 cm, Hypotenuse 6 cm. Winkel α?", "30°", "Hypotenuse 10 cm, α = 30°. Gegenkathete?", "5 cm"],
+ [10, "Kosinus und Tangens im rechtwinkligen Dreieck", "cos α = ?", "Ankathete : Hypotenuse", "tan α = ?", "Gegenkathete : Ankathete", "Ankathete 4 cm, Gegenkathete 3 cm. tan α und α?", "tan α = 0,75, α ≈ 36,9°"],
+ [11, "Gegenkathete und Hypotenuse zu einem Winkel bestimmen", "Gegenkathete von α bei γ = 90°?", "a", "Hypotenuse bei γ = 90°?", "c", "sin α bei a = 3, c = 5?", "0,6"],
+ [12, "Kosinus und Tangens: Ankathete zu Hypotenuse bzw. Gegenkathete zu Ankathete", "cos α bei b = 4, c = 5 (γ = 90°)?", "0,8", "tan α bei a = 3, b = 4?", "0,75", "b = 8 cm, α = 35°. a = b · tan α ≈ ?", "5,6 cm"],
+ [13, "Seiten mit dem Sinus berechnen", "c = 10 cm, α = 30°. a?", "5 cm", "c = 8 cm, α = 50°. a ≈ ?", "6,13 cm", "a = 4 cm, α = 40°. c ≈ ?", "6,22 cm"],
+ [15, "Winkel mit sin⁻¹ berechnen", "sin α = 0,5. α?", "30°", "a = 3, c = 6. α?", "30°", "a = 7, c = 10. α ≈ ?", "44,4°"]],
 "1.2": [
-[
-1,
-"Umkehrung: Gilt a² + b² = c², ist das Dreieck rechtwinklig",
-"Ist ein Dreieck mit 3 cm, 4 cm, 5 cm rechtwinklig?",
-"ja, 9 + 16 = 25",
-"Ist ein Dreieck mit 5 cm, 6 cm, 7 cm rechtwinklig?",
-"nein, 25 + 36 ≠ 49",
-"Ist ein Dreieck mit 9 cm, 12 cm, 15 cm rechtwinklig?",
-"ja, 81 + 144 = 225"
-],
-[
-4,
-"Rechte Winkel in der Praxis prüfen",
-"Wie prüfen Handwerker einen rechten Winkel mit einem Seil?",
-"Knoten im Verhältnis 3 : 4 : 5",
-"Ein Maurer misst 60 cm, 80 cm und 1 m. Ist die Ecke rechtwinklig?",
-"ja",
-"Warum genügt es, die Seiten zu messen?",
-"nach der Umkehrung des Pythagoras folgt der rechte Winkel"
-],
-[
-6,
-"Satz und Umkehrung unterscheiden",
-"Formuliere den Satz des Pythagoras als Wenn-dann-Satz.",
-"Wenn ein Dreieck rechtwinklig ist, dann gilt a² + b² = c².",
-"Formuliere die Umkehrung.",
-"Wenn a² + b² = c² gilt, dann ist das Dreieck rechtwinklig.",
-"Wofür benutzt man die Umkehrung?",
-"um zu prüfen, ob ein Winkel ein rechter ist"
-]
-],
+ [1, "Umkehrung: Gilt a² + b² = c², ist das Dreieck rechtwinklig", "Ist ein Dreieck mit 3 cm, 4 cm, 5 cm rechtwinklig?", "ja, 9 + 16 = 25", "Ist ein Dreieck mit 5 cm, 6 cm, 7 cm rechtwinklig?", "nein, 25 + 36 ≠ 49", "Ist ein Dreieck mit 9 cm, 12 cm, 15 cm rechtwinklig?", "ja, 81 + 144 = 225"],
+ [3, "Umkehrung anwenden: Ist das Dreieck rechtwinklig?", "8, 15, 17?", "ja, 64 + 225 = 289", "5, 6, 8?", "nein", "Welche Seite muss man als c nehmen?", "die längste"],
+ [4, "Rechte Winkel in der Praxis prüfen", "Wie prüfen Handwerker einen rechten Winkel mit einem Seil?", "Knoten im Verhältnis 3 : 4 : 5", "Ein Maurer misst 60 cm, 80 cm und 1 m. Ist die Ecke rechtwinklig?", "ja", "Warum genügt es, die Seiten zu messen?", "nach der Umkehrung des Pythagoras folgt der rechte Winkel"],
+ [4, "Pythagoreische Zahlentripel", "Ist (6, 8, 10) ein Tripel?", "ja", "Bilde aus (3, 4, 5) ein weiteres Tripel.", "z. B. (9, 12, 15)", "Ist (7, 24, 25) ein Tripel?", "ja, 49 + 576 = 625"],
+ [6, "Satz und Umkehrung unterscheiden", "Formuliere den Satz des Pythagoras als Wenn-dann-Satz.", "Wenn ein Dreieck rechtwinklig ist, dann gilt a² + b² = c².", "Formuliere die Umkehrung.", "Wenn a² + b² = c² gilt, dann ist das Dreieck rechtwinklig.", "Wofür benutzt man die Umkehrung?", "um zu prüfen, ob ein Winkel ein rechter ist"],
+ [6, "Rechte Winkel abstecken mit der 3-4-5-Regel", "Ein Gärtner misst 3 m und 4 m. Wie lang muss die Diagonale sein?", "5 m", "Er misst 6 m, 8 m und 9,8 m. Rechter Winkel?", "nein, die Diagonale müsste 10 m sein", "Warum funktioniert das?", "Umkehrung des Satzes des Pythagoras"]],
 "1.3": [
-[
-1,
-"Längen in Sachaufgaben mit Pythagoras",
-"Eine 5 m lange Leiter steht 3 m von der Wand. Wie hoch reicht sie?",
-"4 m",
-"Ein Fernseher hat 80 cm Breite und 60 cm Höhe. Bildschirmdiagonale?",
-"100 cm",
-"Wie lang ist die Strecke quer über ein Fußballfeld 100 m × 60 m?",
-"etwa 117 m"
-],
-[
-3,
-"Winkel in Sachaufgaben mit dem Sinus",
-"Eine Rampe ist 5 m lang und 1 m hoch. Steigungswinkel?",
-"etwa 11,5°",
-"Ein Drachen hängt an 50 m Schnur unter 40°. Wie hoch fliegt er?",
-"etwa 32 m",
-"Warum zeichnet man vorher eine Skizze?",
-"um das rechtwinklige Dreieck zu erkennen"
-],
-[
-5,
-"Rechtwinklige Dreiecke in Figuren finden",
-"Wo steckt im gleichschenkligen Dreieck ein rechtwinkliges Dreieck?",
-"zwischen Höhe und halber Grundseite",
-"Höhe eines gleichseitigen Dreiecks mit 6 cm Seitenlänge?",
-"etwa 5,2 cm",
-"Wie berechnest du die Raumdiagonale eines Quaders?",
-"zweimal Pythagoras"
-]
-],
+ [1, "Längen in Sachaufgaben mit Pythagoras", "Eine 5 m lange Leiter steht 3 m von der Wand. Wie hoch reicht sie?", "4 m", "Ein Fernseher hat 80 cm Breite und 60 cm Höhe. Bildschirmdiagonale?", "100 cm", "Wie lang ist die Strecke quer über ein Fußballfeld 100 m × 60 m?", "etwa 117 m"],
+ [2, "Sachaufgaben: Leiter, Rampe, Mast", "Leiter 5 m, Fuß 3 m von der Wand. Höhe?", "4 m", "Rampe: 12 m waagerecht, 5 m hoch. Länge?", "13 m", "Ein Mast (8 m) wird mit einem Seil 6 m vom Fuß verankert. Seillänge?", "10 m"],
+ [3, "Winkel in Sachaufgaben mit dem Sinus", "Eine Rampe ist 5 m lang und 1 m hoch. Steigungswinkel?", "etwa 11,5°", "Ein Drachen hängt an 50 m Schnur unter 40°. Wie hoch fliegt er?", "etwa 32 m", "Warum zeichnet man vorher eine Skizze?", "um das rechtwinklige Dreieck zu erkennen"],
+ [5, "Rechtwinklige Dreiecke in Figuren finden", "Wo steckt im gleichschenkligen Dreieck ein rechtwinkliges Dreieck?", "zwischen Höhe und halber Grundseite", "Höhe eines gleichseitigen Dreiecks mit 6 cm Seitenlänge?", "etwa 5,2 cm", "Wie berechnest du die Raumdiagonale eines Quaders?", "zweimal Pythagoras"],
+ [5, "Höhen und Entfernungen mit Sinus in Sachaufgaben", "Eine Rampe ist 10 m lang und steigt mit 5°. Höhe?", "ca. 0,87 m", "Ein Drachen an 50 m Schnur unter 40°. Höhe?", "ca. 32 m", "Eine Leiter (6 m) lehnt in 5 m Höhe. Winkel zum Boden?", "ca. 56,4°"],
+ [6, "Rechtwinklige Dreiecke in Figuren und Körpern einzeichnen", "Wo findet man ein rechtwinkliges Dreieck im Rechteck?", "durch eine Diagonale", "Wo im gleichschenkligen Dreieck?", "durch die Höhe auf die Basis", "Wo in der quadratischen Pyramide?", "Höhe, halbe Grundseite, Seitenhöhe"]],
 "2.1": [
-[
-1,
-"Pyramide und Kegel skizzieren",
-"Welche Form hat die Grundfläche eines Kegels?",
-"Kreis",
-"Wie viele Flächen hat eine quadratische Pyramide?",
-"5",
-"Wie sieht ein Kegel von der Seite aus?",
-"wie ein Dreieck"
-],
-[
-4,
-"Netz einer Pyramide mit rechteckiger Grundfläche",
-"Woraus besteht das Netz einer quadratischen Pyramide?",
-"ein Quadrat und vier Dreiecke",
-"Welche Dreiecke sind im Netz einer rechteckigen Pyramide gleich?",
-"je zwei gegenüberliegende",
-"Wie viele Dreiecke hat das Netz einer sechsseitigen Pyramide?",
-"6"
-],
-[
-7,
-"Schrägbild und Ansichten der Pyramide",
-"Wie zeichnet man die Spitze im Schrägbild?",
-"über dem Mittelpunkt der Grundfläche",
-"Wie sieht eine quadratische Pyramide von oben aus?",
-"Quadrat mit Diagonalen",
-"Wie sieht sie von vorn aus?",
-"ein Dreieck"
-],
-[
-9,
-"Körper aus Ansichten erkennen",
-"Von oben ein Kreis, von vorn ein Dreieck: welcher Körper?",
-"ein Kegel",
-"Von oben ein Quadrat mit Diagonalen, von vorn ein Dreieck?",
-"eine quadratische Pyramide",
-"Von oben ein Kreis, von vorn ein Rechteck?",
-"ein Zylinder"
-]
-],
+ [1, "Pyramide und Kegel skizzieren", "Welche Form hat die Grundfläche eines Kegels?", "Kreis", "Wie viele Flächen hat eine quadratische Pyramide?", "5", "Wie sieht ein Kegel von der Seite aus?", "wie ein Dreieck"],
+ [2, "Pyramiden und Kegel: Grundfläche, Spitze, Höhe, Seitenhöhe, Mantellinie", "Wie heißt die Strecke von der Kegelspitze zum Grundkreis?", "Mantellinie s", "Was ist die Seitenhöhe einer Pyramide?", "Höhe einer Seitenfläche", "Steht die Höhe einer geraden Pyramide senkrecht auf der Grundfläche?", "ja"],
+ [4, "Netz einer Pyramide mit rechteckiger Grundfläche", "Woraus besteht das Netz einer quadratischen Pyramide?", "ein Quadrat und vier Dreiecke", "Welche Dreiecke sind im Netz einer rechteckigen Pyramide gleich?", "je zwei gegenüberliegende", "Wie viele Dreiecke hat das Netz einer sechsseitigen Pyramide?", "6"],
+ [6, "Netz einer quadratischen Pyramide zeichnen", "Aus welchen Flächen besteht das Netz?", "1 Quadrat, 4 gleichschenklige Dreiecke", "Wie lang ist die Grundseite jedes Dreiecks?", "so lang wie die Quadratseite", "Welche Maße braucht man für die Dreiecke?", "Grundseite und Seitenhöhe (oder Seitenkante)"],
+ [7, "Schrägbild und Ansichten der Pyramide", "Wie zeichnet man die Spitze im Schrägbild?", "über dem Mittelpunkt der Grundfläche", "Wie sieht eine quadratische Pyramide von oben aus?", "Quadrat mit Diagonalen", "Wie sieht sie von vorn aus?", "ein Dreieck"],
+ [7, "Netz eines Kegels: Kreis und Kreisausschnitt", "Woraus besteht das Kegelnetz?", "Grundkreis und Kreisausschnitt", "Welchen Radius hat der Kreisausschnitt?", "die Mantellinie s", "Wie lang ist der Bogen des Ausschnitts?", "so lang wie der Umfang des Grundkreises"],
+ [8, "Pyramide im Zweitafelbild: Grundriss und Aufriss", "Grundriss einer quadratischen Pyramide?", "Quadrat mit Diagonalen", "Aufriss?", "gleichschenkliges Dreieck", "Grundriss eines Kegels?", "Kreis mit Mittelpunkt"],
+ [9, "Körper aus Ansichten erkennen", "Von oben ein Kreis, von vorn ein Dreieck: welcher Körper?", "ein Kegel", "Von oben ein Quadrat mit Diagonalen, von vorn ein Dreieck?", "eine quadratische Pyramide", "Von oben ein Kreis, von vorn ein Rechteck?", "ein Zylinder"]],
 "2.2": [
-[
-1,
-"Seitenhöhe der Pyramide mit Pythagoras",
-"Quadratische Pyramide a = 6 cm, h = 4 cm. Seitenhöhe?",
-"5 cm",
-"Was ist die Seitenhöhe?",
-"die Höhe einer dreieckigen Seitenfläche",
-"Warum braucht man die Seitenhöhe?",
-"für die Mantelfläche"
-],
-[
-4,
-"Oberfläche der Pyramide: O = G + M",
-"Grundfläche einer quadratischen Pyramide mit a = 6 cm?",
-"36 cm²",
-"Mantelfläche bei a = 6 cm und Seitenhöhe 5 cm?",
-"60 cm²",
-"Oberfläche dieser Pyramide?",
-"96 cm²"
-],
-[
-8,
-"Volumen von Pyramide und Kegel: V = 1/3 · G · h",
-"Pyramide mit G = 36 cm², h = 5 cm. Volumen?",
-"60 cm³",
-"Kegel mit r = 3 cm, h = 4 cm. Volumen?",
-"etwa 37,7 cm³",
-"Wie viele Pyramiden füllen ein Prisma mit gleicher Grundfläche und Höhe?",
-"drei"
-],
-[
-11,
-"Masse mit Dichte berechnen",
-"Ein Körper hat 100 cm³ und die Dichte 2,5 g/cm³. Masse?",
-"250 g",
-"Ein Sandhaufen (Kegel) hat 2 m³, Sand wiegt 1,5 t pro m³. Masse?",
-"3 t",
-"Welche Einheit hat die Dichte?",
-"z. B. g/cm³"
-]
-],
+ [1, "Seitenhöhe der Pyramide mit Pythagoras", "Quadratische Pyramide a = 6 cm, h = 4 cm. Seitenhöhe?", "5 cm", "Was ist die Seitenhöhe?", "die Höhe einer dreieckigen Seitenfläche", "Warum braucht man die Seitenhöhe?", "für die Mantelfläche"],
+ [2, "Seitenhöhe aus Körperhöhe und halber Grundseite", "a = 6 cm, h = 4 cm. Seitenhöhe?", "5 cm", "a = 10 cm, h = 12 cm. Seitenhöhe?", "13 cm", "a = 8 cm, hs = 5 cm. Körperhöhe?", "3 cm"],
+ [3, "Seitenkante einer quadratischen Pyramide", "a = 6 cm, hs = 4 cm. Seitenkante?", "5 cm", "a = 4 cm, h = 2 cm. Seitenkante?", "√12 ≈ 3,46 cm", "Welches Dreieck nutzt man aus Seitenhöhe und halber Grundseite?", "ein rechtwinkliges in der Seitenfläche"],
+ [4, "Oberfläche der Pyramide: O = G + M", "Grundfläche einer quadratischen Pyramide mit a = 6 cm?", "36 cm²", "Mantelfläche bei a = 6 cm und Seitenhöhe 5 cm?", "60 cm²", "Oberfläche dieser Pyramide?", "96 cm²"],
+ [6, "Mantel und Oberfläche der quadratischen Pyramide", "a = 6 cm, hs = 5 cm. M?", "60 cm²", "O dazu?", "96 cm²", "a = 10 cm, hs = 13 cm. O?", "360 cm²"],
+ [7, "Mantellinie des Kegels: s = √(r² + h²)", "r = 3 cm, h = 4 cm. s?", "5 cm", "r = 5 cm, h = 12 cm. s?", "13 cm", "s = 10 cm, r = 6 cm. h?", "8 cm"],
+ [8, "Volumen von Pyramide und Kegel: V = 1/3 · G · h", "Pyramide mit G = 36 cm², h = 5 cm. Volumen?", "60 cm³", "Kegel mit r = 3 cm, h = 4 cm. Volumen?", "etwa 37,7 cm³", "Wie viele Pyramiden füllen ein Prisma mit gleicher Grundfläche und Höhe?", "drei"],
+ [8, "Mantel und Oberfläche des Kegels: M = π · r · s", "r = 3 cm, s = 5 cm. M?", "15π ≈ 47,1 cm²", "O dazu?", "24π ≈ 75,4 cm²", "Eine Schultüte (ohne Deckel) mit r = 10 cm, s = 70 cm. Papier?", "ca. 2 199 cm²"],
+ [11, "Masse mit Dichte berechnen", "Ein Körper hat 100 cm³ und die Dichte 2,5 g/cm³. Masse?", "250 g", "Ein Sandhaufen (Kegel) hat 2 m³, Sand wiegt 1,5 t pro m³. Masse?", "3 t", "Welche Einheit hat die Dichte?", "z. B. g/cm³"],
+ [11, "Volumen in Sachaufgaben: Sandhaufen, Dach, Trichter", "Sandkegel r = 2 m, h = 1,5 m. V?", "2π ≈ 6,3 m³", "Wie viele Liter fasst ein Trichter mit r = 6 cm, h = 10 cm?", "ca. 0,38 l", "Ein Zeltdach (quadratische Pyramide) a = 4 m, h = 3 m. Luftraum?", "16 m³"],
+ [13, "Kugel: V = 4/3 · π · r³, O = 4 · π · r²", "r = 3 cm. V?", "36π ≈ 113 cm³", "r = 3 cm. O?", "36π ≈ 113 cm²", "Ein Ball hat d = 22 cm. Volumen?", "ca. 5 575 cm³"]],
 "2.3": [
-[
-1,
-"Zusammengesetzte Körper zerlegen",
-"Ein Turm aus Zylinder und Kegel: Wie berechnest du das Volumen?",
-"Volumen von Zylinder und Kegel addieren",
-"Ein Haus aus Quader und Pyramide: was entfällt bei der Oberfläche?",
-"die gemeinsame Fläche",
-"Würfel (a = 4 cm) mit aufgesetzter Pyramide (h = 3 cm). Volumen?",
-"64 + 16 = 80 cm³"
-],
-[
-3,
-"Zusammengesetzte Körper darstellen",
-"Wie sieht ein Bleistift von der Seite aus?",
-"Rechteck mit Dreieck",
-"Womit beginnst du das Schrägbild eines zusammengesetzten Körpers?",
-"mit dem unteren Körper",
-"Welche Kanten sind beim zusammengesetzten Körper verdeckt?",
-"die hinteren und die innen liegenden"
-],
-[
-4,
-"Materialbedarf bei zusammengesetzten Körpern",
-"Wie viel Blech braucht ein Trichter (Kegelmantel) mit r = 5 cm und Mantellinie 13 cm?",
-"etwa 204 cm²",
-"Warum rechnet man mit Zuschlag für Verschnitt?",
-"Material geht beim Zuschneiden verloren",
-"Ein Silo besteht aus Zylinder und Kegel. Was berechnest du für das Fassungsvermögen?",
-"die Volumina"
-]
-],
+ [1, "Zusammengesetzte Körper zerlegen", "Ein Turm aus Zylinder und Kegel: Wie berechnest du das Volumen?", "Volumen von Zylinder und Kegel addieren", "Ein Haus aus Quader und Pyramide: was entfällt bei der Oberfläche?", "die gemeinsame Fläche", "Würfel (a = 4 cm) mit aufgesetzter Pyramide (h = 3 cm). Volumen?", "64 + 16 = 80 cm³"],
+ [3, "Zusammengesetzte Körper darstellen", "Wie sieht ein Bleistift von der Seite aus?", "Rechteck mit Dreieck", "Womit beginnst du das Schrägbild eines zusammengesetzten Körpers?", "mit dem unteren Körper", "Welche Kanten sind beim zusammengesetzten Körper verdeckt?", "die hinteren und die innen liegenden"],
+ [3, "Zusammengesetzte Körper: Kegel auf Zylinder, Pyramide auf Quader", "Turm: Zylinder (r = 2 m, h = 5 m) mit Kegeldach (h = 3 m). V?", "ca. 75,4 m³", "Haus: Quader 6 × 8 × 3 m mit Pyramidendach h = 2 m. V?", "176 m³", "Welche Fläche zählt bei der Oberfläche nicht mit?", "die Berührfläche"],
+ [4, "Materialbedarf bei zusammengesetzten Körpern", "Wie viel Blech braucht ein Trichter (Kegelmantel) mit r = 5 cm und Mantellinie 13 cm?", "etwa 204 cm²", "Warum rechnet man mit Zuschlag für Verschnitt?", "Material geht beim Zuschneiden verloren", "Ein Silo besteht aus Zylinder und Kegel. Was berechnest du für das Fassungsvermögen?", "die Volumina"]],
 "3.1": [
-[
-1,
-"Normalparabel y = x²: Wertetabelle und Graph",
-"Wertetabelle für y = x² mit x = −2, −1, 0, 1, 2?",
-"4, 1, 0, 1, 4",
-"Welche Symmetrie hat die Normalparabel?",
-"symmetrisch zur y-Achse",
-"Liegt P(−3 | 9) auf y = x²?",
-"ja"
-],
-[
-4,
-"Graph von y = x² und y = a · x²",
-"Wie heißt der Graph von y = x²?",
-"Normalparabel",
-"Wie verändert a = 2 die Parabel y = a · x²?",
-"sie wird schmaler",
-"Was bewirkt ein negatives a?",
-"die Parabel ist nach unten geöffnet"
-],
-[
-5,
-"Definitions-, Wertebereich und Nullstellen ablesen",
-"Wertebereich von y = x² − 4?",
-"y ≥ −4",
-"Nullstellen von y = x² − 4 am Graphen?",
-"x = −2 und x = 2",
-"Hat y = x² + 1 Nullstellen?",
-"nein, der Graph liegt über der x-Achse"
-]
-],
+ [1, "Normalparabel y = x²: Wertetabelle und Graph", "Wertetabelle für y = x² mit x = −2, −1, 0, 1, 2?", "4, 1, 0, 1, 4", "Welche Symmetrie hat die Normalparabel?", "symmetrisch zur y-Achse", "Liegt P(−3 | 9) auf y = x²?", "ja"],
+ [2, "Wertetabelle und Graph der Normalparabel", "y = x² für x = −2, −1, 0, 1, 2?", "4, 1, 0, 1, 4", "Liegt (−3|9) auf der Normalparabel?", "ja", "Symmetrieachse der Normalparabel?", "die y-Achse"],
+ [4, "Graph von y = x² und y = a · x²", "Wie heißt der Graph von y = x²?", "Normalparabel", "Wie verändert a = 2 die Parabel y = a · x²?", "sie wird schmaler", "Was bewirkt ein negatives a?", "die Parabel ist nach unten geöffnet"],
+ [4, "Streckung und Stauchung: y = a · x²", "Ist y = 3x² gestreckt oder gestaucht?", "gestreckt", "Wie sieht y = −x² aus?", "nach unten geöffnet", "Liegt (2|2) auf y = 0,5x²?", "ja"],
+ [5, "Definitions-, Wertebereich und Nullstellen ablesen", "Wertebereich von y = x² − 4?", "y ≥ −4", "Nullstellen von y = x² − 4 am Graphen?", "x = −2 und x = 2", "Hat y = x² + 1 Nullstellen?", "nein, der Graph liegt über der x-Achse"],
+ [7, "Nullstellen am Graphen ablesen", "Nullstellen von y = x² − 4 am Graphen?", "x = −2 und x = 2", "Wie viele Nullstellen hat y = x² + 3?", "keine", "Wo liegen die Nullstellen von y = (x − 1)² − 1?", "x = 0 und x = 2"]],
 "3.2": [
-[
-1,
-"Monotonie: steigend und fallend",
-"Wo fällt die Normalparabel?",
-"für x ≤ 0",
-"Wo steigt y = x²?",
-"für x ≥ 0",
-"Wo steigt y = −x² + 3?",
-"für x ≤ 0"
-],
-[
-2,
-"Monotoniewechsel im Scheitelpunkt",
-"Wo wechselt y = (x − 2)² das Monotonieverhalten?",
-"bei x = 2",
-"Ist y = x² auf ganz ℝ monoton?",
-"nein",
-"Fällt y = 2 · x² für x < 0?",
-"ja"
-]
-],
+ [1, "Monotonie: steigend und fallend", "Wo fällt die Normalparabel?", "für x ≤ 0", "Wo steigt y = x²?", "für x ≥ 0", "Wo steigt y = −x² + 3?", "für x ≤ 0"],
+ [2, "Monotoniewechsel im Scheitelpunkt", "Wo wechselt y = (x − 2)² das Monotonieverhalten?", "bei x = 2", "Ist y = x² auf ganz ℝ monoton?", "nein", "Fällt y = 2 · x² für x < 0?", "ja"]],
 "3.3": [
-[
-1,
-"Scheitelpunktform y = (x + d)² + e: S(−d | e)",
-"Scheitelpunkt von y = (x − 3)² + 1?",
-"S(3 | 1)",
-"Scheitelpunkt von y = (x + 2)² − 5?",
-"S(−2 | −5)",
-"Gleichung der um 4 nach links und 1 nach unten verschobenen Normalparabel?",
-"y = (x + 4)² − 1"
-],
-[
-4,
-"Quadratische Ergänzung: y = x² + p · x + q in Scheitelpunktform",
-"Scheitelpunkt von y = x² − 6 · x + 5?",
-"y = (x − 3)² − 4, S(3 | −4)",
-"Scheitelpunkt von y = x² + 4 · x + 1?",
-"S(−2 | −3)",
-"Scheitelpunkt von y = x² + p · x + q allgemein?",
-"S(−p/2 | q − p²/4)"
-],
-[
-7,
-"y = a · x² + c, Scheitelpunkt als Minimum oder Maximum",
-"Scheitelpunkt von y = −2 · x² + 3?",
-"S(0 | 3), Maximum",
-"Ist der Scheitelpunkt von y = 0,5 · x² − 1 Minimum oder Maximum?",
-"Minimum",
-"Größter Wert von y = −x² + 4 · x?",
-"4 (bei x = 2)"
-]
-],
+ [1, "Scheitelpunktform y = (x + d)² + e: S(−d | e)", "Scheitelpunkt von y = (x − 3)² + 1?", "S(3 | 1)", "Scheitelpunkt von y = (x + 2)² − 5?", "S(−2 | −5)", "Gleichung der um 4 nach links und 1 nach unten verschobenen Normalparabel?", "y = (x + 4)² − 1"],
+ [2, "Scheitelpunkt aus y = (x + d)² + e ablesen", "y = (x − 2)² + 3: S?", "S(2|3)", "y = (x + 4)² − 1: S?", "S(−4|−1)", "Gleichung der Normalparabel mit S(1|−5)?", "y = (x − 1)² − 5"],
+ [3, "Parabeln verschieben: nach links/rechts und oben/unten", "Wie entsteht y = x² + 2 aus y = x²?", "2 nach oben", "Wie entsteht y = (x − 3)²?", "3 nach rechts", "Verschiebe y = x² um 1 nach links und 2 nach unten.", "y = (x + 1)² − 2"],
+ [4, "Quadratische Ergänzung: y = x² + p · x + q in Scheitelpunktform", "Scheitelpunkt von y = x² − 6 · x + 5?", "y = (x − 3)² − 4, S(3 | −4)", "Scheitelpunkt von y = x² + 4 · x + 1?", "S(−2 | −3)", "Scheitelpunkt von y = x² + p · x + q allgemein?", "S(−p/2 | q − p²/4)"],
+ [5, "Quadratische Ergänzung: y = x² + px + q in Scheitelpunktform", "y = x² + 4x + 1", "y = (x + 2)² − 3", "y = x² − 6x + 10", "y = (x − 3)² + 1", "Scheitelpunkt von y = x² + 2x?", "S(−1|−1)"],
+ [7, "y = a · x² + c, Scheitelpunkt als Minimum oder Maximum", "Scheitelpunkt von y = −2 · x² + 3?", "S(0 | 3), Maximum", "Ist der Scheitelpunkt von y = 0,5 · x² − 1 Minimum oder Maximum?", "Minimum", "Größter Wert von y = −x² + 4 · x?", "4 (bei x = 2)"],
+ [7, "Scheitelpunkt als Minimum oder Maximum in Sachaufgaben", "Kleinster Wert von y = (x − 1)² + 4?", "4", "Größter Wert von y = −x² + 9?", "9", "Ein Ball fliegt auf h(t) = −5(t − 2)² + 20. Maximale Höhe?", "20 m"]],
 "3.4": [
-[
-5,
-"Lösungsformel für x² + p · x + q = 0",
-"x² − 5 · x + 6 = 0",
-"x = 2 oder x = 3",
-"x² + 2 · x − 8 = 0",
-"x = −4 oder x = 2",
-"Wann hat x² + p · x + q = 0 keine reelle Lösung?",
-"wenn (p/2)² − q < 0"
-],
-[
-9,
-"Ohne Hilfsmittel: Ausklammern und Satz vom Nullprodukt",
-"x² − 4 · x = 0",
-"x = 0 oder x = 4",
-"(x + 3) · (x − 2) = 0",
-"x = −3 oder x = 2",
-"x² − 169 = 0",
-"x = 13 oder x = −13"
-],
-[
-6,
-"Schnittpunkte von Parabel und Gerade berechnen",
-"Schnittpunkte von y = x² und y = 4?",
-"(−2 | 4) und (2 | 4)",
-"Schnittpunkte von y = x² und y = x + 2?",
-"(−1 | 1) und (2 | 4)",
-"Ein Rechteck hat Umfang 20 m und Fläche 24 m². Seiten?",
-"4 m und 6 m"
-]
-],
+ [2, "Reinquadratische Gleichungen x² = c", "x² = 49", "x = ±7", "x² − 18 = 0", "x = ±√18 ≈ ±4,24", "x² + 9 = 0", "keine Lösung"],
+ [5, "Lösungsformel für x² + p · x + q = 0", "x² − 5 · x + 6 = 0", "x = 2 oder x = 3", "x² + 2 · x − 8 = 0", "x = −4 oder x = 2", "Wann hat x² + p · x + q = 0 keine reelle Lösung?", "wenn (p/2)² − q < 0"],
+ [6, "Schnittpunkte von Parabel und Gerade berechnen", "Schnittpunkte von y = x² und y = 4?", "(−2 | 4) und (2 | 4)", "Schnittpunkte von y = x² und y = x + 2?", "(−1 | 1) und (2 | 4)", "Ein Rechteck hat Umfang 20 m und Fläche 24 m². Seiten?", "4 m und 6 m"],
+ [9, "Ohne Hilfsmittel: Ausklammern und Satz vom Nullprodukt", "x² − 4 · x = 0", "x = 0 oder x = 4", "(x + 3) · (x − 2) = 0", "x = −3 oder x = 2", "x² − 169 = 0", "x = 13 oder x = −13"]],
 "3.5": [
-[
-13,
-"Fallunterscheidung über die Diskriminante",
-"Wie viele Lösungen hat x² + 6 · x + 9 = 0?",
-"eine (x = −3)",
-"Wie viele Lösungen hat x² + 1 = 0?",
-"keine reelle",
-"Für welches q hat x² + 4 · x + q = 0 genau eine Lösung?",
-"q = 4"
-],
-[
-2,
-"Fallunterscheidung: Anzahl der Lösungen von x² = a",
-"Lösungen von x² = 9?",
-"x = −3 und x = 3",
-"Lösungen von x² = 0?",
-"nur x = 0",
-"Lösungen von x² = −4?",
-"keine"
-]
-],
+ [2, "Fallunterscheidung: Anzahl der Lösungen von x² = a", "Lösungen von x² = 9?", "x = −3 und x = 3", "Lösungen von x² = 0?", "nur x = 0", "Lösungen von x² = −4?", "keine"],
+ [13, "Fallunterscheidung über die Diskriminante", "Wie viele Lösungen hat x² + 6 · x + 9 = 0?", "eine (x = −3)", "Wie viele Lösungen hat x² + 1 = 0?", "keine reelle", "Für welches q hat x² + 4 · x + q = 0 genau eine Lösung?", "q = 4"]],
 "4.1": [
-[
-1,
-"Manipulation durch Achsen und Bezugsgrößen erkennen",
-"Wie lässt die y-Achse einen kleinen Anstieg groß wirken?",
-"sie beginnt nicht bei 0",
-"„Unfälle um 50 % gestiegen“ von 2 auf 3. Kritik?",
-"kleine absolute Zahlen",
-"Warum darf man aus drei Jahreswerten keinen Trend festschreiben?",
-"zu wenige Daten, Schwankungen möglich"
-],
-[
-2,
-"Überzogene Genauigkeit und vorsortierte Daten",
-"„Durchschnittlich 2,374 Kinder pro Familie“: Was ist daran problematisch?",
-"überzogene Genauigkeit",
-"Eine Umfrage nur unter Fans eines Vereins: Problem?",
-"nicht repräsentative Stichprobe",
-"Wie prüfst du eine Statistik aus den Medien?",
-"Quelle, Stichprobe, Bezugsgröße und Darstellung prüfen"
-],
-[
-5,
-"Medien als Informationsquelle kritisch nutzen",
-"Eine Umfrage unter 10 Personen gilt als „repräsentativ“. Einwand?",
-"Stichprobe zu klein",
-"Wer hat eine Umfrage in Auftrag gegeben – warum ist das wichtig?",
-"Interessen können das Ergebnis färben",
-"„Doppelt so viele Unfälle“ – welche Angabe fehlt oft?",
-"die absoluten Zahlen bzw. die Bezugsgröße"
-]
-],
+ [1, "Manipulation durch Achsen und Bezugsgrößen erkennen", "Wie lässt die y-Achse einen kleinen Anstieg groß wirken?", "sie beginnt nicht bei 0", "„Unfälle um 50 % gestiegen“ von 2 auf 3. Kritik?", "kleine absolute Zahlen", "Warum darf man aus drei Jahreswerten keinen Trend festschreiben?", "zu wenige Daten, Schwankungen möglich"],
+ [2, "Überzogene Genauigkeit und vorsortierte Daten", "„Durchschnittlich 2,374 Kinder pro Familie“: Was ist daran problematisch?", "überzogene Genauigkeit", "Eine Umfrage nur unter Fans eines Vereins: Problem?", "nicht repräsentative Stichprobe", "Wie prüfst du eine Statistik aus den Medien?", "Quelle, Stichprobe, Bezugsgröße und Darstellung prüfen"],
+ [2, "Abgeschnittene Achsen und verzerrte Diagramme erkennen", "Warum wirkt ein Säulendiagramm mit Achse ab 90 übertrieben?", "kleine Unterschiede wirken riesig", "Wie erkennt man eine verzerrte Darstellung?", "Achsenbeginn und Einteilung prüfen", "Was ist bei Bildsymbolen (z. B. Säcke) problematisch?", "Verdoppelte Höhe vervierfacht die Fläche"],
+ [4, "Absolute und relative Angaben vergleichen", "„Unfälle stiegen um 100 %“ – von 2 auf 4. Aussagekraft?", "gering, absolute Zahlen sind klein", "Was ist aussagekräftiger: 300 Unfälle in A oder 200 in B?", "hängt von der Einwohnerzahl ab", "Stadt A: 300 Unfälle bei 100 000 Einwohnern, B: 200 bei 50 000. Wo relativ mehr?", "in B"],
+ [5, "Medien als Informationsquelle kritisch nutzen", "Eine Umfrage unter 10 Personen gilt als „repräsentativ“. Einwand?", "Stichprobe zu klein", "Wer hat eine Umfrage in Auftrag gegeben – warum ist das wichtig?", "Interessen können das Ergebnis färben", "„Doppelt so viele Unfälle“ – welche Angabe fehlt oft?", "die absoluten Zahlen bzw. die Bezugsgröße"],
+ [6, "Umfragen bewerten: Stichprobe, Fragestellung", "Warum ist eine Umfrage mit 20 Personen wenig aussagekräftig?", "Stichprobe zu klein", "Was ist an der Frage „Finden Sie auch, dass …?“ problematisch?", "sie ist suggestiv", "Wer sollte bei einer Schulumfrage befragt werden?", "eine zufällige Auswahl aus allen Klassen"]],
 "4.2": [
-[
-1,
-"Modalwert, Median, arithmetisches Mittel",
-"Modalwert von 2, 3, 3, 5, 7?",
-"3",
-"Median von 2, 9, 4, 7, 1?",
-"4",
-"Mittelwert von 2, 3, 3, 5, 7?",
-"4"
-],
-[
-1,
-"Spannweite = größter minus kleinster Wert",
-"Spannweite von 4, 9, 2, 7?",
-"7",
-"Wie ändert sich die Spannweite, wenn ein Ausreißer 30 dazukommt?",
-"sie wird 28",
-"Warum sagt die Spannweite wenig über die Verteilung aus?",
-"sie hängt nur von zwei Werten ab"
-],
-[
-5,
-"Mittelwerte und Ausreißer mit Tabellenkalkulation",
-"Gehälter 2 000, 2 200, 2 400, 20 000 €. Welcher Mittelwert beschreibt typisch?",
-"der Zentralwert (2 300 €)",
-"Welche Funktion liefert in der Tabellenkalkulation das arithmetische Mittel?",
-"MITTELWERT",
-"Werte 3, 5, 5, 7, 10: Modalwert, Zentralwert, Mittelwert?",
-"5; 5; 6"
-]
-],
+ [1, "Modalwert, Median, arithmetisches Mittel", "Modalwert von 2, 3, 3, 5, 7?", "3", "Median von 2, 9, 4, 7, 1?", "4", "Mittelwert von 2, 3, 3, 5, 7?", "4"],
+ [1, "Spannweite = größter minus kleinster Wert", "Spannweite von 4, 9, 2, 7?", "7", "Wie ändert sich die Spannweite, wenn ein Ausreißer 30 dazukommt?", "sie wird 28", "Warum sagt die Spannweite wenig über die Verteilung aus?", "sie hängt nur von zwei Werten ab"],
+ [2, "Arithmetisches Mittel, Median, Modalwert berechnen", "Daten 2, 3, 3, 5, 7: Mittelwert?", "4", "Median dazu?", "3", "Modalwert dazu?", "3"],
+ [4, "Ausreißer: Welcher Mittelwert ist aussagekräftiger?", "Gehälter 2 000, 2 100, 2 200, 9 000. Median oder Mittelwert?", "Median (2 150)", "Mittelwert dazu?", "3 825", "Warum verändert ein Ausreißer den Median kaum?", "Er hängt nur von der Reihenfolge ab"],
+ [5, "Mittelwerte und Ausreißer mit Tabellenkalkulation", "Gehälter 2 000, 2 200, 2 400, 20 000 €. Welcher Mittelwert beschreibt typisch?", "der Zentralwert (2 300 €)", "Welche Funktion liefert in der Tabellenkalkulation das arithmetische Mittel?", "MITTELWERT", "Werte 3, 5, 5, 7, 10: Modalwert, Zentralwert, Mittelwert?", "5; 5; 6"],
+ [5, "Maximum, Minimum und Spannweite", "Temperaturen 3, −2, 8, 5: Spannweite?", "10", "Max und Min von 12, 7, 19, 4?", "19 und 4", "Zwei Klassen haben denselben Mittelwert. Was sagt eine größere Spannweite?", "Die Werte streuen stärker"]],
 "4.3": [
-[
-1,
-"Ergebnisse dokumentieren: Fragestellung, Daten, Auswertung, Fazit",
-"Was gehört an den Anfang einer statistischen Auswertung?",
-"die Fragestellung",
-"Was gehört zu jeder Grafik?",
-"Titel, Achsenbeschriftung, Quelle",
-"Warum trennt man Auswertung und Bewertung?",
-"Ergebnisse sollen nachprüfbar bleiben, Bewertungen sind Meinung"
-],
-[
-2,
-"Ergebnisse präsentieren",
-"Welche Darstellung eignet sich für Anteile?",
-"Kreisdiagramm",
-"Wie viele Kernaussagen sollte eine Präsentationsfolie höchstens haben?",
-"wenige, meist eine",
-"Wie reagierst du auf eine Nachfrage zur Datengrundlage?",
-"Quelle und Stichprobe offenlegen"
-]
-]
+ [1, "Ergebnisse dokumentieren: Fragestellung, Daten, Auswertung, Fazit", "Was gehört an den Anfang einer statistischen Auswertung?", "die Fragestellung", "Was gehört zu jeder Grafik?", "Titel, Achsenbeschriftung, Quelle", "Warum trennt man Auswertung und Bewertung?", "Ergebnisse sollen nachprüfbar bleiben, Bewertungen sind Meinung"],
+ [2, "Ergebnisse präsentieren", "Welche Darstellung eignet sich für Anteile?", "Kreisdiagramm", "Wie viele Kernaussagen sollte eine Präsentationsfolie höchstens haben?", "wenige, meist eine", "Wie reagierst du auf eine Nachfrage zur Datengrundlage?", "Quelle und Stichprobe offenlegen"]]
 }

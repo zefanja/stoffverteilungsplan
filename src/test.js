@@ -212,6 +212,13 @@ function serve(dir) {
     m.applyDoc('settings', { calendar: { start: '2026-08-17', end: '2027-07-09', holidays: [], free: [] }, engineStart: '2026-11-01', retention: 0.85 });
     const y = m.S.settings.years; const res = [y.length, y[0].id, y[0].legacyDocs, y[0].engineStart, m.S.settings.retention];
     m.applyDoc('settings', JSON.parse(keep)); return res; });
+  const plMig = await p.evaluate(() => { const m = window.__mp; const keep = JSON.stringify(m.S.settings);
+    const base = JSON.parse(keep); delete base.pl10;
+    m.applyDoc('settings', Object.assign({}, base, { perLesson: 5 })); const a = m.S.settings.perLesson;
+    m.applyDoc('settings', Object.assign({}, base, { perLesson: 7 })); const b = m.S.settings.perLesson;
+    m.applyDoc('settings', Object.assign({}, base, { perLesson: 5, pl10: true })); const c = m.S.settings.perLesson;
+    m.applyDoc('settings', JSON.parse(keep)); return [a, b, c, m.S.settings.perLesson]; });
+  ok(plMig.join() === '10,7,5,10', 'Wiederholungen pro Stunde: Standard 10, alter Standard 5 wird einmal auf 10 gehoben ' + plMig.join());
   ok(JSON.stringify(migS) === JSON.stringify([1, '2026-27', true, '2026-11-01', 0.85]), 'Alte Einstellungen werden zum Schuljahr 2026/27');
 
   // Ferien Sachsen: eingebaute Termine ergeben genau den bisherigen Kalender

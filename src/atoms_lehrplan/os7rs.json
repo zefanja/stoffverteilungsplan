@@ -1,604 +1,108 @@
 {
 "1.1": [
-[
-1,
-"Grundaufgaben der Prozentrechnung mit dem Dreisatz",
-"Wie viel sind 12 % von 250 €? (über 1 %)",
-"1 % = 2,50 €, 12 % = 30 €",
-"18 € sind 15 %. Grundwert?",
-"1 % = 1,20 €, 100 % = 120 €",
-"Wie viel Prozent sind 42 von 120?",
-"35 %"
-],
-[
-3,
-"Prozentwert, Prozentsatz oder Grundwert gesucht?",
-"Gegeben G = 80 €, p = 25 %. Was ist gesucht?",
-"der Prozentwert (20 €)",
-"Gegeben W = 9, G = 36. Was ist gesucht?",
-"der Prozentsatz (25 %)",
-"Ein Kleid kostet nach 30 % Rabatt 63 €. Ursprünglicher Preis?",
-"90 €"
-]
-],
+ [1, "Grundaufgaben der Prozentrechnung mit dem Dreisatz", "Wie viel sind 12 % von 250 €? (über 1 %)", "1 % = 2,50 €, 12 % = 30 €", "18 € sind 15 %. Grundwert?", "1 % = 1,20 €, 100 % = 120 €", "Wie viel Prozent sind 42 von 120?", "35 %"],
+ [2, "Grundwert, Prozentwert, Prozentsatz in Texten erkennen", "„15 % der 200 Schüler kommen mit dem Rad.“ Grundwert?", "200 Schüler", "„Von 40 Losen gewinnen 10.“ Prozentwert?", "10 Lose", "„30 € sind 25 % des Preises.“ Was ist gesucht?", "der Grundwert"],
+ [3, "Prozentwert, Prozentsatz oder Grundwert gesucht?", "Gegeben G = 80 €, p = 25 %. Was ist gesucht?", "der Prozentwert (20 €)", "Gegeben W = 9, G = 36. Was ist gesucht?", "der Prozentsatz (25 %)", "Ein Kleid kostet nach 30 % Rabatt 63 €. Ursprünglicher Preis?", "90 €"]],
 "1.2": [
-[
-1,
-"Bequeme Prozentsätze: 50 % = 1/2, 25 % = 1/4, 10 % = 1/10",
-"50 % von 36 €?",
-"18 €",
-"25 % von 80 €?",
-"20 €",
-"10 % von 45 €?",
-"4,50 €"
-],
-[
-3,
-"Anteile im Kreisdiagramm darstellen",
-"Welcher Winkel gehört zu 50 %?",
-"180°",
-"Welcher Winkel gehört zu 25 %?",
-"90°",
-"Welcher Winkel gehört zu 10 %?",
-"36°"
-],
-[
-1,
-"Anteile als Bruch, Dezimalzahl und Prozent angeben",
-"Schreibe 1/4 in Prozent.",
-"25 %",
-"Schreibe 0,3 in Prozent.",
-"30 %",
-"8 von 20 Schülern kommen mit dem Rad. Anteil in Prozent?",
-"40 %"
-]
-],
+ [1, "Bequeme Prozentsätze: 50 % = 1/2, 25 % = 1/4, 10 % = 1/10", "50 % von 36 €?", "18 €", "25 % von 80 €?", "20 €", "10 % von 45 €?", "4,50 €"],
+ [1, "Anteile als Bruch, Dezimalzahl und Prozent angeben", "Schreibe 1/4 in Prozent.", "25 %", "Schreibe 0,3 in Prozent.", "30 %", "8 von 20 Schülern kommen mit dem Rad. Anteil in Prozent?", "40 %"],
+ [2, "Bequeme Prozentsätze im Kopf: 10 %, 25 %, 50 %, 75 %", "50 % von 84 €?", "42 €", "25 % von 120 kg?", "30 kg", "10 % von 35 €?", "3,50 €"],
+ [3, "Anteile im Kreisdiagramm darstellen", "Welcher Winkel gehört zu 50 %?", "180°", "Welcher Winkel gehört zu 25 %?", "90°", "Welcher Winkel gehört zu 10 %?", "36°"],
+ [3, "Bequeme Prozentsätze zusammensetzen: 20 %, 5 %, 1 %", "20 % von 60 €?", "12 €", "5 % von 80 €?", "4 €", "15 % von 40 €?", "6 € (10 % + 5 %)"],
+ [6, "Anteile aus Säulen- und Kreisdiagrammen ablesen und vergleichen", "Ein Viertelkreis im Kreisdiagramm entspricht?", "25 %", "Welcher Anteil ist größer: 3/8 oder 40 %?", "40 %", "In einer Klasse mit 25 Kindern sind 40 % Mädchen. Wie viele?", "10"]],
 "1.3": [
-[
-1,
-"Grundwert, Prozentwert und Prozentsatz",
-"Wie heißt das Ganze in der Prozentrechnung?",
-"Grundwert",
-"Von 200 € sind 50 € gemeint. Was ist der Prozentwert?",
-"50 €",
-"In „20 % von 80 € sind 16 €“: Was ist der Prozentsatz?",
-"20 %"
-],
-[
-2,
-"Prozent bedeutet Hundertstel",
-"Wie viel sind 1 % von 300 €?",
-"3 €",
-"Wie viel sind 100 % von 45 €?",
-"45 €",
-"Kann ein Prozentsatz größer als 100 % sein?",
-"ja, z. B. bei einer Preissteigerung"
-]
-],
+ [1, "Grundwert, Prozentwert und Prozentsatz", "Wie heißt das Ganze in der Prozentrechnung?", "Grundwert", "Von 200 € sind 50 € gemeint. Was ist der Prozentwert?", "50 €", "In „20 % von 80 € sind 16 €“: Was ist der Prozentsatz?", "20 %"],
+ [2, "Prozent bedeutet Hundertstel", "Wie viel sind 1 % von 300 €?", "3 €", "Wie viel sind 100 % von 45 €?", "45 €", "Kann ein Prozentsatz größer als 100 % sein?", "ja, z. B. bei einer Preissteigerung"],
+ [3, "Prozentsatz als Anteil berechnen: Prozentwert : Grundwert", "12 von 48 sind wie viel Prozent?", "25 %", "9 von 60?", "15 %", "Ein Preis sinkt von 50 € auf 42 €. Um wie viel Prozent?", "16 %"]],
 "1.4": [
-[
-1,
-"Jahreszinsen: Z = K · p/100",
-"Zinsen für 800 € bei 2 % in einem Jahr?",
-"16 €",
-"Für 1 200 € gibt es 36 € Zinsen. Zinssatz?",
-"3 %",
-"Welches Kapital bringt bei 4 % im Jahr 20 € Zinsen?",
-"500 €"
-],
-[
-5,
-"Preiserhöhung und Preissenkung",
-"Ein Fahrrad für 400 € wird um 10 % teurer. Neuer Preis?",
-"440 €",
-"Eine Jacke für 80 € wird um 25 % billiger. Neuer Preis?",
-"60 €",
-"Ein Preis steigt erst um 10 %, dann sinkt er um 10 %. Ist er wieder gleich?",
-"nein, er ist 1 % niedriger"
-],
-[
-5,
-"Tageszinsen: Z = K · p/100 · t/360",
-"Zinsen für 3 600 € bei 5 % für 30 Tage?",
-"15 €",
-"Zinsen für 1 000 € bei 3 % für 90 Tage?",
-"7,50 €",
-"Wie viele Zinstage hat das Jahr in der Bankrechnung?",
-"360"
-],
-[
-8,
-"Zinseszins: Zinsen werden mitverzinst",
-"1 000 € bei 2 % mit Zinseszins nach 2 Jahren?",
-"1 040,40 €",
-"Was wächst schneller: einfache Zinsen oder Zinseszins?",
-"Zinseszins",
-"Nach wie vielen Jahren verdoppelt sich ein Kapital bei 10 % Zinseszins etwa?",
-"nach etwa 7 Jahren"
-]
-],
+ [1, "Jahreszinsen: Z = K · p/100", "Zinsen für 800 € bei 2 % in einem Jahr?", "16 €", "Für 1 200 € gibt es 36 € Zinsen. Zinssatz?", "3 %", "Welches Kapital bringt bei 4 % im Jahr 20 € Zinsen?", "500 €"],
+ [2, "Grundwert berechnen", "10 % sind 7 €. Grundwert?", "70 €", "40 % sind 18 kg. Grundwert?", "45 kg", "Nach 20 % Rabatt kostet die Hose 48 €. Ursprünglicher Preis?", "60 €"],
+ [4, "Preiserhöhung und Preissenkung in einem Schritt mit dem Faktor", "Ein Preis von 80 € steigt um 5 %. Neuer Preis?", "84 €", "Welcher Faktor gehört zu 30 % Rabatt?", "0,7", "Netto 50 €, mit 19 % MwSt.?", "59,50 €"],
+ [5, "Preiserhöhung und Preissenkung", "Ein Fahrrad für 400 € wird um 10 % teurer. Neuer Preis?", "440 €", "Eine Jacke für 80 € wird um 25 % billiger. Neuer Preis?", "60 €", "Ein Preis steigt erst um 10 %, dann sinkt er um 10 %. Ist er wieder gleich?", "nein, er ist 1 % niedriger"],
+ [5, "Tageszinsen: Z = K · p/100 · t/360", "Zinsen für 3 600 € bei 5 % für 30 Tage?", "15 €", "Zinsen für 1 000 € bei 3 % für 90 Tage?", "7,50 €", "Wie viele Zinstage hat das Jahr in der Bankrechnung?", "360"],
+ [5, "Zinsen, Kapital, Zinssatz: die drei Grundaufgaben", "Zinsen für 2 000 € zu 1,5 % in einem Jahr?", "30 €", "40 € Zinsen bei 2 % im Jahr. Kapital?", "2 000 €", "800 € bringen 24 € Zinsen im Jahr. Zinssatz?", "3 %"],
+ [8, "Zinseszins: Zinsen werden mitverzinst", "1 000 € bei 2 % mit Zinseszins nach 2 Jahren?", "1 040,40 €", "Was wächst schneller: einfache Zinsen oder Zinseszins?", "Zinseszins", "Nach wie vielen Jahren verdoppelt sich ein Kapital bei 10 % Zinseszins etwa?", "nach etwa 7 Jahren"],
+ [9, "Zinseszins Jahr für Jahr berechnen", "1 000 € zu 2 % nach 2 Jahren?", "1 040,40 €", "Mit welchem Faktor wächst das Kapital pro Jahr bei 3 %?", "1,03", "Wie viel Zinsen bringt das zweite Jahr bei 500 € und 4 %?", "20,80 €"]],
 "1.5": [
-[
-1,
-"Verschiedene Lösungswege vergleichen",
-"Wie berechnest du 25 % von 64 am schnellsten?",
-"64 : 4 = 16",
-"Welcher Weg ist bei 17 % von 238 € sinnvoll?",
-"Taschenrechner oder Dreisatz",
-"Warum ist ein Überschlag auch mit Taschenrechner nützlich?",
-"um Tippfehler zu erkennen"
-],
-[
-2,
-"Rechenhilfsmittel sinnvoll einsetzen",
-"Wann rechnest du im Kopf?",
-"bei bequemen Zahlen",
-"Wann nutzt du eine Tabellenkalkulation?",
-"bei vielen gleichartigen Rechnungen",
-"Ein Ergebnis von 2 000 % Rabatt erscheint. Was tust du?",
-"Eingabe prüfen, Ergebnis ist unsinnig"
-],
-[
-4,
-"Lösungswege bewerten",
-"Was macht einen Lösungsweg gut?",
-"richtig, nachvollziehbar, möglichst kurz",
-"Zwei Wege führen zu verschiedenen Ergebnissen. Was tust du?",
-"beide prüfen und den Fehler suchen",
-"Warum schreibt man Zwischenschritte auf?",
-"damit der Weg kontrollierbar ist"
-]
-],
+ [1, "Verschiedene Lösungswege vergleichen", "Wie berechnest du 25 % von 64 am schnellsten?", "64 : 4 = 16", "Welcher Weg ist bei 17 % von 238 € sinnvoll?", "Taschenrechner oder Dreisatz", "Warum ist ein Überschlag auch mit Taschenrechner nützlich?", "um Tippfehler zu erkennen"],
+ [2, "Rechenhilfsmittel sinnvoll einsetzen", "Wann rechnest du im Kopf?", "bei bequemen Zahlen", "Wann nutzt du eine Tabellenkalkulation?", "bei vielen gleichartigen Rechnungen", "Ein Ergebnis von 2 000 % Rabatt erscheint. Was tust du?", "Eingabe prüfen, Ergebnis ist unsinnig"],
+ [4, "Lösungswege bewerten", "Was macht einen Lösungsweg gut?", "richtig, nachvollziehbar, möglichst kurz", "Zwei Wege führen zu verschiedenen Ergebnissen. Was tust du?", "beide prüfen und den Fehler suchen", "Warum schreibt man Zwischenschritte auf?", "damit der Weg kontrollierbar ist"]],
 "2.1": [
-[
-1,
-"Urliste, Strichliste, absolute und relative Häufigkeit",
-"Wozu dient eine Strichliste?",
-"zum Zählen der Ergebnisse",
-"30 Würfe, 6-mal Sechs. Relative Häufigkeit?",
-"6/30 = 20 %",
-"Wie viele Striche hat eine Strichliste bei absoluter Häufigkeit 12?",
-"12"
-],
-[
-2,
-"Ergebnis, Ergebnismenge, Ereignis",
-"Ergebnismenge beim Würfeln?",
-"{1, 2, 3, 4, 5, 6}",
-"Ereignis „gerade Zahl“ beim Würfeln?",
-"{2, 4, 6}",
-"Ereignis „Primzahl“ beim Würfeln?",
-"{2, 3, 5}"
-]
-],
+ [1, "Urliste, Strichliste, absolute und relative Häufigkeit", "Wozu dient eine Strichliste?", "zum Zählen der Ergebnisse", "30 Würfe, 6-mal Sechs. Relative Häufigkeit?", "6/30 = 20 %", "Wie viele Striche hat eine Strichliste bei absoluter Häufigkeit 12?", "12"],
+ [2, "Ergebnis, Ergebnismenge, Ereignis", "Ergebnismenge beim Würfeln?", "{1, 2, 3, 4, 5, 6}", "Ereignis „gerade Zahl“ beim Würfeln?", "{2, 4, 6}", "Ereignis „Primzahl“ beim Würfeln?", "{2, 3, 5}"],
+ [3, "Relative Häufigkeit berechnen und vergleichen", "20 Würfe, 5-mal Sechs. Relative Häufigkeit?", "0,25", "Klasse A: 12 von 30, Klasse B: 10 von 20 haben ein Haustier. Wo ist der Anteil größer?", "in Klasse B (50 % zu 40 %)", "Wie viel Prozent sind 7 von 35?", "20 %"]],
 "2.2": [
-[
-6,
-"Nicht gleich wahrscheinliche Ergebnisse: relative Häufigkeit wird stabil",
-"Kann man bei einer Reißzwecke die Wahrscheinlichkeit für „Spitze oben“ vorhersagen?",
-"nein, man schätzt sie durch viele Würfe",
-"Nach 200 Würfen 80-mal Spitze oben. Schätzwert?",
-"40 %",
-"Warum braucht man viele Würfe?",
-"die relative Häufigkeit wird erst dann stabil"
-],
-[
-2,
-"Gesetz der großen Zahlen",
-"Was passiert mit der relativen Häufigkeit bei sehr vielen Würfen?",
-"sie nähert sich der Wahrscheinlichkeit",
-"10 Münzwürfe, 7-mal Kopf. Ist die Münze gezinkt?",
-"nicht sicher, zu wenige Würfe",
-"Warum stimmt die relative Häufigkeit selten genau mit der Wahrscheinlichkeit überein?",
-"der Zufall schwankt"
-]
-],
+ [2, "Gesetz der großen Zahlen", "Was passiert mit der relativen Häufigkeit bei sehr vielen Würfen?", "sie nähert sich der Wahrscheinlichkeit", "10 Münzwürfe, 7-mal Kopf. Ist die Münze gezinkt?", "nicht sicher, zu wenige Würfe", "Warum stimmt die relative Häufigkeit selten genau mit der Wahrscheinlichkeit überein?", "der Zufall schwankt"],
+ [6, "Nicht gleich wahrscheinliche Ergebnisse: relative Häufigkeit wird stabil", "Kann man bei einer Reißzwecke die Wahrscheinlichkeit für „Spitze oben“ vorhersagen?", "nein, man schätzt sie durch viele Würfe", "Nach 200 Würfen 80-mal Spitze oben. Schätzwert?", "40 %", "Warum braucht man viele Würfe?", "die relative Häufigkeit wird erst dann stabil"]],
 "2.3": [
-[
-1,
-"Wahrscheinlichkeit als Maß für die Chance eines Ereignisses (zwischen 0 und 1)",
-"Wahrscheinlichkeit eines unmöglichen Ereignisses?",
-"0",
-"Wahrscheinlichkeit, eine Zahl kleiner als 7 zu würfeln?",
-"1 (sicheres Ereignis)",
-"Wahrscheinlichkeit für eine Zahl größer als 4 beim Würfeln?",
-"2/6 = 1/3"
-],
-[
-8,
-"Chancen abschätzen",
-"Welches Feld eines Glücksrads mit 1 rotem und 3 blauen gleich großen Feldern kommt öfter?",
-"blau",
-"Wahrscheinlichkeit für Rot bei diesem Glücksrad?",
-"1/4",
-"Ist ein Spiel fair, bei dem man bei Blau gewinnt?",
-"nein, Blau ist wahrscheinlicher"
-]
-],
+ [1, "Wahrscheinlichkeit als Maß für die Chance eines Ereignisses (zwischen 0 und 1)", "Wahrscheinlichkeit eines unmöglichen Ereignisses?", "0", "Wahrscheinlichkeit, eine Zahl kleiner als 7 zu würfeln?", "1 (sicheres Ereignis)", "Wahrscheinlichkeit für eine Zahl größer als 4 beim Würfeln?", "2/6 = 1/3"],
+ [8, "Chancen abschätzen", "Welches Feld eines Glücksrads mit 1 rotem und 3 blauen gleich großen Feldern kommt öfter?", "blau", "Wahrscheinlichkeit für Rot bei diesem Glücksrad?", "1/4", "Ist ein Spiel fair, bei dem man bei Blau gewinnt?", "nein, Blau ist wahrscheinlicher"]],
 "2.4": [
-[
-1,
-"Diagramme lesen und deuten",
-"Welches Diagramm zeigt eine Entwicklung über Monate?",
-"Liniendiagramm",
-"Welches Diagramm zeigt Anteile am Ganzen?",
-"Kreisdiagramm",
-"Ein Säulendiagramm beginnt bei 90 statt bei 0. Was ist zu beachten?",
-"Unterschiede wirken größer, als sie sind"
-],
-[
-4,
-"Schaubilder kritisch prüfen",
-"Was fehlt einem Schaubild ohne Quelle?",
-"die Überprüfbarkeit",
-"Warum können Bilder statt Säulen täuschen?",
-"doppelte Höhe ergibt vierfache Fläche",
-"Wie erkennst du eine irreführende Grafik?",
-"Achsen, Ausschnitt und Bezugsgrößen prüfen"
-]
-],
+ [1, "Diagramme lesen und deuten", "Welches Diagramm zeigt eine Entwicklung über Monate?", "Liniendiagramm", "Welches Diagramm zeigt Anteile am Ganzen?", "Kreisdiagramm", "Ein Säulendiagramm beginnt bei 90 statt bei 0. Was ist zu beachten?", "Unterschiede wirken größer, als sie sind"],
+ [4, "Schaubilder kritisch prüfen", "Was fehlt einem Schaubild ohne Quelle?", "die Überprüfbarkeit", "Warum können Bilder statt Säulen täuschen?", "doppelte Höhe ergibt vierfache Fläche", "Wie erkennst du eine irreführende Grafik?", "Achsen, Ausschnitt und Bezugsgrößen prüfen"]],
 "3.1": [
-[
-1,
-"Zahlen auf der Zahlengeraden darstellen",
-"Wo liegt −3 auf der Zahlengeraden?",
-"drei Einheiten links von 0",
-"Welche Zahl liegt genau zwischen −4 und 2?",
-"−1",
-"Wie heißt die Gegenzahl von 7?",
-"−7"
-],
-[
-3,
-"Zahlen vergleichen und ordnen",
-"Was ist größer: −2 oder −5?",
-"−2",
-"Ordne: 3; −1; −4; 0.",
-"−4 < −1 < 0 < 3",
-"Welche Temperatur ist wärmer: −8 °C oder −3 °C?",
-"−3 °C"
-],
-[
-5,
-"Betrag einer Zahl",
-"Betrag von −6?",
-"6",
-"Welche Zahlen haben den Betrag 4?",
-"4 und −4",
-"Was ist weiter von 0 entfernt: −7 oder 5?",
-"−7"
-]
-],
+ [1, "Zahlen auf der Zahlengeraden darstellen", "Wo liegt −3 auf der Zahlengeraden?", "drei Einheiten links von 0", "Welche Zahl liegt genau zwischen −4 und 2?", "−1", "Wie heißt die Gegenzahl von 7?", "−7"],
+ [2, "Gegenzahl und Abstand auf der Zahlengeraden", "Gegenzahl von 8?", "−8", "Wie weit ist −3 von 4 entfernt?", "7", "Welche Zahl liegt in der Mitte zwischen −6 und 2?", "−2"],
+ [3, "Zahlen vergleichen und ordnen", "Was ist größer: −2 oder −5?", "−2", "Ordne: 3; −1; −4; 0.", "−4 < −1 < 0 < 3", "Welche Temperatur ist wärmer: −8 °C oder −3 °C?", "−3 °C"],
+ [5, "Betrag einer Zahl", "Betrag von −6?", "6", "Welche Zahlen haben den Betrag 4?", "4 und −4", "Was ist weiter von 0 entfernt: −7 oder 5?", "−7"]],
 "3.2": [
-[
-1,
-"Zahlbereiche: ℕ ⊂ ℤ ⊂ ℚ",
-"Zu welchen Zahlbereichen gehört −5?",
-"ℤ und ℚ",
-"Gehört 3/4 zu ℤ?",
-"nein, nur zu ℚ",
-"Gibt es eine Zahl, die in ℤ, aber nicht in ℕ liegt?",
-"ja, z. B. −1"
-],
-[
-3,
-"Zahlbereichserweiterungen begründen",
-"Warum braucht man ℤ?",
-"damit z. B. 3 − 5 lösbar ist",
-"Warum braucht man ℚ?",
-"damit z. B. 2 : 3 lösbar ist",
-"Ist jede natürliche Zahl auch rational?",
-"ja"
-],
-[
-4,
-"Zahlen im Mengendiagramm einordnen",
-"Wo liegt 7 im Diagramm ℕ, ℤ, ℚ?",
-"in ℕ (und damit in allen)",
-"Wo liegt −0,5?",
-"in ℚ, nicht in ℤ",
-"Wo liegt −8?",
-"in ℤ und ℚ, nicht in ℕ"
-]
-],
+ [1, "Zahlbereiche: ℕ ⊂ ℤ ⊂ ℚ", "Zu welchen Zahlbereichen gehört −5?", "ℤ und ℚ", "Gehört 3/4 zu ℤ?", "nein, nur zu ℚ", "Gibt es eine Zahl, die in ℤ, aber nicht in ℕ liegt?", "ja, z. B. −1"],
+ [3, "Zahlbereichserweiterungen begründen", "Warum braucht man ℤ?", "damit z. B. 3 − 5 lösbar ist", "Warum braucht man ℚ?", "damit z. B. 2 : 3 lösbar ist", "Ist jede natürliche Zahl auch rational?", "ja"],
+ [4, "Zahlen im Mengendiagramm einordnen", "Wo liegt 7 im Diagramm ℕ, ℤ, ℚ?", "in ℕ (und damit in allen)", "Wo liegt −0,5?", "in ℚ, nicht in ℤ", "Wo liegt −8?", "in ℤ und ℚ, nicht in ℕ"]],
 "3.3": [
-[
-1,
-"Punkte in allen vier Quadranten",
-"Wie heißt der Punkt 2 nach links und 3 nach unten?",
-"P(−2 | −3)",
-"In welchem Quadranten liegen Punkte mit x < 0 und y > 0?",
-"im zweiten",
-"Spiegle P(3 | −1) an der x-Achse.",
-"P′(3 | 1)"
-],
-[
-4,
-"Koordinatensystem mit vier Quadranten",
-"In welchem Quadranten liegt P(−2 | 3)?",
-"im zweiten",
-"Wie heißt der Punkt 3 nach links und 1 nach unten?",
-"P(−3 | −1)",
-"Spiegle P(2 | 4) an der y-Achse.",
-"P′(−2 | 4)"
-]
-],
+ [1, "Punkte in allen vier Quadranten", "Wie heißt der Punkt 2 nach links und 3 nach unten?", "P(−2 | −3)", "In welchem Quadranten liegen Punkte mit x < 0 und y > 0?", "im zweiten", "Spiegle P(3 | −1) an der x-Achse.", "P′(3 | 1)"],
+ [4, "Koordinatensystem mit vier Quadranten", "In welchem Quadranten liegt P(−2 | 3)?", "im zweiten", "Wie heißt der Punkt 3 nach links und 1 nach unten?", "P(−3 | −1)", "Spiegle P(2 | 4) an der y-Achse.", "P′(−2 | 4)"]],
 "3.4": [
-[
-1,
-"Ganze Zahlen addieren und subtrahieren",
-"−200 − 50 = ?",
-"−250",
-"−3 + 8 = ?",
-"5",
-"4 − 9 = ?",
-"−5"
-],
-[
-2,
-"Vervielfachen und Teilen: Minus mal Plus ergibt Minus",
-"7 · (−3) = ?",
-"−21",
-"−36 : 4 = ?",
-"−9",
-"Der Kontostand sinkt 5 Monate lang um je 20 €. Gesamtänderung?",
-"−100 €"
-],
-[
-5,
-"Potenzieren rationaler Zahlen",
-"(−3)² = ?",
-"9",
-"(−2)³ = ?",
-"−8",
-"(−1/2)² = ?",
-"1/4"
-]
-],
+ [1, "Ganze Zahlen addieren und subtrahieren", "−200 − 50 = ?", "−250", "−3 + 8 = ?", "5", "4 − 9 = ?", "−5"],
+ [2, "Vervielfachen und Teilen: Minus mal Plus ergibt Minus", "7 · (−3) = ?", "−21", "−36 : 4 = ?", "−9", "Der Kontostand sinkt 5 Monate lang um je 20 €. Gesamtänderung?", "−100 €"],
+ [2, "Ganze Zahlen addieren: gleiche und verschiedene Vorzeichen", "(−4) + (−6) = ?", "−10", "−9 + 5 = ?", "−4", "7 + (−12) = ?", "−5"],
+ [3, "Subtrahieren: die Gegenzahl addieren", "4 − 9 = ?", "−5", "−3 − (−8) = ?", "5", "−6 − 4 = ?", "−10"],
+ [4, "Multiplizieren und Dividieren: Vorzeichenregeln", "(−5) · 4 = ?", "−20", "(−36) : (−9) = ?", "4", "(−2) · (−3) · (−1) = ?", "−6"],
+ [5, "Potenzieren rationaler Zahlen", "(−3)² = ?", "9", "(−2)³ = ?", "−8", "(−1/2)² = ?", "1/4"]],
 "3.5": [
-[
-1,
-"Vertauschungs- und Verbindungsgesetz für rationale Zahlen",
-"Rechne geschickt: −7 + 12 + 7",
-"12",
-"Rechne geschickt: 4 · (−9) · 25",
-"−900",
-"Gilt das Vertauschungsgesetz für die Subtraktion?",
-"nein, 3 − 5 ≠ 5 − 3"
-],
-[
-2,
-"Vorrangregeln: Klammer, Potenz, Punkt, Strich",
-"−2 + 3 · (−4) = ?",
-"−14",
-"(−2 + 3) · (−4) = ?",
-"−4",
-"−3² = ?",
-"−9"
-]
-],
+ [1, "Vertauschungs- und Verbindungsgesetz für rationale Zahlen", "Rechne geschickt: −7 + 12 + 7", "12", "Rechne geschickt: 4 · (−9) · 25", "−900", "Gilt das Vertauschungsgesetz für die Subtraktion?", "nein, 3 − 5 ≠ 5 − 3"],
+ [2, "Vorrangregeln: Klammer, Potenz, Punkt, Strich", "−2 + 3 · (−4) = ?", "−14", "(−2 + 3) · (−4) = ?", "−4", "−3² = ?", "−9"],
+ [2, "Klammern auflösen und Vorzeichen zusammenfassen", "−(5 − 8) = ?", "3", "10 − (−3 + 4) = ?", "9", "−2 · (3 − 7) = ?", "8"]],
 "3.6": [
-[
-1,
-"Variable, Term, Aussage, Lösungsmenge",
-"Ist 2 · x + 3 ein Term oder eine Gleichung?",
-"ein Term",
-"Ist x = 2 eine Lösung von 3 · x − 1 = 5?",
-"ja",
-"Lösungsmenge von x + 4 = 1 in ℕ?",
-"die leere Menge"
-],
-[
-4,
-"Gleichungen der Form a · x + b = c · x + d",
-"5 · x + 3 = 2 · x + 12",
-"x = 3",
-"4 · x − 7 = 6 · x + 1",
-"x = −4",
-"3 : x = 6 : 8 (Verhältnisgleichung)",
-"x = 4"
-],
-[
-7,
-"Gleichungen zu Sachaufgaben aufstellen",
-"„Das Dreifache einer Zahl vermindert um 4 ist 11.“ Zahl?",
-"5",
-"Vater und Sohn sind zusammen 48, der Vater ist dreimal so alt. Alter des Sohnes?",
-"12",
-"u = 2 · a + 2 · b nach a umstellen",
-"a = (u − 2 · b) : 2"
-]
-],
+ [1, "Variable, Term, Aussage, Lösungsmenge", "Ist 2 · x + 3 ein Term oder eine Gleichung?", "ein Term", "Ist x = 2 eine Lösung von 3 · x − 1 = 5?", "ja", "Lösungsmenge von x + 4 = 1 in ℕ?", "die leere Menge"],
+ [2, "Variablen, Terme und Aussagen unterscheiden", "Ist 3x + 2 eine Aussage?", "nein, ein Term", "Ist 3 + 4 = 8 eine Aussage?", "ja, eine falsche", "Welche Zahl aus {−2, 0, 2} erfüllt x² = 4?", "−2 und 2"],
+ [2, "Termwerte mit negativen Zahlen berechnen", "2x + 3 für x = −4?", "−5", "x² − 1 für x = −3?", "8", "5 − 2a für a = −1,5?", "8"],
+ [4, "Gleichungen der Form a · x + b = c · x + d", "5 · x + 3 = 2 · x + 12", "x = 3", "4 · x − 7 = 6 · x + 1", "x = −4", "3 : x = 6 : 8 (Verhältnisgleichung)", "x = 4"],
+ [5, "Gleichungen ax + b = c mit Äquivalenzumformungen lösen", "3x + 4 = 19", "x = 5", "2x − 7 = −1", "x = 3", "−4x + 6 = 18", "x = −3"],
+ [6, "Verhältnisgleichungen lösen", "x : 4 = 6 : 8", "x = 3", "2 : 5 = x : 20", "x = 8", "3/x = 9/12", "x = 4"],
+ [7, "Gleichungen zu Sachaufgaben aufstellen", "„Das Dreifache einer Zahl vermindert um 4 ist 11.“ Zahl?", "5", "Vater und Sohn sind zusammen 48, der Vater ist dreimal so alt. Alter des Sohnes?", "12", "u = 2 · a + 2 · b nach a umstellen", "a = (u − 2 · b) : 2"],
+ [7, "Gleichungen mit Variable auf beiden Seiten", "5x − 2 = 3x + 6", "x = 4", "4x + 1 = x − 8", "x = −3", "2(x + 3) = x + 10", "x = 4"]],
 "4.1": [
-[
-1,
-"Realobjekte mit geometrischen Begriffen beschreiben",
-"Welche Form hat ein typisches Fenster?",
-"Rechteck",
-"Welche Dreiecke sieht man in einem Fachwerk?",
-"z. B. rechtwinklige und gleichschenklige",
-"Wie stehen die Stufen einer Treppe zum Geländer?",
-"die Stufen sind waagerecht, das Geländer ist schräg"
-],
-[
-2,
-"Lagebeziehungen an Bauwerken erkennen",
-"Wie stehen Wand und Fußboden zueinander?",
-"senkrecht",
-"Welche Kanten eines Hauses sind parallel?",
-"z. B. die senkrechten Ecken",
-"Warum sind Dreiecke in Tragwerken häufig?",
-"Dreiecke sind stabil, sie verformen sich nicht"
-],
-[
-3,
-"Objekte in Fachsprache beschreiben",
-"Welche Form hat eine Satteldach-Giebelseite?",
-"Dreieck",
-"Beschreibe einen Damm im Querschnitt.",
-"ein Trapez",
-"Warum ist Fachsprache bei Bauplänen wichtig?",
-"damit alle dasselbe verstehen"
-]
-],
+ [1, "Realobjekte mit geometrischen Begriffen beschreiben", "Welche Form hat ein typisches Fenster?", "Rechteck", "Welche Dreiecke sieht man in einem Fachwerk?", "z. B. rechtwinklige und gleichschenklige", "Wie stehen die Stufen einer Treppe zum Geländer?", "die Stufen sind waagerecht, das Geländer ist schräg"],
+ [2, "Lagebeziehungen an Bauwerken erkennen", "Wie stehen Wand und Fußboden zueinander?", "senkrecht", "Welche Kanten eines Hauses sind parallel?", "z. B. die senkrechten Ecken", "Warum sind Dreiecke in Tragwerken häufig?", "Dreiecke sind stabil, sie verformen sich nicht"],
+ [3, "Objekte in Fachsprache beschreiben", "Welche Form hat eine Satteldach-Giebelseite?", "Dreieck", "Beschreibe einen Damm im Querschnitt.", "ein Trapez", "Warum ist Fachsprache bei Bauplänen wichtig?", "damit alle dasselbe verstehen"],
+ [3, "Körper und Flächen an Bauwerken benennen", "Welcher Körper ist ein Hausdach mit dreieckigen Giebeln?", "dreiseitiges Prisma", "Wie liegen gegenüberliegende Wände zueinander?", "parallel", "Welche Form hat der Querschnitt eines Kanals mit schrägen Wänden?", "Trapez"]],
 "4.2": [
-[
-2,
-"Parallelogramme konstruieren",
-"Welche Seiten sind im Parallelogramm parallel?",
-"die gegenüberliegenden",
-"Welche Angaben genügen für ein Parallelogramm?",
-"z. B. zwei Seiten und ein Winkel",
-"Wie groß ist der vierte Winkel, wenn einer 70° misst?",
-"die Winkel sind 70°, 110°, 70°, 110°"
-],
-[
-3,
-"Drachenvierecke konstruieren",
-"Welche Seiten sind beim Drachen gleich lang?",
-"je zwei benachbarte",
-"Wie stehen die Diagonalen eines Drachens zueinander?",
-"senkrecht",
-"Wie viele Symmetrieachsen hat ein Drachen, der keine Raute ist?",
-"eine"
-],
-[
-2,
-"Flächeninhalt von Trapez und Drachen",
-"Trapez a = 10 cm, c = 6 cm, h = 4 cm. Flächeninhalt?",
-"32 cm²",
-"Drachen mit e = 8 cm, f = 5 cm. Flächeninhalt?",
-"20 cm²",
-"Woher kommt das „: 2“ in der Dreiecksformel?",
-"ein Dreieck ist ein halbes Parallelogramm"
-]
-],
+ [2, "Parallelogramme konstruieren", "Welche Seiten sind im Parallelogramm parallel?", "die gegenüberliegenden", "Welche Angaben genügen für ein Parallelogramm?", "z. B. zwei Seiten und ein Winkel", "Wie groß ist der vierte Winkel, wenn einer 70° misst?", "die Winkel sind 70°, 110°, 70°, 110°"],
+ [2, "Flächeninhalt von Trapez und Drachen", "Trapez a = 10 cm, c = 6 cm, h = 4 cm. Flächeninhalt?", "32 cm²", "Drachen mit e = 8 cm, f = 5 cm. Flächeninhalt?", "20 cm²", "Woher kommt das „: 2“ in der Dreiecksformel?", "ein Dreieck ist ein halbes Parallelogramm"],
+ [2, "Trapezfläche A = (a + c) · h : 2", "a = 8 cm, c = 4 cm, h = 5 cm. A?", "30 cm²", "a = 10 m, c = 6 m, h = 3 m. A?", "24 m²", "A = 36 cm², a = 7 cm, c = 5 cm. h?", "6 cm"],
+ [3, "Drachenvierecke konstruieren", "Welche Seiten sind beim Drachen gleich lang?", "je zwei benachbarte", "Wie stehen die Diagonalen eines Drachens zueinander?", "senkrecht", "Wie viele Symmetrieachsen hat ein Drachen, der keine Raute ist?", "eine"]],
 "4.3": [
-[
-1,
-"Vielecke in bekannte Figuren zerlegen",
-"Wie berechnest du den Flächeninhalt eines Fünfecks?",
-"in Dreiecke oder Rechtecke zerlegen",
-"Ein Haus-Querschnitt: Rechteck 8 m × 4 m und Dreieck mit g = 8 m, h = 3 m. Fläche?",
-"32 + 12 = 44 m²",
-"Welche Figuren entstehen beim Tangram?",
-"Dreiecke, ein Quadrat, ein Parallelogramm"
-],
-[
-1,
-"Flächeninhalt von Dreieck und Parallelogramm",
-"Dreieck g = 8 cm, h = 5 cm. Flächeninhalt?",
-"20 cm²",
-"Parallelogramm g = 6 cm, h = 4 cm. Flächeninhalt?",
-"24 cm²",
-"Dreieck mit A = 18 cm² und g = 6 cm. Höhe?",
-"6 cm"
-],
-[
-3,
-"Umfang von Drei- und Vierecken",
-"Umfang eines Dreiecks mit 5 cm, 6 cm, 7 cm?",
-"18 cm",
-"Umfang eines Parallelogramms mit 8 cm und 5 cm?",
-"26 cm",
-"Ein Drachen hat Seiten 4 cm und 6 cm. Umfang?",
-"20 cm"
-]
-],
+ [1, "Vielecke in bekannte Figuren zerlegen", "Wie berechnest du den Flächeninhalt eines Fünfecks?", "in Dreiecke oder Rechtecke zerlegen", "Ein Haus-Querschnitt: Rechteck 8 m × 4 m und Dreieck mit g = 8 m, h = 3 m. Fläche?", "32 + 12 = 44 m²", "Welche Figuren entstehen beim Tangram?", "Dreiecke, ein Quadrat, ein Parallelogramm"],
+ [1, "Flächeninhalt von Dreieck und Parallelogramm", "Dreieck g = 8 cm, h = 5 cm. Flächeninhalt?", "20 cm²", "Parallelogramm g = 6 cm, h = 4 cm. Flächeninhalt?", "24 cm²", "Dreieck mit A = 18 cm² und g = 6 cm. Höhe?", "6 cm"],
+ [3, "Umfang von Drei- und Vierecken", "Umfang eines Dreiecks mit 5 cm, 6 cm, 7 cm?", "18 cm", "Umfang eines Parallelogramms mit 8 cm und 5 cm?", "26 cm", "Ein Drachen hat Seiten 4 cm und 6 cm. Umfang?", "20 cm"],
+ [3, "Vielecke zerlegen oder ergänzen", "Ein Haus-Fünfeck aus Quadrat (4 cm) und Dreieck (h = 2 cm). A?", "20 cm²", "Ein Rechteck 8 × 5 m mit einer ausgesparten Ecke 2 × 2 m. A?", "36 m²", "Welche Methode nutzt man bei einem L-förmigen Grundstück?", "in zwei Rechtecke zerlegen"]],
 "4.4": [
-[
-1,
-"Prismen darstellen: Netz, Schrägbild, Ansichten",
-"Woraus besteht das Netz eines dreiseitigen Prismas?",
-"2 Dreiecke und 3 Rechtecke",
-"Welche Form hat die Vorderansicht eines liegenden dreiseitigen Prismas?",
-"ein Dreieck (oder Rechteck, je nach Lage)",
-"Wie viele Flächen hat ein sechsseitiges Prisma?",
-"8"
-],
-[
-4,
-"Oberfläche und Volumen von Prismen: V = G · h",
-"Prisma mit G = 12 cm², h = 5 cm. Volumen?",
-"60 cm³",
-"Wie berechnet man die Oberfläche eines Prismas?",
-"2 · Grundfläche + Mantelfläche",
-"Ein dreiseitiges Prisma: Dreieck mit g = 4 cm, h = 3 cm, Körperhöhe 10 cm. Volumen?",
-"60 cm³"
-],
-[
-6,
-"Masse berechnen: m = V · Dichte",
-"Ein Holzklotz hat 500 cm³ und die Dichte 0,7 g/cm³. Masse?",
-"350 g",
-"Ein Betonbalken hat 0,2 m³, Beton wiegt 2,4 t pro m³. Masse?",
-"0,48 t",
-"Warum braucht man für die Masse die Dichte?",
-"gleich große Körper aus verschiedenen Stoffen sind verschieden schwer"
-],
-[
-6,
-"Senkrechtes Zweitafelbild: Grundriss und Aufriss",
-"Was zeigt der Aufriss?",
-"die Ansicht von vorn",
-"Wo zeichnet man den Grundriss im Zweitafelbild?",
-"unter dem Aufriss",
-"Warum braucht man zwei Risse?",
-"ein Riss allein zeigt nicht alle Maße"
-]
-],
+ [1, "Prismen darstellen: Netz, Schrägbild, Ansichten", "Woraus besteht das Netz eines dreiseitigen Prismas?", "2 Dreiecke und 3 Rechtecke", "Welche Form hat die Vorderansicht eines liegenden dreiseitigen Prismas?", "ein Dreieck (oder Rechteck, je nach Lage)", "Wie viele Flächen hat ein sechsseitiges Prisma?", "8"],
+ [2, "Netze von Prismen zeichnen", "Aus welchen Flächen besteht das Netz eines dreiseitigen Prismas?", "2 Dreiecke, 3 Rechtecke", "Wie viele Flächen hat ein fünfseitiges Prisma?", "7", "Wie breit ist das Mantelrechteck im Netz?", "so breit wie der Umfang der Grundfläche"],
+ [3, "Schrägbild eines Prismas zeichnen", "Unter welchem Winkel zeichnet man Tiefenkanten?", "45°", "Wie lang zeichnet man eine 6 cm tiefe Kante?", "3 cm", "Welche Fläche zeichnet man in wahrer Größe?", "die vordere (Grundfläche, wenn sie vorn liegt)"],
+ [4, "Oberfläche und Volumen von Prismen: V = G · h", "Prisma mit G = 12 cm², h = 5 cm. Volumen?", "60 cm³", "Wie berechnet man die Oberfläche eines Prismas?", "2 · Grundfläche + Mantelfläche", "Ein dreiseitiges Prisma: Dreieck mit g = 4 cm, h = 3 cm, Körperhöhe 10 cm. Volumen?", "60 cm³"],
+ [5, "Grundfläche, Mantelfläche und Oberfläche eines Prismas", "Dreiseitiges Prisma: Grundfläche 6 cm², Umfang 12 cm, Höhe 10 cm. Mantel?", "120 cm²", "Oberfläche dazu?", "132 cm²", "Wie berechnet man die Mantelfläche schnell?", "Umfang der Grundfläche · Körperhöhe"],
+ [6, "Masse berechnen: m = V · Dichte", "Ein Holzklotz hat 500 cm³ und die Dichte 0,7 g/cm³. Masse?", "350 g", "Ein Betonbalken hat 0,2 m³, Beton wiegt 2,4 t pro m³. Masse?", "0,48 t", "Warum braucht man für die Masse die Dichte?", "gleich große Körper aus verschiedenen Stoffen sind verschieden schwer"],
+ [6, "Senkrechtes Zweitafelbild: Grundriss und Aufriss", "Was zeigt der Aufriss?", "die Ansicht von vorn", "Wo zeichnet man den Grundriss im Zweitafelbild?", "unter dem Aufriss", "Warum braucht man zwei Risse?", "ein Riss allein zeigt nicht alle Maße"],
+ [6, "Volumen eines Prismas: V = G · h", "G = 12 cm², h = 5 cm. V?", "60 cm³", "Dreieck mit g = 4 cm und h = 3 cm als Grundfläche, Körperhöhe 10 cm. V?", "60 cm³", "Ein Prisma hat V = 90 cm³ und G = 15 cm². Höhe?", "6 cm"],
+ [7, "Volumeneinheiten in Sachaufgaben", "Wie viele Liter fasst ein Prisma mit V = 4 dm³?", "4 l", "Ein Becken fasst 12 m³. Wie viele Liter?", "12 000 l", "750 cm³ = ? l", "0,75 l"]],
 "4.5": [
-[
-1,
-"Zusammengesetzte Körper aus Prismen",
-"Wie berechnest du das Volumen eines L-förmigen Prismas?",
-"Grundfläche (L-Form) mal Höhe",
-"Ein Haus aus Quader 8 m × 6 m × 3 m und dreiseitigem Prisma (Dach) mit g = 6 m, h = 2 m, Länge 8 m. Volumen?",
-"144 + 48 = 192 m³",
-"Welche Flächen fallen bei der Oberfläche weg?",
-"die Flächen, an denen die Körper aneinanderstoßen"
-],
-[
-3,
-"Zusammengesetzte Körper darstellen",
-"Womit beginnst du das Schrägbild?",
-"mit dem unteren Körper",
-"Welche Kanten zeichnest du gestrichelt?",
-"die verdeckten",
-"Wie sieht ein Haus mit Satteldach von vorn (Giebelseite) aus?",
-"Rechteck mit Dreieck darauf"
-],
-[
-4,
-"Materialbedarf bei zusammengesetzten Körpern",
-"Wie viel Blech braucht man für eine Dachfläche aus zwei Rechtecken 8 m × 3,6 m?",
-"57,6 m²",
-"Warum plant man Verschnitt ein?",
-"beim Zuschneiden geht Material verloren",
-"Wie prüfst du, ob dein Ergebnis plausibel ist?",
-"Überschlag mit runden Maßen"
-]
-],
+ [1, "Zusammengesetzte Körper aus Prismen", "Wie berechnest du das Volumen eines L-förmigen Prismas?", "Grundfläche (L-Form) mal Höhe", "Ein Haus aus Quader 8 m × 6 m × 3 m und dreiseitigem Prisma (Dach) mit g = 6 m, h = 2 m, Länge 8 m. Volumen?", "144 + 48 = 192 m³", "Welche Flächen fallen bei der Oberfläche weg?", "die Flächen, an denen die Körper aneinanderstoßen"],
+ [2, "Volumen und Oberfläche zusammengesetzter Körper", "Haus aus Quader (4 × 3 × 2 m) und Prismadach (G = 3 m², Länge 4 m). V?", "36 m³", "Welche Flächen fallen beim Zusammensetzen weg?", "die Berührflächen", "Wie rechnet man bei ausgehöhlten Körpern?", "großes Volumen minus ausgeschnittenes"],
+ [3, "Zusammengesetzte Körper darstellen", "Womit beginnst du das Schrägbild?", "mit dem unteren Körper", "Welche Kanten zeichnest du gestrichelt?", "die verdeckten", "Wie sieht ein Haus mit Satteldach von vorn (Giebelseite) aus?", "Rechteck mit Dreieck darauf"],
+ [4, "Materialbedarf bei zusammengesetzten Körpern", "Wie viel Blech braucht man für eine Dachfläche aus zwei Rechtecken 8 m × 3,6 m?", "57,6 m²", "Warum plant man Verschnitt ein?", "beim Zuschneiden geht Material verloren", "Wie prüfst du, ob dein Ergebnis plausibel ist?", "Überschlag mit runden Maßen"]],
 "4.6": [
-[
-1,
-"Materialverbrauch von Verpackungen vergleichen",
-"Was gibt den Pappverbrauch an: Oberfläche oder Volumen?",
-"die Oberfläche",
-"Welche Packung braucht weniger Material bei gleichem Inhalt: Würfel oder lang gestreckter Quader?",
-"meist der Würfel",
-"Warum haben Verpackungen oft mehr Luft als Inhalt?",
-"z. B. Schutz oder Werbewirkung"
-],
-[
-2,
-"Verpackungen beurteilen",
-"Eine Packung ist halb leer. Was ist das Problem?",
-"unnötiger Materialverbrauch",
-"Wie lässt sich Verpackungsmüll verringern?",
-"passende Größe, Mehrweg, weniger Schichten",
-"Woran erkennst du eine Mogelpackung?",
-"der Inhalt ist viel kleiner als die Packung vermuten lässt"
-]
-]
+ [1, "Materialverbrauch von Verpackungen vergleichen", "Was gibt den Pappverbrauch an: Oberfläche oder Volumen?", "die Oberfläche", "Welche Packung braucht weniger Material bei gleichem Inhalt: Würfel oder lang gestreckter Quader?", "meist der Würfel", "Warum haben Verpackungen oft mehr Luft als Inhalt?", "z. B. Schutz oder Werbewirkung"],
+ [2, "Verpackungen beurteilen", "Eine Packung ist halb leer. Was ist das Problem?", "unnötiger Materialverbrauch", "Wie lässt sich Verpackungsmüll verringern?", "passende Größe, Mehrweg, weniger Schichten", "Woran erkennst du eine Mogelpackung?", "der Inhalt ist viel kleiner als die Packung vermuten lässt"]]
 }

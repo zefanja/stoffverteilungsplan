@@ -109,7 +109,7 @@ der gewählten (Parallel-)Klasse.
   Altbestand für Atome vor dem Startdatum. Die Heute-Seite zeigt die fälligen Wiederholungen der Klasse.
 - **Schwierigkeitsstufen**: nach FSRS-Stabilität unter 7 Tagen „Abrufen“, ab 7 „Anwenden“, ab 30 „Vernetzen“; nach
   „Nochmal“ oder bei Abruf unter 75 % eine Stufe niedriger. Jedes Atom hat drei feste Aufgaben (im Atom-Editor bearbeitbar).
-- **Aufgabengeneratoren**: 335 der 966 Atome haben einen Generator aus der Anemo-Mathe-App. Für sie erscheint bei jeder
+- **Aufgabengeneratoren**: 905 der 1 803 Atome (alle Klassen, auch OS) haben einen Generator aus der Anemo-Mathe-App. Für sie erscheint bei jeder
   Wiederholung eine neue Aufgabe mit Skizze, Antwortauswahl, Lösung, Begründung und Lösungsweg; die Stufe steuert die
   Schwierigkeit (Stufe 1/2/3 → Generatorstufe 0/1/3). Eine Aufgabe bleibt für Klasse, Atom, Stufe und Tag stehen, „Neue
   Aufgabe“ (im Quiz Taste N) erzeugt eine andere. Im Atom-Editor lässt sich der Generator wechseln oder abschalten.
@@ -249,7 +249,10 @@ decken nur 25 Unterrichtswochen ab; die Vorlage füllt daher das ganze Schuljahr
 
 Eine unveränderte Sequenz aus der ersten Lehrplan-Vorlage wird beim Laden automatisch ersetzt. Der Standard-Stundenplan
 ergibt sich aus den Zeitrichtwerten (meist 4, OS 6 und LK 5 Wochenstunden) und ist anzupassen. Für jede Lehrplan-Einheit
-gibt es 2–4 Atome mit Aufgaben auf drei Stufen (Wahlbereiche ohne Atome).
+gibt es etwa ein Atom je Unterrichtsstunde mit neuem Stoff (kleine Einheiten wie Projekte, Präsentation oder Statistik
+weniger), jeweils mit Aufgaben auf drei Stufen (Wahlbereiche ohne Atome). Die feinere Zerlegung orientiert sich am
+Knowledge-Graph von Anemo (`math-knowledge-graph/` in zefanja/anemo); Analysis, Stochastik und Vektorrechnung haben dort
+keine Generatoren, diese Atome nutzen feste Fragen.
 
 Aktualisieren:
 

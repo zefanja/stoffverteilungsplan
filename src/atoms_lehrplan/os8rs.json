@@ -1,590 +1,111 @@
 {
 "1.1": [
-[
-1,
-"Termwerte berechnen: Variable durch Zahl ersetzen",
-"Berechne 3 · x − 5 für x = −2.",
-"−11",
-"Berechne x² − 2 · x für x = −3.",
-"15",
-"Berechne (a − b) · a für a = −1 und b = 2.",
-"3"
-],
-[
-3,
-"Summen addieren und subtrahieren: Klammern auflösen",
-"Vereinfache (3 · x + 2) + (x − 5).",
-"4 · x − 3",
-"Vereinfache (5 · a − 2) − (2 · a − 7).",
-"3 · a + 5",
-"Vereinfache 2 · x − (3 − x) + (4 · x − 1).",
-"7 · x − 4"
-],
-[
-5,
-"Faktor mal Summe: a · (b + c) = a · b + a · c",
-"Multipliziere aus: 4 · (x + 3)",
-"4 · x + 12",
-"Multipliziere aus: −2 · (3 · a − 5)",
-"−6 · a + 10",
-"Vereinfache 3 · (x − 2) − 2 · (x − 4).",
-"x + 2"
-],
-[
-7,
-"Ausklammern eines gemeinsamen Faktors",
-"Klammere aus: 6 · x + 9",
-"3 · (2 · x + 3)",
-"Klammere aus: 4 · a² − 10 · a",
-"2 · a · (2 · a − 5)",
-"Klammere aus: −5 · x − 15",
-"−5 · (x + 3)"
-]
-],
+ [1, "Termwerte berechnen: Variable durch Zahl ersetzen", "Berechne 3 · x − 5 für x = −2.", "−11", "Berechne x² − 2 · x für x = −3.", "15", "Berechne (a − b) · a für a = −1 und b = 2.", "3"],
+ [2, "Gleichartige Glieder zusammenfassen", "3a + 5a − 2a = ?", "6a", "4x + 3y − x + 2y = ?", "3x + 5y", "2ab + 3a − ab = ?", "ab + 3a"],
+ [3, "Summen addieren und subtrahieren: Klammern auflösen", "Vereinfache (3 · x + 2) + (x − 5).", "4 · x − 3", "Vereinfache (5 · a − 2) − (2 · a − 7).", "3 · a + 5", "Vereinfache 2 · x − (3 − x) + (4 · x − 1).", "7 · x − 4"],
+ [3, "Produkte von Termen vereinfachen", "3 · 4x = ?", "12x", "2a · 5b = ?", "10ab", "x · x · 3 = ?", "3x²"],
+ [5, "Faktor mal Summe: a · (b + c) = a · b + a · c", "Multipliziere aus: 4 · (x + 3)", "4 · x + 12", "Multipliziere aus: −2 · (3 · a − 5)", "−6 · a + 10", "Vereinfache 3 · (x − 2) − 2 · (x − 4).", "x + 2"],
+ [5, "Klammern bei Plus und Minus auflösen", "(3x + 2) + (x − 5) = ?", "4x − 3", "(5a − 1) − (2a − 4) = ?", "3a + 3", "7 − (2x + 3) = ?", "4 − 2x"],
+ [7, "Ausklammern eines gemeinsamen Faktors", "Klammere aus: 6 · x + 9", "3 · (2 · x + 3)", "Klammere aus: 4 · a² − 10 · a", "2 · a · (2 · a − 5)", "Klammere aus: −5 · x − 15", "−5 · (x + 3)"],
+ [7, "Ausmultiplizieren: Faktor mal Summe", "3(x + 4) = ?", "3x + 12", "−2(a − 5) = ?", "−2a + 10", "x(x + 3) = ?", "x² + 3x"],
+ [8, "Summe mal Summe ausmultiplizieren", "(x + 2)(x + 3) = ?", "x² + 5x + 6", "(a − 1)(a + 4) = ?", "a² + 3a − 4", "(2x + 1)(x − 3) = ?", "2x² − 5x − 3"]],
 "1.2": [
-[
-1,
-"Lineare Gleichungen kalkülmäßig lösen",
-"3 · (x − 2) = 2 · x + 1",
-"x = 7",
-"5 − 2 · (x + 1) = 3 · x − 9",
-"x = 2,4",
-"(x + 4) : 2 = x − 1",
-"x = 6"
-],
-[
-4,
-"Formeln nach einer Größe umstellen",
-"A = a · b nach b umstellen",
-"b = A : a",
-"u = 4 · a nach a umstellen",
-"a = u : 4",
-"s = v · t nach v umstellen",
-"v = s : t"
-],
-[
-5,
-"Probe und Lösungsmenge angeben",
-"Ist x = −1 Lösung von 4 · x + 7 = 3?",
-"ja, 4 · (−1) + 7 = 3",
-"Löse 2 · x + 3 = 2 · x + 5.",
-"keine Lösung, L = { }",
-"Löse 3 · (x + 1) = 3 · x + 3.",
-"jede Zahl ist Lösung"
-]
-],
+ [1, "Lineare Gleichungen kalkülmäßig lösen", "3 · (x − 2) = 2 · x + 1", "x = 7", "5 − 2 · (x + 1) = 3 · x − 9", "x = 2,4", "(x + 4) : 2 = x − 1", "x = 6"],
+ [2, "Gleichungen mit Klammern lösen", "2(x + 3) = 14", "x = 4", "5(x − 1) = 3x + 7", "x = 6", "4 − (x + 2) = 3x − 6", "x = 2"],
+ [3, "Gleichungen mit Brüchen: mit dem Hauptnenner multiplizieren", "x/3 = 5", "x = 15", "x/2 + 3 = 7", "x = 8", "x/4 − x/6 = 1", "x = 12"],
+ [4, "Formeln nach einer Größe umstellen", "A = a · b nach b umstellen", "b = A : a", "u = 4 · a nach a umstellen", "a = u : 4", "s = v · t nach v umstellen", "v = s : t"],
+ [4, "Sonderfälle: keine oder unendlich viele Lösungen", "2x + 3 = 2x + 5", "keine Lösung", "3(x + 1) = 3x + 3", "unendlich viele Lösungen", "Woran erkennt man den Sonderfall?", "Die Variable fällt weg"],
+ [5, "Probe und Lösungsmenge angeben", "Ist x = −1 Lösung von 4 · x + 7 = 3?", "ja, 4 · (−1) + 7 = 3", "Löse 2 · x + 3 = 2 · x + 5.", "keine Lösung, L = { }", "Löse 3 · (x + 1) = 3 · x + 3.", "jede Zahl ist Lösung"],
+ [7, "Gleichungen zu Sachaufgaben aufstellen", "Ein Rechteck ist 3 cm länger als breit, u = 26 cm. Breite?", "5 cm", "Drei aufeinanderfolgende Zahlen ergeben 54.", "17, 18, 19", "Anna ist doppelt so alt wie Ben, zusammen 36 Jahre.", "Ben 12, Anna 24"]],
 "2.1": [
-[
-1,
-"Funktion: jedem x genau ein y",
-"Ist Person → Körpergröße eine Funktion?",
-"ja",
-"Ist Zahl → ihr Quadrat eine Funktion?",
-"ja",
-"Ist Quadratzahl → Zahl mit diesem Quadrat (4 → 2 und −2) eine Funktion?",
-"nein"
-],
-[
-3,
-"Zuordnungen und Funktionen in Tabellen erkennen",
-"Ist die Zuordnung Körpergröße → Schüler eine Funktion?",
-"nein, eine Größe kann mehreren Schülern gehören",
-"Ist Schüler → Körpergröße eine Funktion?",
-"ja, jeder Schüler hat genau eine Größe",
-"x: 1, 2, 2, 3 / y: 4, 5, 6, 7. Funktion?",
-"nein, x = 2 hat zwei Werte"
-],
-[
-8,
-"Darstellungen: Wertetabelle, Graph, Gleichung",
-"Wertetabelle von y = 2 · x − 1 für x = 0, 1, 2?",
-"−1, 1, 3",
-"Wie zeichnest du y = x + 2?",
-"Punkt (0 | 2), dann 1 nach rechts, 1 nach oben",
-"Gleichung der Geraden durch (0 | 1) mit Anstieg 3?",
-"y = 3 · x + 1"
-],
-[
-7,
-"Graphen deuten: Ist das der Graph einer Funktion?",
-"Ein Kreis im Koordinatensystem. Funktion?",
-"nein, zu einem x gibt es zwei y",
-"Eine Parallele zur y-Achse. Funktion?",
-"nein",
-"Eine Parallele zur x-Achse. Funktion?",
-"ja (konstante Funktion)"
-]
-],
+ [1, "Funktion: jedem x genau ein y", "Ist Person → Körpergröße eine Funktion?", "ja", "Ist Zahl → ihr Quadrat eine Funktion?", "ja", "Ist Quadratzahl → Zahl mit diesem Quadrat (4 → 2 und −2) eine Funktion?", "nein"],
+ [2, "Funktionale Zusammenhänge in Wort, Tabelle und Graph", "„Jede Minute fließen 5 l ein“ als Tabelle für 0–3 min?", "0, 5, 10, 15 l", "Was zeigt ein waagerechter Abschnitt im Weg-Zeit-Graphen?", "Stillstand", "Gleichung zu „Grundgebühr 5 € plus 2 € pro Stunde“?", "y = 2x + 5"],
+ [3, "Zuordnungen und Funktionen in Tabellen erkennen", "Ist die Zuordnung Körpergröße → Schüler eine Funktion?", "nein, eine Größe kann mehreren Schülern gehören", "Ist Schüler → Körpergröße eine Funktion?", "ja, jeder Schüler hat genau eine Größe", "x: 1, 2, 2, 3 / y: 4, 5, 6, 7. Funktion?", "nein, x = 2 hat zwei Werte"],
+ [3, "Graphen von Sachsituationen deuten", "Ein Graph steigt steil, dann flach. Bedeutung beim Füllen einer Vase?", "unten schmal, oben breit", "Was bedeutet ein fallender Weg-Zeit-Graph?", "Rückweg zum Start", "Welcher Graph gehört zu gleichmäßiger Geschwindigkeit?", "eine Gerade"],
+ [7, "Graphen deuten: Ist das der Graph einer Funktion?", "Ein Kreis im Koordinatensystem. Funktion?", "nein, zu einem x gibt es zwei y", "Eine Parallele zur y-Achse. Funktion?", "nein", "Eine Parallele zur x-Achse. Funktion?", "ja (konstante Funktion)"],
+ [7, "Ist das eine Funktion? Senkrechten-Test", "Ist ein Kreis der Graph einer Funktion?", "nein", "Ist x → x² eine Funktion?", "ja", "Woran erkennt man es am Graphen?", "Jede Senkrechte schneidet höchstens einmal"],
+ [8, "Darstellungen: Wertetabelle, Graph, Gleichung", "Wertetabelle von y = 2 · x − 1 für x = 0, 1, 2?", "−1, 1, 3", "Wie zeichnest du y = x + 2?", "Punkt (0 | 2), dann 1 nach rechts, 1 nach oben", "Gleichung der Geraden durch (0 | 1) mit Anstieg 3?", "y = 3 · x + 1"],
+ [8, "Funktionswerte berechnen und ablesen", "f(x) = 3x − 2. f(4)?", "10", "f(x) = x² + 1. f(−2)?", "5", "Für welches x ist f(x) = 2x + 1 gleich 9?", "x = 4"]],
 "2.2": [
-[
-1,
-"Argument und Funktionswert: f(x) = y",
-"f(x) = 2 · x + 1. Berechne f(3).",
-"7",
-"f(x) = x² − 4. Berechne f(−2).",
-"0",
-"f(x) = 3 · x − 2. Für welches Argument ist f(x) = 10?",
-"x = 4"
-],
-[
-2,
-"Definitionsbereich: erlaubte Argumente",
-"Definitionsbereich von f(x) = 2 · x?",
-"alle rationalen Zahlen",
-"Welche Zahl ist bei f(x) = 1/x nicht erlaubt?",
-"0",
-"Fahrzeit t (in h) einer 3-stündigen Fahrt. Sinnvoller Definitionsbereich?",
-"0 ≤ t ≤ 3"
-],
-[
-3,
-"Wertebereich: angenommene Funktionswerte",
-"Wertebereich von f(x) = x²?",
-"y ≥ 0",
-"Wertebereich von f(x) = 5 (konstant)?",
-"nur die Zahl 5",
-"f(x) = 2 · x für 0 ≤ x ≤ 4. Wertebereich?",
-"0 ≤ y ≤ 8"
-]
-],
+ [1, "Argument und Funktionswert: f(x) = y", "f(x) = 2 · x + 1. Berechne f(3).", "7", "f(x) = x² − 4. Berechne f(−2).", "0", "f(x) = 3 · x − 2. Für welches Argument ist f(x) = 10?", "x = 4"],
+ [2, "Definitionsbereich: erlaubte Argumente", "Definitionsbereich von f(x) = 2 · x?", "alle rationalen Zahlen", "Welche Zahl ist bei f(x) = 1/x nicht erlaubt?", "0", "Fahrzeit t (in h) einer 3-stündigen Fahrt. Sinnvoller Definitionsbereich?", "0 ≤ t ≤ 3"],
+ [3, "Wertebereich: angenommene Funktionswerte", "Wertebereich von f(x) = x²?", "y ≥ 0", "Wertebereich von f(x) = 5 (konstant)?", "nur die Zahl 5", "f(x) = 2 · x für 0 ≤ x ≤ 4. Wertebereich?", "0 ≤ y ≤ 8"]],
 "2.3": [
-[
-4,
-"Lineare Funktion: y = m · x + n",
-"Was bedeutet n in y = 2 · x + 3?",
-"der y-Achsenabschnitt (3)",
-"Was bedeutet m in y = 2 · x + 3?",
-"der Anstieg (2)",
-"Taxi: 3 € Grundgebühr, 2 € pro km. Gleichung?",
-"y = 2 · x + 3"
-],
-[
-3,
-"Steigung m mit dem Steigungsdreieck zeichnen",
-"Wie zeichnest du m = 2/3?",
-"3 nach rechts, 2 nach oben",
-"Wie zeichnest du m = −2?",
-"1 nach rechts, 2 nach unten",
-"Steigung der Geraden durch A(1 | 2) und B(3 | 8)?",
-"m = 6 : 2 = 3"
-],
-[
-5,
-"Einfluss von m und n auf den Graphen",
-"Was bedeutet n bei y = m · x + n?",
-"Schnittpunkt mit der y-Achse (0 | n)",
-"Wie verläuft eine Gerade mit m < 0?",
-"fallend",
-"Welche Geraden sind parallel: y = 2 · x + 1, y = −2 · x + 1, y = 2 · x − 3?",
-"y = 2 · x + 1 und y = 2 · x − 3"
-],
-[
-7,
-"Nullstellen zeichnerisch und rechnerisch",
-"Nullstelle von y = 2 · x − 6?",
-"x = 3",
-"Nullstelle von y = −3 · x + 4?",
-"x = 4/3",
-"Wie liest du die Nullstelle am Graphen ab?",
-"Schnittpunkt mit der x-Achse"
-]
-],
+ [2, "Wertetabelle und Graph einer linearen Funktion", "y = 2x − 1 für x = 0, 1, 2?", "−1, 1, 3", "Zeichne y = −x + 3: Schnittpunkt mit der y-Achse?", "(0|3)", "Wie viele Punkte braucht man für eine Gerade mindestens?", "2"],
+ [3, "Steigung m mit dem Steigungsdreieck zeichnen", "Wie zeichnest du m = 2/3?", "3 nach rechts, 2 nach oben", "Wie zeichnest du m = −2?", "1 nach rechts, 2 nach unten", "Steigung der Geraden durch A(1 | 2) und B(3 | 8)?", "m = 6 : 2 = 3"],
+ [3, "Proportionale Funktion y = m · x", "Geht y = 3x durch den Ursprung?", "ja", "Welche Steigung hat y = 0,5x?", "0,5", "Liegt (2|5) auf y = 2,5x?", "ja"],
+ [4, "Lineare Funktion: y = m · x + n", "Was bedeutet n in y = 2 · x + 3?", "der y-Achsenabschnitt (3)", "Was bedeutet m in y = 2 · x + 3?", "der Anstieg (2)", "Taxi: 3 € Grundgebühr, 2 € pro km. Gleichung?", "y = 2 · x + 3"],
+ [5, "Einfluss von m und n auf den Graphen", "Was bedeutet n bei y = m · x + n?", "Schnittpunkt mit der y-Achse (0 | n)", "Wie verläuft eine Gerade mit m < 0?", "fallend", "Welche Geraden sind parallel: y = 2 · x + 1, y = −2 · x + 1, y = 2 · x − 3?", "y = 2 · x + 1 und y = 2 · x − 3"],
+ [6, "Steigung aus zwei Punkten berechnen", "Steigung durch (1|2) und (3|6)?", "2", "Steigung durch (0|4) und (2|0)?", "−2", "Steigung durch (−1|3) und (2|3)?", "0"],
+ [7, "Nullstellen zeichnerisch und rechnerisch", "Nullstelle von y = 2 · x − 6?", "x = 3", "Nullstelle von y = −3 · x + 4?", "x = 4/3", "Wie liest du die Nullstelle am Graphen ab?", "Schnittpunkt mit der x-Achse"],
+ [7, "Funktionsgleichung aus Graph oder zwei Punkten aufstellen", "Gerade durch (0|1) mit Steigung 3?", "y = 3x + 1", "Gerade durch (1|4) und (3|8)?", "y = 2x + 2", "Parallele zu y = −2x + 5 durch (0|−1)?", "y = −2x − 1"],
+ [8, "Nullstelle einer linearen Funktion berechnen", "Nullstelle von y = 2x − 6?", "x = 3", "Nullstelle von y = −0,5x + 2?", "x = 4", "Hat y = 4 eine Nullstelle?", "nein"]],
 "2.4": [
-[
-12,
-"Schnittpunkt zweier Geraden zeichnerisch",
-"Was bedeutet der Schnittpunkt zweier Tarifgeraden?",
-"beide Tarife kosten gleich viel",
-"Schnittpunkt von y = x und y = −x + 4 (zeichnerisch)?",
-"(2 | 2)",
-"Haben parallele Geraden einen Schnittpunkt?",
-"nein"
-],
-[
-1,
-"Schnittpunkt rechnerisch: Gleichsetzen",
-"y = 2 · x und y = x + 3. Schnittpunkt?",
-"(3 | 6)",
-"y = x + 1 und y = −x + 5. Schnittpunkt?",
-"(2 | 3)",
-"Tarif A: y = 0,1 · x + 10, Tarif B: y = 0,3 · x. Ab wie vielen Minuten ist A günstiger?",
-"ab mehr als 50 Minuten"
-],
-[
-3,
-"Gleichungssysteme zu Sachaufgaben",
-"2 Hefte und 1 Stift kosten 4 €, 1 Heft und 1 Stift 2,50 €. Preis eines Heftes?",
-"1,50 €",
-"Im Stall sind 10 Tiere (Hühner und Kaninchen) mit 28 Beinen. Wie viele Kaninchen?",
-"4",
-"Tarif A: 10 € + 0,05 € pro min, Tarif B: 0,10 € pro min. Ab wie vielen Minuten ist A günstiger?",
-"ab 200 Minuten"
-]
-],
+ [1, "Schnittpunkt rechnerisch: Gleichsetzen", "y = 2 · x und y = x + 3. Schnittpunkt?", "(3 | 6)", "y = x + 1 und y = −x + 5. Schnittpunkt?", "(2 | 3)", "Tarif A: y = 0,1 · x + 10, Tarif B: y = 0,3 · x. Ab wie vielen Minuten ist A günstiger?", "ab mehr als 50 Minuten"],
+ [3, "Gleichungssysteme zu Sachaufgaben", "2 Hefte und 1 Stift kosten 4 €, 1 Heft und 1 Stift 2,50 €. Preis eines Heftes?", "1,50 €", "Im Stall sind 10 Tiere (Hühner und Kaninchen) mit 28 Beinen. Wie viele Kaninchen?", "4", "Tarif A: 10 € + 0,05 € pro min, Tarif B: 0,10 € pro min. Ab wie vielen Minuten ist A günstiger?", "ab 200 Minuten"],
+ [3, "Lineare Gleichungssysteme mit dem Einsetzungsverfahren", "y = 2x und x + y = 9", "x = 3, y = 6", "y = x + 1 und 2x + y = 7", "x = 2, y = 3", "Wann wählt man das Einsetzungsverfahren?", "wenn eine Gleichung schon nach einer Variable aufgelöst ist"],
+ [12, "Schnittpunkt zweier Geraden zeichnerisch", "Was bedeutet der Schnittpunkt zweier Tarifgeraden?", "beide Tarife kosten gleich viel", "Schnittpunkt von y = x und y = −x + 4 (zeichnerisch)?", "(2 | 2)", "Haben parallele Geraden einen Schnittpunkt?", "nein"]],
 "3.1": [
-[
-1,
-"Kreisornamente: Rosetten mit dem Zirkel",
-"Womit zeichnet man einen Kreis?",
-"mit dem Zirkel",
-"Wie oft passt der Radius als Sehne auf den Kreis?",
-"sechsmal",
-"Wie entsteht eine sechsblättrige Rosette?",
-"Kreisbögen mit gleichem Radius um die sechs Teilungspunkte"
-],
-[
-2,
-"Ornamente entwerfen",
-"Welche Symmetrie hat ein Mandala meist?",
-"Dreh- und Achsensymmetrie",
-"Wie entsteht ein Faltschnitt-Muster?",
-"Papier mehrfach falten und schneiden",
-"Um wie viel Grad muss man ein Muster mit 8 gleichen Teilen drehen, damit es sich deckt?",
-"45°"
-]
-],
+ [1, "Kreisornamente: Rosetten mit dem Zirkel", "Womit zeichnet man einen Kreis?", "mit dem Zirkel", "Wie oft passt der Radius als Sehne auf den Kreis?", "sechsmal", "Wie entsteht eine sechsblättrige Rosette?", "Kreisbögen mit gleichem Radius um die sechs Teilungspunkte"],
+ [2, "Ornamente entwerfen", "Welche Symmetrie hat ein Mandala meist?", "Dreh- und Achsensymmetrie", "Wie entsteht ein Faltschnitt-Muster?", "Papier mehrfach falten und schneiden", "Um wie viel Grad muss man ein Muster mit 8 gleichen Teilen drehen, damit es sich deckt?", "45°"]],
 "3.2": [
-[
-1,
-"Sehne, Sekante, Tangente",
-"Wie heißt eine Strecke, die zwei Punkte des Kreises verbindet?",
-"Sehne",
-"Wie heißt die längste Sehne?",
-"Durchmesser",
-"Wie viele Punkte hat eine Tangente mit dem Kreis gemeinsam?",
-"einen"
-],
-[
-2,
-"Tangente steht senkrecht auf dem Radius",
-"Wie steht die Tangente zum Radius im Berührpunkt?",
-"senkrecht",
-"Wie viele gemeinsame Punkte hat eine Passante mit dem Kreis?",
-"keinen",
-"Was besagt der Satz des Thales?",
-"ein Dreieck über dem Durchmesser mit dritter Ecke auf dem Kreis ist rechtwinklig"
-],
-[
-3,
-"Satz des Thales: Winkel im Halbkreis ist ein rechter",
-"C liegt auf dem Halbkreis über AB. Wie groß ist γ?",
-"90°",
-"Wie konstruierst du ein rechtwinkliges Dreieck mit Hypotenuse 6 cm?",
-"Halbkreis über 6 cm, C beliebig darauf",
-"Warum ist γ = 90°? (Beweisidee)",
-"zwei gleichschenklige Dreiecke mit M: 2 · α + 2 · β = 180°, also α + β = 90°"
-]
-],
+ [1, "Sehne, Sekante, Tangente", "Wie heißt eine Strecke, die zwei Punkte des Kreises verbindet?", "Sehne", "Wie heißt die längste Sehne?", "Durchmesser", "Wie viele Punkte hat eine Tangente mit dem Kreis gemeinsam?", "einen"],
+ [2, "Tangente steht senkrecht auf dem Radius", "Wie steht die Tangente zum Radius im Berührpunkt?", "senkrecht", "Wie viele gemeinsame Punkte hat eine Passante mit dem Kreis?", "keinen", "Was besagt der Satz des Thales?", "ein Dreieck über dem Durchmesser mit dritter Ecke auf dem Kreis ist rechtwinklig"],
+ [3, "Satz des Thales: Winkel im Halbkreis ist ein rechter", "C liegt auf dem Halbkreis über AB. Wie groß ist γ?", "90°", "Wie konstruierst du ein rechtwinkliges Dreieck mit Hypotenuse 6 cm?", "Halbkreis über 6 cm, C beliebig darauf", "Warum ist γ = 90°? (Beweisidee)", "zwei gleichschenklige Dreiecke mit M: 2 · α + 2 · β = 180°, also α + β = 90°"]],
 "3.3": [
-[
-1,
-"Kreiszahl π ≈ 3,14 ist nicht rational",
-"Ist 22/7 genau π?",
-"nein, nur eine Näherung",
-"Warum kann man π nicht als Bruch schreiben?",
-"π ist keine rationale Zahl",
-"Berechne u für d = 10 cm.",
-"u ≈ 31,4 cm"
-],
-[
-4,
-"Kreisring: A = π · (R² − r²)",
-"Kreisring mit R = 5 cm, r = 3 cm. Fläche?",
-"16 · π ≈ 50,3 cm²",
-"Ein runder Tisch mit d = 1 m hat einen 10 cm breiten Rand. Fläche des Randes?",
-"π · (0,5² − 0,4²) ≈ 0,28 m²",
-"Ist der Ring zwischen r = 1 und R = 2 größer als die innere Kreisfläche?",
-"ja, dreimal so groß"
-]
-],
+ [1, "Kreiszahl π ≈ 3,14 ist nicht rational", "Ist 22/7 genau π?", "nein, nur eine Näherung", "Warum kann man π nicht als Bruch schreiben?", "π ist keine rationale Zahl", "Berechne u für d = 10 cm.", "u ≈ 31,4 cm"],
+ [2, "Kreisumfang und Kreisfläche berechnen", "r = 4 cm. u und A?", "u ≈ 25,1 cm, A ≈ 50,3 cm²", "d = 6 m. A?", "ca. 28,3 m²", "Ein Kreis hat A = 78,5 cm². Radius?", "5 cm"],
+ [4, "Kreisring: A = π · (R² − r²)", "Kreisring mit R = 5 cm, r = 3 cm. Fläche?", "16 · π ≈ 50,3 cm²", "Ein runder Tisch mit d = 1 m hat einen 10 cm breiten Rand. Fläche des Randes?", "π · (0,5² − 0,4²) ≈ 0,28 m²", "Ist der Ring zwischen r = 1 und R = 2 größer als die innere Kreisfläche?", "ja, dreimal so groß"]],
 "3.4": [
-[
-1,
-"Netz eines Kreiszylinders: zwei Kreise und ein Rechteck",
-"Woraus besteht das Netz eines Zylinders?",
-"zwei Kreise und ein Rechteck",
-"Wie lang ist das Rechteck im Netz?",
-"so lang wie der Kreisumfang",
-"Zylinder mit r = 2 cm, h = 5 cm: Maße des Mantelrechtecks?",
-"etwa 12,6 cm × 5 cm"
-],
-[
-3,
-"Ansichten und Schrägbild des Zylinders",
-"Wie sieht ein stehender Zylinder von oben aus?",
-"ein Kreis",
-"Wie sieht ein stehender Zylinder von vorn aus?",
-"ein Rechteck",
-"Wie zeichnet man den Kreis im Schrägbild?",
-"als Ellipse"
-]
-],
+ [1, "Netz eines Kreiszylinders: zwei Kreise und ein Rechteck", "Woraus besteht das Netz eines Zylinders?", "zwei Kreise und ein Rechteck", "Wie lang ist das Rechteck im Netz?", "so lang wie der Kreisumfang", "Zylinder mit r = 2 cm, h = 5 cm: Maße des Mantelrechtecks?", "etwa 12,6 cm × 5 cm"],
+ [3, "Ansichten und Schrägbild des Zylinders", "Wie sieht ein stehender Zylinder von oben aus?", "ein Kreis", "Wie sieht ein stehender Zylinder von vorn aus?", "ein Rechteck", "Wie zeichnet man den Kreis im Schrägbild?", "als Ellipse"]],
 "3.5": [
-[
-1,
-"Grund-, Mantel- und Oberfläche beim Zylinder",
-"Welche Form hat die Grundfläche eines Zylinders?",
-"Kreis",
-"Wie berechnet man die Mantelfläche?",
-"Umfang · Höhe",
-"Woraus setzt sich die Oberfläche zusammen?",
-"2 · Grundfläche + Mantelfläche"
-],
-[
-3,
-"Vergleich mit dem Prisma",
-"Was haben Prisma und Zylinder gemeinsam?",
-"zwei gleiche, parallele Grundflächen",
-"Wie berechnet man das Volumen beider Körper?",
-"Grundfläche · Höhe",
-"Wie unterscheidet sich der Mantel?",
-"beim Prisma Rechtecke, beim Zylinder ein gekrümmtes Rechteck"
-]
-],
+ [1, "Grund-, Mantel- und Oberfläche beim Zylinder", "Welche Form hat die Grundfläche eines Zylinders?", "Kreis", "Wie berechnet man die Mantelfläche?", "Umfang · Höhe", "Woraus setzt sich die Oberfläche zusammen?", "2 · Grundfläche + Mantelfläche"],
+ [3, "Vergleich mit dem Prisma", "Was haben Prisma und Zylinder gemeinsam?", "zwei gleiche, parallele Grundflächen", "Wie berechnet man das Volumen beider Körper?", "Grundfläche · Höhe", "Wie unterscheidet sich der Mantel?", "beim Prisma Rechtecke, beim Zylinder ein gekrümmtes Rechteck"]],
 "3.6": [
-[
-1,
-"Zylinder: V = π · r² · h",
-"Volumen eines Zylinders mit r = 2 cm, h = 5 cm?",
-"etwa 62,8 cm³",
-"Wie viele Liter fasst ein Fass mit r = 30 cm, h = 80 cm?",
-"etwa 226 l",
-"Wie ändert sich das Volumen, wenn r verdoppelt wird?",
-"es vervierfacht sich"
-],
-[
-3,
-"Hohlzylinder: V = π · (R² − r²) · h",
-"Rohr mit R = 5 cm, r = 4 cm, h = 100 cm. Volumen des Materials?",
-"900 · π ≈ 2 827 cm³",
-"Warum zieht man beim Hohlzylinder den inneren Zylinder ab?",
-"dort ist kein Material",
-"Masse dieses Rohres aus Stahl (7,8 g/cm³)?",
-"etwa 22 kg"
-]
-],
+ [1, "Zylinder: V = π · r² · h", "Volumen eines Zylinders mit r = 2 cm, h = 5 cm?", "etwa 62,8 cm³", "Wie viele Liter fasst ein Fass mit r = 30 cm, h = 80 cm?", "etwa 226 l", "Wie ändert sich das Volumen, wenn r verdoppelt wird?", "es vervierfacht sich"],
+ [3, "Hohlzylinder: V = π · (R² − r²) · h", "Rohr mit R = 5 cm, r = 4 cm, h = 100 cm. Volumen des Materials?", "900 · π ≈ 2 827 cm³", "Warum zieht man beim Hohlzylinder den inneren Zylinder ab?", "dort ist kein Material", "Masse dieses Rohres aus Stahl (7,8 g/cm³)?", "etwa 22 kg"]],
 "4.1": [
-[
-1,
-"Zentrische Streckung mit Zentrum Z und Faktor k",
-"P ist 3 cm von Z entfernt, k = 2. Abstand ZP′?",
-"6 cm",
-"Was bewirkt k = 0,5?",
-"Verkleinerung auf die Hälfte",
-"Was bewirkt ein negativer Faktor k?",
-"Bild liegt auf der anderen Seite von Z"
-],
-[
-3,
-"Längen, Flächen und Volumen bei Ähnlichkeit: k, k², k³",
-"Strecke 4 cm, k = 3. Bildstrecke?",
-"12 cm",
-"Fläche 5 cm², k = 2. Bildfläche?",
-"20 cm²",
-"Würfel mit Volumen 8 cm³ wird mit k = 3 gestreckt. Volumen?",
-"216 cm³"
-],
-[
-6,
-"Hauptähnlichkeitssatz: zwei gleiche Winkel genügen",
-"Wann sind zwei Dreiecke ähnlich?",
-"wenn sie in zwei Winkeln übereinstimmen",
-"Dreieck 1: 40°, 60°; Dreieck 2: 60°, 80°. Ähnlich?",
-"ja, beide haben 40°, 60°, 80°",
-"Sind alle gleichseitigen Dreiecke ähnlich?",
-"ja, alle Winkel sind 60°"
-],
-[
-8,
-"Fehlende Längen in ähnlichen Figuren berechnen",
-"Ähnliche Dreiecke: 3 cm ↦ 6 cm. Was wird aus 5 cm?",
-"10 cm",
-"Ein Stab von 1 m wirft 1,5 m Schatten, ein Baum 12 m. Baumhöhe?",
-"8 m",
-"Modell 1 : 50, Modellhöhe 6 cm. Wirkliche Höhe?",
-"3 m"
-]
-],
+ [1, "Zentrische Streckung mit Zentrum Z und Faktor k", "P ist 3 cm von Z entfernt, k = 2. Abstand ZP′?", "6 cm", "Was bewirkt k = 0,5?", "Verkleinerung auf die Hälfte", "Was bewirkt ein negativer Faktor k?", "Bild liegt auf der anderen Seite von Z"],
+ [2, "Zentrische Streckung konstruieren: Strahlen vom Zentrum", "k = 2: Wie weit liegt P' von Z, wenn ZP = 3 cm?", "6 cm", "k = 0,5, ZP = 8 cm. ZP'?", "4 cm", "Wo liegt P' bei negativem k?", "auf der anderen Seite von Z"],
+ [3, "Längen, Flächen und Volumen bei Ähnlichkeit: k, k², k³", "Strecke 4 cm, k = 3. Bildstrecke?", "12 cm", "Fläche 5 cm², k = 2. Bildfläche?", "20 cm²", "Würfel mit Volumen 8 cm³ wird mit k = 3 gestreckt. Volumen?", "216 cm³"],
+ [3, "Streckfaktor aus Bild und Original bestimmen", "Original 4 cm, Bild 10 cm. k?", "2,5", "Original 9 cm, Bild 3 cm. k?", "1/3", "k < 1 bedeutet?", "Verkleinerung"],
+ [5, "Ähnliche Figuren erkennen: gleiche Winkel, gleiche Seitenverhältnisse", "Sind alle Quadrate ähnlich?", "ja", "Sind alle Rechtecke ähnlich?", "nein", "Dreiecke mit Winkeln 40°, 60° und 40°, 80°: ähnlich?", "ja, dritter Winkel 80° bzw. 60°"],
+ [6, "Hauptähnlichkeitssatz: zwei gleiche Winkel genügen", "Wann sind zwei Dreiecke ähnlich?", "wenn sie in zwei Winkeln übereinstimmen", "Dreieck 1: 40°, 60°; Dreieck 2: 60°, 80°. Ähnlich?", "ja, beide haben 40°, 60°, 80°", "Sind alle gleichseitigen Dreiecke ähnlich?", "ja, alle Winkel sind 60°"],
+ [6, "Strahlensätze: Streckenverhältnisse an Parallelen", "ZA = 2, ZA' = 6, ZB = 3. ZB'?", "9", "AB = 4, Streckfaktor 1,5. A'B'?", "6", "Ein Stab (1 m) wirft 1,5 m Schatten, ein Baum 12 m. Höhe?", "8 m"],
+ [8, "Fehlende Längen in ähnlichen Figuren berechnen", "Ähnliche Dreiecke: 3 cm ↦ 6 cm. Was wird aus 5 cm?", "10 cm", "Ein Stab von 1 m wirft 1,5 m Schatten, ein Baum 12 m. Baumhöhe?", "8 m", "Modell 1 : 50, Modellhöhe 6 cm. Wirkliche Höhe?", "3 m"],
+ [8, "Flächen und Volumen bei Ähnlichkeit: k² und k³", "k = 3. Wie ändert sich die Fläche?", "9-fach", "k = 2. Wie ändert sich das Volumen?", "8-fach", "Ein Modell 1 : 10 hat 2 dm³. Original?", "2 000 dm³ = 2 m³"]],
 "4.2": [
-[
-1,
-"Kongruenz: deckungsgleich, also k = 1",
-"Was bedeutet kongruent?",
-"deckungsgleich",
-"Welcher Ähnlichkeitsfaktor gehört zur Kongruenz?",
-"k = 1",
-"Sind ähnliche Figuren immer kongruent?",
-"nein, nur bei k = 1"
-],
-[
-2,
-"Kongruenzsätze sws, wsw, sss, SsW",
-"Welcher Satz: zwei Seiten und der eingeschlossene Winkel?",
-"sws",
-"Welcher Satz: drei Seiten?",
-"sss",
-"Reichen drei Winkel für Kongruenz?",
-"nein, nur für Ähnlichkeit"
-],
-[
-3,
-"Kongruenz zum Begründen nutzen",
-"Eine Diagonale teilt ein Parallelogramm. Wie sind die Teildreiecke?",
-"kongruent (sss)",
-"Warum sind die Basiswinkel im gleichschenkligen Dreieck gleich?",
-"Höhe teilt es in zwei kongruente Dreiecke",
-"Wie viele Dreiecke gibt es mit a = 4 cm, b = 5 cm, c = 6 cm?",
-"bis auf Kongruenz genau eines"
-]
-],
+ [1, "Kongruenz: deckungsgleich, also k = 1", "Was bedeutet kongruent?", "deckungsgleich", "Welcher Ähnlichkeitsfaktor gehört zur Kongruenz?", "k = 1", "Sind ähnliche Figuren immer kongruent?", "nein, nur bei k = 1"],
+ [2, "Kongruenzsätze sws, wsw, sss, SsW", "Welcher Satz: zwei Seiten und der eingeschlossene Winkel?", "sws", "Welcher Satz: drei Seiten?", "sss", "Reichen drei Winkel für Kongruenz?", "nein, nur für Ähnlichkeit"],
+ [3, "Kongruenz zum Begründen nutzen", "Eine Diagonale teilt ein Parallelogramm. Wie sind die Teildreiecke?", "kongruent (sss)", "Warum sind die Basiswinkel im gleichschenkligen Dreieck gleich?", "Höhe teilt es in zwei kongruente Dreiecke", "Wie viele Dreiecke gibt es mit a = 4 cm, b = 5 cm, c = 6 cm?", "bis auf Kongruenz genau eines"],
+ [3, "Kongruente Dreiecke mit den Kongruenzsätzen begründen", "Zwei Dreiecke stimmen in drei Seiten überein. Satz?", "SSS", "Stimmen zwei Dreiecke in allen drei Winkeln überein – kongruent?", "nicht unbedingt, nur ähnlich", "Welcher Satz bei a, b und eingeschlossenem γ?", "SWS"]],
 "5.1": [
-[
-1,
-"Simulation: Zufallsversuch durch einen einfacheren ersetzen",
-"Wie simulierst du einen Münzwurf mit einem Würfel?",
-"gerade = Kopf, ungerade = Zahl",
-"Wie simulierst du eine Wahrscheinlichkeit von 1/3?",
-"Würfel: 1 oder 2 ist Treffer",
-"Warum simuliert man?",
-"um Versuche schnell und oft durchzuführen"
-],
-[
-2,
-"Zufallszahlen mit dem Taschenrechner",
-"Wie erzeugst du Würfelzahlen mit dem Taschenrechner?",
-"Zufallsfunktion für ganze Zahlen von 1 bis 6",
-"Wozu viele Durchläufe in der Tabellenkalkulation?",
-"relative Häufigkeiten werden stabiler",
-"Wie simulierst du einen Treffer mit 30 %?",
-"Zufallszahl 1 bis 10, Treffer bei 1, 2, 3"
-],
-[
-3,
-"Simulationsergebnisse auswerten",
-"100 Simulationen, 23 Treffer. Geschätzte Wahrscheinlichkeit?",
-"0,23",
-"Warum ergeben zwei Simulationen verschiedene Werte?",
-"zufällige Schwankung",
-"Wie wird die Schätzung genauer?",
-"mehr Durchläufe"
-]
-],
+ [1, "Simulation: Zufallsversuch durch einen einfacheren ersetzen", "Wie simulierst du einen Münzwurf mit einem Würfel?", "gerade = Kopf, ungerade = Zahl", "Wie simulierst du eine Wahrscheinlichkeit von 1/3?", "Würfel: 1 oder 2 ist Treffer", "Warum simuliert man?", "um Versuche schnell und oft durchzuführen"],
+ [2, "Zufallszahlen mit dem Taschenrechner", "Wie erzeugst du Würfelzahlen mit dem Taschenrechner?", "Zufallsfunktion für ganze Zahlen von 1 bis 6", "Wozu viele Durchläufe in der Tabellenkalkulation?", "relative Häufigkeiten werden stabiler", "Wie simulierst du einen Treffer mit 30 %?", "Zufallszahl 1 bis 10, Treffer bei 1, 2, 3"],
+ [3, "Simulationsergebnisse auswerten", "100 Simulationen, 23 Treffer. Geschätzte Wahrscheinlichkeit?", "0,23", "Warum ergeben zwei Simulationen verschiedene Werte?", "zufällige Schwankung", "Wie wird die Schätzung genauer?", "mehr Durchläufe"]],
 "5.2": [
-[
-1,
-"Ziehen mit und ohne Zurücklegen",
-"Urne: 3 rote, 2 blaue Kugeln. P(rot) beim ersten Zug?",
-"3/5",
-"Ohne Zurücklegen: erste Kugel rot. P(rot) beim zweiten Zug?",
-"2/4 = 1/2",
-"Mit Zurücklegen: erste rot. P(rot) beim zweiten?",
-"3/5"
-],
-[
-2,
-"Unabhängige Ereignisse: Ergebnis des ersten beeinflusst das zweite nicht",
-"Zwei Münzwürfe: sind sie unabhängig?",
-"ja",
-"Ziehen ohne Zurücklegen: abhängig oder unabhängig?",
-"abhängig",
-"Hat eine Münze nach 5-mal Kopf ein „Gedächtnis“?",
-"nein, P(Kopf) bleibt 1/2"
-],
-[
-3,
-"Abhängigkeit im Alltag erkennen",
-"Regen heute und Regenschirm dabei: abhängig?",
-"ja, vermutlich abhängig",
-"Würfelzahl und Wochentag: abhängig?",
-"nein",
-"Lose aus einer Lostrommel ohne Zurücklegen: ändern sich die Chancen?",
-"ja, nach jedem Zug"
-]
-],
+ [1, "Ziehen mit und ohne Zurücklegen", "Urne: 3 rote, 2 blaue Kugeln. P(rot) beim ersten Zug?", "3/5", "Ohne Zurücklegen: erste Kugel rot. P(rot) beim zweiten Zug?", "2/4 = 1/2", "Mit Zurücklegen: erste rot. P(rot) beim zweiten?", "3/5"],
+ [2, "Unabhängige Ereignisse: Ergebnis des ersten beeinflusst das zweite nicht", "Zwei Münzwürfe: sind sie unabhängig?", "ja", "Ziehen ohne Zurücklegen: abhängig oder unabhängig?", "abhängig", "Hat eine Münze nach 5-mal Kopf ein „Gedächtnis“?", "nein, P(Kopf) bleibt 1/2"],
+ [3, "Abhängigkeit im Alltag erkennen", "Regen heute und Regenschirm dabei: abhängig?", "ja, vermutlich abhängig", "Würfelzahl und Wochentag: abhängig?", "nein", "Lose aus einer Lostrommel ohne Zurücklegen: ändern sich die Chancen?", "ja, nach jedem Zug"]],
 "5.3": [
-[
-1,
-"Zählprinzip: Anzahlen multiplizieren",
-"3 Hosen, 4 Shirts. Wie viele Kombinationen?",
-"12",
-"Wie viele dreistellige Zahlencodes mit Ziffern 0–9?",
-"1 000",
-"Wie viele Reihenfolgen für 4 Läufer?",
-"4 · 3 · 2 · 1 = 24"
-],
-[
-2,
-"Wahrscheinlichkeiten durch Abzählen",
-"P, einen vierstelligen Code mit einem Versuch zu erraten?",
-"1/10 000",
-"Zwei Würfel: P(Augensumme 12)?",
-"1/36",
-"Zwei Würfel: P(Augensumme 7)?",
-"6/36 = 1/6"
-]
-],
+ [1, "Zählprinzip: Anzahlen multiplizieren", "3 Hosen, 4 Shirts. Wie viele Kombinationen?", "12", "Wie viele dreistellige Zahlencodes mit Ziffern 0–9?", "1 000", "Wie viele Reihenfolgen für 4 Läufer?", "4 · 3 · 2 · 1 = 24"],
+ [2, "Wahrscheinlichkeiten durch Abzählen", "P, einen vierstelligen Code mit einem Versuch zu erraten?", "1/10 000", "Zwei Würfel: P(Augensumme 12)?", "1/36", "Zwei Würfel: P(Augensumme 7)?", "6/36 = 1/6"],
+ [3, "Anzahl der Möglichkeiten mit dem Zählprinzip", "Wie viele zweistellige Zahlen aus 1–5 mit Wiederholung?", "25", "Wie viele Sitzordnungen für 4 Personen?", "24", "Wie viele Menüs aus 3 Vorspeisen, 4 Hauptgerichten, 2 Desserts?", "24"]],
 "5.4": [
-[
-1,
-"Baumdiagramm und Pfadmultiplikationsregel",
-"Zwei Münzwürfe: P(Kopf, Kopf)?",
-"1/2 · 1/2 = 1/4",
-"Urne 3 rot, 2 blau, ohne Zurücklegen: P(rot, rot)?",
-"3/5 · 2/4 = 3/10",
-"Würfel zweimal: P(zweimal 6)?",
-"1/36"
-],
-[
-2,
-"Pfadadditionsregel für Ereignisse",
-"Zwei Münzwürfe: P(genau einmal Kopf)?",
-"1/4 + 1/4 = 1/2",
-"Urne 3 rot, 2 blau, ohne Zurücklegen: P(zwei gleiche Farben)?",
-"3/10 + 1/10 = 2/5",
-"Zwei Würfe: P(mindestens eine 6)?",
-"1 − 25/36 = 11/36"
-]
-],
+ [1, "Baumdiagramm und Pfadmultiplikationsregel", "Zwei Münzwürfe: P(Kopf, Kopf)?", "1/2 · 1/2 = 1/4", "Urne 3 rot, 2 blau, ohne Zurücklegen: P(rot, rot)?", "3/5 · 2/4 = 3/10", "Würfel zweimal: P(zweimal 6)?", "1/36"],
+ [2, "Pfadadditionsregel für Ereignisse", "Zwei Münzwürfe: P(genau einmal Kopf)?", "1/4 + 1/4 = 1/2", "Urne 3 rot, 2 blau, ohne Zurücklegen: P(zwei gleiche Farben)?", "3/10 + 1/10 = 2/5", "Zwei Würfe: P(mindestens eine 6)?", "1 − 25/36 = 11/36"],
+ [3, "Gegenereignis nutzen: P(mindestens einmal)", "P(mindestens eine Sechs bei 2 Würfen)?", "1 − 25/36 = 11/36", "P(nicht rot) bei P(rot) = 0,3?", "0,7", "P(mindestens einmal Kopf bei 3 Würfen)?", "7/8"]],
 "6": [
-[
-2,
-"Haushaltsbuch: Einnahmen und Ausgaben",
-"Einnahmen 1 800 €, Ausgaben 1 650 €. Was bleibt?",
-"150 €",
-"Welcher Anteil der Einnahmen von 2 000 € ist eine Miete von 600 €?",
-"30 %",
-"Warum führt man ein Haushaltsbuch?",
-"um Ausgaben zu überblicken und zu planen"
-],
-[
-8,
-"Rechnungen lesen und prüfen",
-"Eine Rechnung: 3 Stunden zu 45 € plus 19 % MwSt. Betrag?",
-"160,65 €",
-"Was steht auf einer Handwerkerrechnung?",
-"Arbeitszeit, Material, Steuer",
-"Wie prüfst du eine Telefonrechnung?",
-"Posten mit dem Vertrag vergleichen, nachrechnen"
-],
-[
-14,
-"Wohn- und Baukosten berechnen",
-"Eine Wohnung hat 60 m², Miete 8 € pro m². Kaltmiete?",
-"480 €",
-"Wie viel Farbe braucht man für 40 m² Wand, wenn 1 l für 8 m² reicht?",
-"5 l",
-"Fliesen für einen Boden 4 m × 3 m, 1 m² kostet 25 €, 10 % Verschnitt. Kosten?",
-"330 €"
-],
-[
-20,
-"Angebote vergleichen",
-"Angebot A: 20 € Grundgebühr und 0,10 € pro Minute. Kosten bei 100 Minuten?",
-"30 €",
-"Angebot B: 0,30 € pro Minute. Ab wann ist A günstiger?",
-"ab mehr als 100 Minuten",
-"Was solltest du neben dem Preis noch vergleichen?",
-"Laufzeit, Leistungen, Zusatzkosten"
-]
-]
+ [2, "Haushaltsbuch: Einnahmen und Ausgaben", "Einnahmen 1 800 €, Ausgaben 1 650 €. Was bleibt?", "150 €", "Welcher Anteil der Einnahmen von 2 000 € ist eine Miete von 600 €?", "30 %", "Warum führt man ein Haushaltsbuch?", "um Ausgaben zu überblicken und zu planen"],
+ [3, "Monatliche und jährliche Kosten umrechnen", "Handyvertrag 15 € im Monat. Kosten im Jahr?", "180 €", "Versicherung 240 € im Jahr. Pro Monat?", "20 €", "Was ist günstiger: 12 € im Monat oder 135 € im Jahr?", "135 € im Jahr (12 € · 12 = 144 €)"],
+ [4, "Haushaltsbuch auswerten: Anteile der Ausgaben in Prozent", "Ausgaben 1 200 €, davon Miete 480 €. Anteil?", "40 %", "Einnahmen 1 500 €, Ausgaben 1 380 €. Wie viel bleibt?", "120 €", "Lebensmittel steigen von 300 € auf 330 €. Um wie viel Prozent?", "10 %"],
+ [6, "Rechnungen prüfen: Menge · Einzelpreis, Summe", "3 kg zu 2,49 €/kg?", "7,47 €", "Stromrechnung: 250 kWh zu 0,32 €. Arbeitspreis?", "80 €", "Eine Rechnung zeigt 4 · 1,99 € = 8,96 €. Richtig?", "nein, 7,96 €"],
+ [7, "Netto, Mehrwertsteuer und Brutto", "Netto 100 €, 19 % MwSt. Brutto?", "119 €", "Brutto 238 €. Netto?", "200 €", "Wie viel MwSt. steckt in 59,50 € brutto?", "9,50 €"],
+ [8, "Rechnungen lesen und prüfen", "Eine Rechnung: 3 Stunden zu 45 € plus 19 % MwSt. Betrag?", "160,65 €", "Was steht auf einer Handwerkerrechnung?", "Arbeitszeit, Material, Steuer", "Wie prüfst du eine Telefonrechnung?", "Posten mit dem Vertrag vergleichen, nachrechnen"],
+ [11, "Baukosten aus Fläche und Preis pro m²", "Laminat 15 €/m² für 20 m²?", "300 €", "Zaun 25 € pro m für ein Grundstück 20 m × 30 m?", "2 500 €", "Malerkosten 12 €/m² für 85 m² Wandfläche?", "1 020 €"],
+ [12, "Angebote mit Grundgebühr vergleichen", "Tarif A: 10 € + 0,10 €/min, Tarif B: 0,20 €/min. Ab wann ist A günstiger?", "ab mehr als 100 min", "Kosten von A bei 60 min?", "16 €", "Wie stellt man beide Tarife grafisch dar?", "als Geraden; Schnittpunkt = gleiche Kosten"],
+ [12, "Preis pro Einheit vergleichen", "500 g für 2,40 € oder 750 g für 3,30 €?", "750 g (4,40 € statt 4,80 € je kg)", "1,5 l für 1,29 € oder 1 l für 0,89 €?", "1,5 l (0,86 € je l)", "Warum lohnt sich eine Großpackung nicht immer?", "wenn Reste verderben oder man sie nicht braucht"],
+ [14, "Wohn- und Baukosten berechnen", "Eine Wohnung hat 60 m², Miete 8 € pro m². Kaltmiete?", "480 €", "Wie viel Farbe braucht man für 40 m² Wand, wenn 1 l für 8 m² reicht?", "5 l", "Fliesen für einen Boden 4 m × 3 m, 1 m² kostet 25 €, 10 % Verschnitt. Kosten?", "330 €"],
+ [20, "Angebote vergleichen", "Angebot A: 20 € Grundgebühr und 0,10 € pro Minute. Kosten bei 100 Minuten?", "30 €", "Angebot B: 0,30 € pro Minute. Ab wann ist A günstiger?", "ab mehr als 100 Minuten", "Was solltest du neben dem Preis noch vergleichen?", "Laufzeit, Leistungen, Zusatzkosten"]]
 }

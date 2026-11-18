@@ -247,7 +247,7 @@ function addHaDays(Y) {
   Y.free.sort((a, b) => (a.date || "9") < (b.date || "9") ? -1 : 1);
   return Y;
 }
-function defaultSettings() { return { years: [defaultYear()], retention: 0.9, perLesson: 5, autoBuffer: true }; }
+function defaultSettings() { return { years: [defaultYear()], retention: 0.9, perLesson: 10, autoBuffer: true, pl10: true }; }
 const sortYears = ys => ys.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const sortTT = tt => tt.sort((a, b) => (a.frm || "") < (b.frm || "") ? -1 : (a.frm || "") > (b.frm || "") ? 1 : 0);
 const cloneLessons = ls => ls.map(l => Object.assign({ id: uid(), day: +l.day, period: +l.period, track: l.track }, +l.len === 2 ? { len: 2 } : {}));
@@ -915,6 +915,9 @@ function applyDoc(name, data) {
       const c = Object.assign(clone(D.calendar), data.calendar || {});
       o.years = [{ id: yearIdOf(c.start), start: c.start, end: c.end, holidays: c.holidays || [], free: c.free || [], engineStart: data.engineStart || null, legacyDocs: true }];
     }
+    /* Wiederholungen pro Stunde: Standard von 5 auf 10 angehoben (Merker pl10). Wer den alten Standard 5 hatte, bekommt einmal 10. */
+    if (!data.pl10 && (data.perLesson === undefined || data.perLesson === 5)) o.perLesson = 10;
+    o.pl10 = true;
     delete o.calendar; delete o.engineStart;
     o.years = sortYears(o.years.filter(y => y && y.id).map(y => addHaDays(Object.assign({ holidays: [], free: [], engineStart: null }, y))));
     S.settings = o;
@@ -2495,7 +2498,7 @@ document.addEventListener("change", ev => {
     }
     case "hrsset": setSeq(k, s => { s[i].hours = Math.max(0, Math.min(60, Math.round(+t.value || 0))); }); break;
     case "ret": S.settings.retention = +t.value; commit(null, { settings: true }); break;
-    case "perlesson": S.settings.perLesson = Math.max(1, Math.min(15, Math.round(+t.value || 5))); commit(null, { settings: true }); break;
+    case "perlesson": S.settings.perLesson = Math.max(1, Math.min(15, Math.round(+t.value || 10))); commit(null, { settings: true }); break;
     case "cal": if (t.value) { cal()[f] = t.value; commit(null, { settings: true }); } break;
     case "autobuf": S.settings.autoBuffer = t.checked; commit(null, { settings: true }); break;
     case "engstart": if (t.value) { cal().engineStart = t.value; commit(null, { settings: true }); } break;
