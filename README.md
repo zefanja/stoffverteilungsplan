@@ -37,7 +37,9 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
   Im Schritt **Planung** wählt man je Klasse „Nacheinander“ (Standard in allen Klassen) oder „In Strängen“ und ordnet bei
   Strängen jeden Lernbereich Strang A oder B zu. Vorbelegt ist die Aufteilung der Vorlage, sonst abwechselnd A, B, A …;
   Puffer folgen dem Lernbereich davor, die Stunden je Strang werden angezeigt. Der Schritt **Unterrichtszeiten** richtet
-  sich danach: nacheinander nur Spur A (Klasse 7–9 dazu FIL), in Strängen A und B. Der Stundenplan bleibt beim
+  sich danach: nacheinander nur Spur A (Klasse 7–9 dazu FIL), in Strängen A und B. Das Raster ist beim ersten Öffnen leer
+  (ein Stundenplan, der noch der Vorlage entspricht, wird durch einen leeren Zeitraum ab Schuljahresbeginn ersetzt; eigene
+  Stundenpläne bleiben), „Weiter“ geht erst, wenn jede (Parallel-)Klasse mindestens eine Stunde hat. Der Stundenplan bleibt beim
   Umschalten erhalten; im Modus „nacheinander“ zählen B-Stunden als A-Stunden. Im Wochenraster werden zwei direkt
   aufeinanderfolgende Stunden derselben Spur zur Doppelstunde (bei drei Stunden die ersten beiden).
 

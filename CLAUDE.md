@@ -55,6 +55,9 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   `[data-act="obstep"][data-v=…]`). Planung: `setClassMode(k, mode)`, `setLbStrand(k, lb, strand)`, `obLbs(k)`; beim
   ersten Betreten setzt `obDefaults()` jede Klasse ohne Merker `obMode` auf „nacheinander“. `obTracks(k)` richtet sich nur
   nach `S.cls[k].mode`. Die Tests stellen GYM 6 im Assistenten auf „in Strängen“, weil spätere Prüfungen zwei Stränge erwarten.
+  Unterrichtszeiten: `obClearTT()` leert beim ersten Betreten Stundenpläne, die noch der Vorlage entsprechen (Merker `obTT`
+  je Gruppe); `obTTMissing()` sperrt „Weiter“. Die Tests holen danach die Stundenpläne der Vorlage zurück (`ttKeepOb`),
+  weil viele spätere Prüfungen mit ihnen rechnen.
 - `renderOverlay()` (Assistent, Quiz) ersetzt das Overlay per `innerHTML`. Der Assistent merkt sich dabei die
   Scrollposition von `#overlay`, `.ov-card` und `.obbody` im selben Schritt (sonst springt er auf dem Handy nach oben).
 - Routen: `#heute`, `#plan`, `#sequenz`, `#einheiten`, `#lernuebersicht`, `#einstellungen`, `#u-<klasse>-<index>`

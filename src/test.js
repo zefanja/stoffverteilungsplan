@@ -47,6 +47,19 @@ function serve(dir) {
   const obPL1 = await p.evaluate(() => ({ mode: window.__mp.S.cls.kl8.mode, sel: [...document.querySelectorAll('#overlay [data-act="oblb"][data-k="kl8"]')].map(x => x.value).join('') }));
   await p.selectOption('#overlay [data-act="oblb"][data-k="kl8"][data-lb="LB2"]', 'A'); await p.waitForTimeout(100);
   const obPL2 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.filter(r => /^Z\d/.test(r.code)).every(r => r.strand === 'A'));
+  const ttKeepOb = await p.evaluate(() => JSON.stringify({ kl6: window.__mp.S.cls.kl6.groups[0].tt, kl8: window.__mp.S.cls.kl8.groups[0].tt }));
+  await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(100);
+  // Unterrichtszeiten: Raster zuerst leer, Weiter erst mit mindestens einer Stunde je Klasse
+  const obE0 = await p.evaluate(() => ({ on: document.querySelectorAll('#overlay .obcell.on').length, dis: document.querySelector('#overlay [data-act="obstep"][data-v="4"]').disabled, need: (document.querySelector('#overlay .obneed') || {}).textContent || '', tt: window.__mp.S.cls.kl8.groups[0].tt.length }));
+  await p.click('#overlay [data-act="obcell"][data-g="kl6.a"][data-d="1"][data-p="1"]'); await p.waitForTimeout(80);
+  const obE1 = await p.evaluate(() => document.querySelector('#overlay [data-act="obstep"][data-v="4"]').disabled);
+  await p.click('#overlay [data-act="obcell"][data-g="kl8.a"][data-d="1"][data-p="1"]'); await p.waitForTimeout(80);
+  const obE2 = await p.evaluate(() => document.querySelector('#overlay [data-act="obstep"][data-v="4"]').disabled);
+  ok(obE0.on === 0 && obE0.dis && /Klasse 6/.test(obE0.need) && /Klasse 8/.test(obE0.need) && obE0.tt === 1 && obE1 && !obE2,
+    'Unterrichtszeiten: Raster leer, Weiter erst wenn jede Klasse mindestens eine Stunde hat ' + JSON.stringify([obE0, obE1, obE2]));
+  // für die folgenden Tests die Stundenpläne der Vorlage zurückholen (Merker obTT bleibt, das Raster wird nicht erneut geleert)
+  await p.evaluate(j => { const t = JSON.parse(j), M = window.__mp; M.S.cls.kl6.groups[0].tt = t.kl6; M.S.cls.kl8.groups[0].tt = t.kl8; M.touch(); }, ttKeepOb);
+  await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(80);
   await p.click('#overlay [data-act="obstep"][data-v="3"]'); await p.waitForTimeout(100);
   const obPL3 = await p.evaluate(() => [...document.querySelectorAll('#overlay .obgrid')].map(g => g.querySelector('p.small').textContent));
   await p.click('#overlay [data-act="obstep"][data-v="2"]'); await p.waitForTimeout(100);
