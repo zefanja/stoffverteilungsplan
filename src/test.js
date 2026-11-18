@@ -355,6 +355,30 @@ function serve(dir) {
   await p.click('.tcard .slot.x [data-act="cancel"]'); await p.waitForTimeout(150);
   const dhr = await p.evaluate(k => k.split(',').every(x => !window.__mp.S.cls.kl6.groups[0].cancelled[x]), dhb.keys);
   ok(!!dhb.keys && dhb.keys.split(',').length === 2 && /Stunde \d+–\d+ von/.test(dhb.title) && dhd && dhc && dhr, 'Heute: Doppelstunde als ein Block, gehalten, Ausfall und Rücknahme für beide Schulstunden ' + JSON.stringify([dhb, dhd, dhc, dhr]));
+  // Rückgabe nie in derselben Doppelstunde wie die Arbeit; Dauer 45/90 min ändert die Stunden in der Sequenz
+  const rueck = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6, row = C.seq.find(x => x.code === 'KA1');
+    const keepPin = JSON.stringify(C.groups[0].pin), keepDur = JSON.stringify(C.lnDur || {});
+    const look = () => { const sc = M.schedule('kl6.a'), r = sc.rows.find(x => x.id === row.id), u = window.__mp.lnDurOf('kl6', 'KA1');
+      const ai = r.slots.filter((s, i) => !/Wiederholung|Rückgabe/.test(M.lessonInfo('kl6.a', s.lesson).title)), rv = r.slots[r.slots.length - 1];
+      return { dates: r.slots.map(s => s.date + '/' + s.period), arbeit: ai.map(s => s.date), rueck: rv.date, hours: C.seq.find(x => x.id === row.id).hours, dur: u }; };
+    M.setLnDate('kl6.a', row.id, '2026-10-08'); const a = look();
+    M.setLnDur('kl6', 'KA1', 90); const b = look();
+    M.setLnDur('kl6', 'KA1', 45); const c = look();
+    C.groups[0].pin = JSON.parse(keepPin); C.lnDur = JSON.parse(keepDur); M.touch();
+    return { a, b, c }; });
+  ok(rueck.a.rueck > rueck.a.arbeit[0] && rueck.a.hours === 3 && rueck.b.hours === 4 && rueck.b.dur === 90 && rueck.b.arbeit.length === 2 && rueck.b.arbeit[0] === rueck.b.arbeit[1] && rueck.b.rueck > rueck.b.arbeit[1] && rueck.c.hours === 3,
+    'Klassenarbeit in der Doppelstunde: Rückgabe frühestens am nächsten Unterrichtstag, 90 min belegen die Doppelstunde, Sequenz wächst und schrumpft ' + JSON.stringify(rueck));
+  // Kurzkontrolle mit Dauer: Restzeit in der Stunde, ab 45 min Hinweis zum Verlängern
+  const kk = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6; C.checks = [{ id: 'k1', kind: 'kk', title: 'A', code: 'A1', n: 1, dur: 30 }, { id: 'k2', kind: 'kk', title: 'B', code: 'A1', n: 2, dur: 20 }]; M.touch();
+    location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); return true; });
+  await p.waitForTimeout(250);
+  const kkUi = await p.evaluate(() => ({ rest: [...document.querySelectorAll('.lcheck')].map(e => e.textContent.replace(/\s+/g, ' ')), warn: !!document.querySelector('[data-act="unitplus"]') }));
+  const hrs0 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
+  await p.click('[data-act="unitplus"]'); await p.waitForTimeout(150);
+  const hrs1 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  await p.evaluate(() => { window.__mp.S.cls.kl6.checks = []; window.__mp.touch(); });
+  ok(kkUi.rest.some(t => t.includes('noch 15 min')) && kkUi.warn && hrs1 === hrs0 + 1, 'Kurzkontrolle mit Dauer: Restzeit der Stunde, ab 45 min Vorschlag „Einheit verlängern“ ' + JSON.stringify([kkUi, hrs0, hrs1]));
   await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
   // Seitenwechsel über die Navigation beginnt oben, auch beim erneuten Klick auf die offene Seite
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
@@ -372,7 +396,7 @@ function serve(dir) {
   const ln0 = await p.evaluate(() => { const M = window.__mp, sc = M.schedule('kl8.a'); return { n: M.S.cls.kl8.seq.length, nextStart: (sc.rows.find(r => r.code === 'T1') || {}).start }; });
   const afterIdx = await p.evaluate(() => window.__mp.S.cls.kl8.seq.findIndex(r => r.code === 'S0'));
   await p.selectOption('#lnkind', 'test');
-  const lnDef = await p.evaluate(() => [document.getElementById('lnhrs').value, document.getElementById('lnwdh').checked, document.getElementById('lnrueck').checked]);
+  const lnDef = await p.evaluate(() => [String(+document.getElementById('lndur').value / 45), document.getElementById('lnwdh').checked, document.getElementById('lnrueck').checked]);
   await p.fill('#lntopic', 'Terme'); await p.selectOption('#lnafter', String(afterIdx)); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
   const ln1 = await p.evaluate(i => { const M = window.__mp, C = M.S.cls.kl8, sc = M.schedule('kl8.a'), row = C.seq[i + 1];
     return { n: C.seq.length, code: row.code, hours: row.hours, title: C.ln[row.code] && C.ln[row.code].title, nextStart: (sc.rows.find(r => r.code === 'T1') || {}).start, listed: M.lnDates('kl8.a').some(x => x.code === row.code && x.date) }; }, afterIdx);
