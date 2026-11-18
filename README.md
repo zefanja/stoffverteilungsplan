@@ -82,6 +82,8 @@ der gewählten (Parallel-)Klasse.
 - **Kalender für Termine**: Ein Klick auf den Termin (Liste, Termin-Karte, Formular) öffnet einen eigenen Monatskalender.
   Ferien und schulfreie Tage sind schraffiert (Name beim Darüberfahren), Tage mit Mathe-Unterricht der gewählten Klasse
   blau, Doppelstunden mit „2“, Tage mit anderen Leistungsnachweisen mit Punkt. Jeder Tag im Schuljahr ist wählbar.
+  Derselbe Kalender sitzt auf der Heute-Seite („Kalender“ in der Datumsleiste) und springt zum gewählten Tag; bei „Alle meine
+  Klassen“ markiert er die Mathe-Tage und Leistungsnachweise aller eigenen Klassen.
 - **Termin ändern**: Datum im Kalender wählen genügt (Liste oder Termin-Karte der Einheit). Die Arbeitsstunde liegt dann fest an diesem
   Tag (ohne Mathestunde: in der nächsten), Wiederholung davor, Rückgabe danach; der übrige Plan läuft darum herum, eine
   Einheit auch über den Termin hinweg. Feste Termine gelten je Parallelklasse; „lösen“ gibt den Termin frei.
@@ -92,8 +94,9 @@ der gewählten (Parallel-)Klasse.
   in allen Klassen; außer GYM 6 laufen alle Klassen der Vorlage ohnehin „nacheinander“ in einem Strang.
 - **Kontrollen in einer Stunde** („+ Kontrolle“ bei einer Stunde der Einheit): Kurzkontrolle, Test, mündliche Kontrolle,
   Hausaufgabenkontrolle, sonstige Bewertung, 20 oder 30 min. Die Stunde zeigt die verbleibende Unterrichtszeit; ab 45 min
-  Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern. Per Datum wandern sie in die erste Stunde
-  dieses Tages.
+  Kontrollen in einer Einheit schlägt die App vor, die Einheit zu verlängern. Mit Datum (auch kurze Tests mit Termin) liegen
+  sie **fest** in der ersten Mathestunde dieses Tages und wandern nicht mit, wenn sich Stunden der Sequenz ändern; in der Liste
+  stehen sie dann ohne Einheit. „lösen“ hängt sie an die Stunde, in der sie gerade liegen.
 - **Bearbeiten und Löschen**: Titel und Stundenthemen eigener Leistungsnachweise in ihrer Einheit; Löschen über × in der
   Liste oder in der Termin-Karte (mit Rückfrage, rückgängig machbar). Eigene verschwinden ganz, Platzhalter verlassen nur
   die Sequenz.
