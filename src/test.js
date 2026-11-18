@@ -520,5 +520,104 @@ function serve(dir) {
   await p2.selectOption('#yearsel', '2027-28'); await p2.waitForTimeout(150);
   ok(await p2.evaluate(() => window.__mp.S.cls.kl8.groups[0].tt.length === 1 && window.__mp.cal().id === '2027-28'), 'Schuljahr 2027/28 aus dem Browser-Speicher geladen');
   ok(errs.length === 0, 'Keine Fehler in der Konsole ' + JSON.stringify(errs));
+
+  /* ---------- Fachschaftsvorlage: Vorlage und persönliche Daten getrennt ----------
+     Eigener Browser-Kontext; vorlage.js wird je Ladevorgang durch tplBody ersetzt. */
+  let tplBody = { updated: null, classes: {} };
+  const ctx3 = await b.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
+  if (process.env.MATHJAX_JS) await ctx3.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/mathjax\/.*tex-svg/, r => r.fulfill({ path: process.env.MATHJAX_JS, contentType: 'text/javascript' }));
+  await ctx3.route(/\/vorlage\.js$/, r => r.fulfill({ contentType: 'text/javascript', body: 'window.PLAN_TEMPLATE=' + JSON.stringify(tplBody) + ';' }));
+  const p3 = await ctx3.newPage(); const errs3 = [];
+  p3.on('pageerror', e => errs3.push(e.message)); p3.on('console', m => { if (m.type() === 'error') errs3.push(m.text()); });
+  // goto mit anderem #hash lädt nicht neu: daher Hash setzen und neu laden
+  const load3 = async (hash) => { if (p3.url().startsWith(BASE)) { await p3.evaluate(h => { history.replaceState(null, '', '#' + h); }, hash || 'sequenz'); await p3.reload(); } else await p3.goto(BASE + 'index.html#' + (hash || 'sequenz'));
+    await p3.waitForTimeout(400);
+    await p3.evaluate(() => { const M = window.__mp; M.UI.date = '2026-11-17'; M.UI.cls = 'kl8'; M.UI.type = 'gym'; M.UI.obDismissed = true; document.getElementById('overlay').hidden = true; M.UI.ob = null; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p3.waitForTimeout(150); };
+  const lp8 = await (async () => { await load3(); return p3.evaluate(() => window.__mp.LP.kl8.seq); })();
+  const hrs = (seq, code) => (seq.find(r => (r.code || r[0]) === code) || {}).hours ?? (seq.find(r => r[0] === code) || [])[2];
+  // 1. ohne Fachschaftsvorlage persönliche Daten anlegen: eigener Leistungsnachweis, fester KA-Termin, Mehrbedarf in T2
+  const pers = await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8;
+    M.addLn('kl8', { kind: 'praes', topic: 'Daten', hours: 1, wdh: false, rueck: false, afterIdx: C.seq.findIndex(r => r.code === 'T2') });
+    const ka1 = C.seq.find(r => r.code === 'KA1'); M.setLnDate('kl8.a', ka1.id, '2026-10-01');
+    const t2 = C.seq.find(r => r.code === 'T2'); C.groups[0].adj[t2.id] = 1; M.commit('kl8');
+    return { own: M.seqOwn('kl8', C), t2: t2.id, ka1: ka1.id, ln: Object.keys(C.ln) }; });
+  ok(!pers.own && pers.ln.join() === 'PR1', 'Eigener Leistungsnachweis, Termin und Mehrbedarf zählen nicht als eigene Fassung ' + JSON.stringify(pers));
+  await p3.waitForTimeout(900);
+  // 2. Fachschaftsvorlage A: T1 eine Stunde mehr, ein zusätzliches Atom in T1 → wird still übernommen
+  const tplA = await p3.evaluate(() => { const c = window.PLAN_DATA.classes.kl8, seq = window.__mp.LP.kl8.seq.map(r => r.slice());
+    seq.find(r => r[0] === 'T1')[2] += 1;
+    const atoms = { T1: c.units.T1.atoms.concat([{ id: 'T1.fs', l: 1, t: 'Fachschaftsatom', q: 'Frage FS?', a: 'Antwort FS' }]) };
+    return { exported: '2026-11-10', mode: c.mode, seq, atoms, ln: {} }; });
+  tplBody = { updated: '2026-11-10', classes: { kl8: tplA } };
+  await load3();
+  const sA = await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; const i = c => C.seq.findIndex(r => r.code === c);
+    return { t1: C.seq.find(r => r.code === 'T1').hours, pr: i('PR1') === i('T2') + 1, pin: C.groups[0].pin[C.seq.find(r => r.code === 'KA1').id], adj: Object.values(C.groups[0].adj).join(),
+      newer: M.tplNewer('kl8', C), own: M.seqOwn('kl8', C), fsAtom: M.atomsOf('kl8', 'T1').some(a => a.id === 'T1.fs'), toast: document.getElementById('toast').innerText, view: document.querySelector('main').innerText }; });
+  ok(sA.t1 === hrs(lp8, 'T1') + 1 && sA.pr && sA.pin === '2026-10-01' && sA.adj === '1' && !sA.newer && !sA.own && sA.fsAtom, 'Neue Fachschaftsvorlage still übernommen, persönliche Daten bleiben ' + JSON.stringify(Object.assign({}, sA, { view: undefined, toast: undefined })));
+  ok(sA.toast.includes('Neue Fachschaftsvorlage übernommen') && sA.view.includes('folgt der Vorlage') && sA.view.includes('Fachschaftsvorlage (Stand 10.11.2026)'), 'Hinweis nach dem Übernehmen und Stand in der Sequenz');
+  await p3.screenshot({ path: path.join(OUT, 's_vorlage_folgt.png') });
+  // 3. eigene Fassung: T3 zwei Stunden mehr, eigene Atome in T2
+  await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; C.seq.find(r => r.code === 'T3').hours += 2;
+    C.atoms.T2 = M.atomsOf('kl8', 'T2').map(a => Object.assign({}, a, { t: a.t + ' (eigene Fassung)' })); M.commit('kl8'); });
+  await p3.waitForTimeout(900);
+  // 4. Vorlage B: T4 eine Stunde weniger, Atome von T2 geändert, Präsentation PR1 der Fachschaft am Ende
+  const tplB = await p3.evaluate(a => { const c = window.PLAN_DATA.classes.kl8, B = JSON.parse(JSON.stringify(a));
+    B.seq.find(r => r[0] === 'T4')[2] -= 1; B.seq.push(['PR1', 'A', 1]);
+    B.atoms.T2 = c.units.T2.atoms.map((x, i) => i ? x : Object.assign({}, x, { t: x.t + ' (Fachschaft)' }));
+    B.ln = { PR1: { kind: 'praes', title: 'Präsentation: Fachschaft', stunden: ['Präsentation'] } }; B.exported = '2026-11-15'; return B; }, tplA);
+  tplBody = { updated: '2026-11-15', classes: { kl8: tplB } };
+  await load3();
+  const sB = await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8;
+    return { t4: C.seq.find(r => r.code === 'T4').hours, newer: M.tplNewer('kl8', C), ln: Object.keys(C.ln).join(), prRows: C.seq.filter(r => /^PR/.test(r.code)).map(r => r.code).join(), diff: M.tplDiff('kl8', C), view: document.querySelector('main').innerText }; });
+  ok(sB.t4 === hrs(lp8, 'T4') && sB.newer && sB.ln === 'PR2' && sB.prRows === 'PR2' && sB.view.includes('Neue Vorlage für') && sB.diff.some(x => x.includes('T3') && x.includes('T4')), 'Eigene Fassung: neue Vorlage nur als Hinweis, eigener PR1 wird zu PR2 ' + JSON.stringify(Object.assign({}, sB, { view: undefined })));
+  await p3.screenshot({ path: path.join(OUT, 's_vorlage_neu.png') });
+  await p3.click('[data-act="tpladopt"]'); await p3.waitForTimeout(200);
+  const sC = await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8;
+    return { t3: C.seq.find(r => r.code === 'T3').hours, t4: C.seq.find(r => r.code === 'T4').hours, codes: C.seq.filter(r => /^PR/.test(r.code)).map(r => r.code).join(), pin: C.groups[0].pin[C.seq.find(r => r.code === 'KA1').id], newer: M.tplNewer('kl8', C), own: M.seqOwn('kl8', C) }; });
+  ok(sC.t3 === hrs(tplB.seq, 'T3') && sC.t4 === hrs(tplB.seq, 'T4') && sC.codes.split(',').sort().join() === 'PR1,PR2' && sC.pin === '2026-10-01' && !sC.newer && !sC.own, 'Vorlage übernehmen: Sequenz der Fachschaft, eigene Leistungsnachweise und Termine bleiben ' + JSON.stringify(sC));
+  await p3.click('#toast [data-act="undo"]'); await p3.waitForTimeout(200);
+  ok(await p3.evaluate(() => window.__mp.tplNewer('kl8', window.__mp.S.cls.kl8)), 'Übernehmen ist rückgängig zu machen');
+  await p3.click('[data-act="tplkeep"]'); await p3.waitForTimeout(200);
+  const sD = await p3.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; return [M.tplNewer('kl8', C), M.seqOwn('kl8', C), C.seq.find(r => r.code === 'T3').hours, document.querySelector('main').innerText.includes('eigene Fassung')]; });
+  ok(!sD[0] && sD[1] && sD[2] === hrs(lp8, 'T3') + 2 && sD[3], 'Meine Fassung behalten: Hinweis weg, eigene Stunden bleiben ' + JSON.stringify(sD));
+  // Atome: Hinweis in der Einheit T2, eigene behalten
+  const t2i = await p3.evaluate(() => window.__mp.unitOrderOf('kl8').indexOf('T2'));
+  await p3.evaluate(i => { location.hash = 'u-kl8-' + i; }, t2i); await p3.waitForTimeout(250);
+  ok((await p3.innerText('main')).includes('Die Fachschaft hat die Atome dieser Einheit geändert'), 'Einheit zeigt geänderte Atome der Fachschaft');
+  await p3.click('[data-act="atomkeep"]'); await p3.waitForTimeout(200);
+  ok(await p3.evaluate(() => !window.__mp.atomsNewer('kl8', 'T2') && window.__mp.atomsOf('kl8', 'T2')[0].t.includes('eigene Fassung')), 'Meine Atome behalten');
+  // 5. Export als Vorlage: ohne persönliche Daten, baut mit src/build_vorlage.js, eine neue Lehrkraft bekommt genau diese Sequenz
+  await p3.evaluate(() => { location.hash = 'einstellungen'; }); await p3.waitForTimeout(250);
+  const sett = await p3.innerText('main');
+  ok(sett.includes('Fachschaftsvorlage') && sett.includes('eigene Fassung'), 'Einstellungen: Karte Fachschaftsvorlage mit Stand je Klasse');
+  await p3.screenshot({ path: path.join(OUT, 's_vorlage_einstellungen.png'), fullPage: true });
+  const [dl] = await Promise.all([p3.waitForEvent('download'), p3.click('[data-act="tplexport"][data-k="kl8"]')]);
+  const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'mpv-')), file = path.join(tmp, 'vorlage-kl8.json');
+  await dl.saveAs(file);
+  const ex = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const mySeq = await p3.evaluate(() => window.__mp.S.cls.kl8.seq.map(r => [r.code, r.strand, r.hours]));
+  ok(ex.app === 'matheplaner-vorlage' && ex.id === 'kl8' && !ex.groups && !ex.tt && !ex.checks && ex.ln.PR2 && ex.atoms.T2 && JSON.stringify(ex.seq) === JSON.stringify(mySeq), 'Export: Sequenz, Atome, Leistungsnachweise, keine persönlichen Daten ' + JSON.stringify(Object.keys(ex)));
+  const out = path.join(tmp, 'vorlage.js');
+  require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'src', 'build_vorlage.js')], { env: Object.assign({}, process.env, { VORLAGE_SRC: tmp, VORLAGE_OUT: out }) });
+  const built = fs.readFileSync(out, 'utf8'); const sb = { window: {} }; require('vm').runInNewContext(built, sb);
+  tplBody = sb.window.PLAN_TEMPLATE;
+  fs.writeFileSync(path.join(tmp, 'kaputt.json'), JSON.stringify({ app: 'matheplaner-vorlage', id: 'kl8', mode: 'Stränge', seq: [['XYZ', 'A', 1]], atoms: {} }));
+  let failed = false; try { require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'src', 'build_vorlage.js')], { env: Object.assign({}, process.env, { VORLAGE_SRC: tmp, VORLAGE_OUT: out }), stdio: 'pipe' }); } catch (e) { failed = String(e.stderr).includes('XYZ'); }
+  ok(failed && fs.readFileSync(out, 'utf8') === built, 'build_vorlage.js prüft die Dateien und bricht bei unbekannten Kürzeln ab');
+  const p4 = await ctx3.newPage(); await p4.evaluate(() => localStorage.clear()).catch(() => {});
+  await p4.goto(BASE + 'index.html#sequenz'); await p4.evaluate(() => localStorage.clear()); await p4.reload(); await p4.waitForTimeout(400);
+  const fresh = await p4.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; return { seq: C.seq.map(r => [r.code, r.strand, r.hours]), atom: M.atomsOf('kl8', 'T2')[0].t, unit: !!window.PLAN_DATA.classes.kl8.units.PR2 }; });
+  ok(JSON.stringify(fresh.seq) === JSON.stringify(mySeq) && fresh.atom.includes('eigene Fassung') && fresh.unit, 'Neue Lehrkraft startet mit der exportierten Fachschaftsvorlage');
+  await p4.close();
+  // 6. Erinnerung an die Sicherung nach 30 Tagen, wenn nur im Browser gespeichert wird
+  tplBody = { updated: null, classes: {} };
+  await p3.evaluate(() => { localStorage.setItem('mp-since', '2026-01-01'); localStorage.removeItem('mp-lastbackup'); });
+  await load3('einstellungen');
+  const bk1 = await p3.evaluate(() => [document.getElementById('banner').dataset.kind, document.getElementById('banner').innerText]);
+  const [dl2] = await Promise.all([p3.waitForEvent('download'), p3.click('#dlbtn')]); await p3.waitForTimeout(150);
+  const bk2 = await p3.evaluate(() => document.getElementById('banner').dataset.kind);
+  ok(bk1[0] === 'backup' && bk1[1].includes('Noch keine Sicherung') && /sicherung/.test(dl2.suggestedFilename()) && bk2 === 'local', 'Erinnerung an die Sicherung, Datei-Download auch ohne Claude ' + JSON.stringify([bk1[0], bk2]));
+  ok(errs3.length === 0, 'Fachschaftsvorlage: keine Fehler in der Konsole ' + JSON.stringify(errs3));
+  await ctx3.close();
   await b.close(); srv.close();
 })();

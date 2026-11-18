@@ -7,6 +7,37 @@ const TYPES = D.schoolTypes || { gym: { label: "Gymnasium", short: "GYM", grades
 const classesFor = (type, grade) => CLASSES.filter(k => D.classes[k].type === type && +D.classes[k].grade === +grade);
 const classFor = (type, grade) => classesFor(type, grade)[0] || null;
 
+/* ---------------- Vorlage ----------------
+   Drei Ebenen: Lehrplan (data.js, erzeugt) → Fachschaftsvorlage (vorlage.js, gemeinsam gepflegt) → persönliche Daten
+   (je Lehrkraft gespeichert: Stundenplan, Häkchen, Ausfälle, Lernstand, eigene Abweichungen).
+   Die Fachschaftsvorlage ersetzt je Klasse Modus, Sequenz und die Atome einzelner Einheiten und kann eigene
+   Leistungsnachweis-Einheiten mitbringen. Danach ist D.classes die gemeinsame Vorlage; LP hält den Lehrplan-Stand. */
+const TPLDATA = window.PLAN_TEMPLATE && typeof window.PLAN_TEMPLATE === "object" ? window.PLAN_TEMPLATE : {};
+const strHash = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+const atomHash = list => strHash(JSON.stringify((list || []).map(a => [a.id, +a.l, a.t, a.q, a.a, a.q2 ?? null, a.a2 ?? null, a.q3 ?? null, a.a3 ?? null, a.g ?? null])));
+const LP = {}, TPL = {};
+CLASSES.forEach(k => {
+  const c = D.classes[k], atoms = {};
+  Object.keys(c.units).forEach(code => { atoms[code] = atomHash(c.units[code].atoms); });
+  LP[k] = { seq: c.seq.map(r => [r[0], r[1] === "B" ? "B" : "A", +r[2] || 0]), mode: c.mode, atoms };
+});
+Object.entries(TPLDATA.classes || {}).forEach(([k, t]) => {
+  const c = D.classes[k]; if (!c || !t || typeof t !== "object") return;
+  Object.entries(t.ln || {}).forEach(([code, u]) => {
+    if (c.units[code] || !u || typeof u !== "object") return;
+    const stunden = Array.isArray(u.stunden) && u.stunden.length ? u.stunden.map(String) : ["Leistungsnachweis"];
+    c.units[code] = { code, lb: "test", title: String(u.title || code), kind: ["ka", "klausur", "test", "praes", "komplex"].includes(u.kind) ? u.kind : undefined, main: Number.isInteger(u.main) ? u.main : undefined, stunden, inhalte: [], begriffe: [], hinweise: [], atoms: [], tpl: true };
+    c.unitOrder.push(code);
+  });
+  if (Array.isArray(t.seq) && t.seq.length) {
+    const seq = t.seq.filter(r => Array.isArray(r) && (c.units[r[0]] || r[0] === "P" || r[0] === "JA")).map(([code, strand, hours]) => [code, strand === "B" ? "B" : "A", Math.max(0, +hours || 0)]);
+    if (seq.length) c.seq = seq;
+  }
+  if (t.mode === "nacheinander" || t.mode === "Stränge") c.mode = t.mode;
+  Object.entries(t.atoms || {}).forEach(([code, list]) => { if (c.units[code] && Array.isArray(list)) c.units[code].atoms = list; });
+  TPL[k] = { exported: t.exported || null, by: t.by || "" };
+});
+
 /* ---------------- utils ---------------- */
 const pad = n => String(n).padStart(2, "0");
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -243,7 +274,7 @@ function defaultClass(k, y) {
     ? c.tt.map(v => ({ id: uid(), frm: v.frm, lessons: cloneLessons(v.lessons) }))
     : [{ id: uid(), frm: y.start, lessons: cloneLessons(c.tt[c.tt.length - 1].lessons) }];
   const C = { mode: c.mode, seq: c.seq.map(([code, strand, hours]) => ({ id: uid(), code, strand, hours })), atoms: {},
-    groups: [newGroup("a", "", tt)], ln: {}, checks: [], kaV: 1 };
+    groups: [newGroup("a", "", tt)], ln: {}, checks: [], kaV: 1, tpl: tplStamp(k) };
   C.groups[0].pin = kaPins(k, C.seq, y);
   return C;
 }
@@ -294,6 +325,135 @@ function migrateKa(k, C) {
   const pins = kaPins(k, C.seq, cal());
   C.groups.forEach(G => { G.pin = G.pin || {}; Object.entries(pins).forEach(([id, d]) => { if (!G.pin[id]) G.pin[id] = d; }); });
   C.kaV = 1;
+}
+
+/* ---------------- Abgleich mit der Fachschaftsvorlage ----------------
+   C.tpl merkt sich den Stand der Vorlage, auf dem die eigene Planung beruht: Sequenz als [Kürzel, Strang, Stunden], Modus
+   und für Einheiten mit eigenen Atomen deren Prüfsumme. Ändert sich die Vorlage:
+   - eigene Sequenz unverändert gegenüber diesem Stand: die neue Vorlage wird still übernommen;
+   - eigene Sequenz geändert: Hinweis in der Sequenz („Vorlage übernehmen“ oder „Meine Fassung behalten“);
+   - eigene Atome einer Einheit, deren Atome die Fachschaft geändert hat: Hinweis in der Einheit.
+   Leistungsnachweise (Lernbereich „test“: Platzhalter und eigene Arbeiten) zählen dabei nicht als Abweichung und
+   bleiben beim Übernehmen erhalten, ebenso Stundenpläne, Termine, Ausfälle, Häkchen und Lernstand. */
+function tplStamp(k) { const c = D.classes[k]; return { seq: c.seq.map(r => [r[0], r[1] === "B" ? "B" : "A", +r[2] || 0]), mode: c.mode, atoms: {} }; }
+const seqArr = seq => seq.map(r => [r.code, r.strand === "B" ? "B" : "A", +r.hours || 0]);
+const tplAtomHash = (k, code) => atomHash((D.classes[k].units[code] || {}).atoms);
+/* Kernzeilen: Einheiten mit Stoff, Puffer und Jahresabschluss; alle anderen Zeilen sind Leistungsnachweise. */
+const isCore = (k, code) => code === "P" || code === "JA" || (!!D.classes[k].units[code] && D.classes[k].units[code].lb !== "test");
+const coreKey = (k, arr, mode) => mode + ";" + arr.filter(r => isCore(k, r[0])).map(r => r.join("|")).join(",");
+function tplOf(k, C) {
+  if (!C.tpl || !Array.isArray(C.tpl.seq)) C.tpl = tplStamp(k);
+  if (!C.tpl.atoms || typeof C.tpl.atoms !== "object") C.tpl.atoms = {};
+  return C.tpl;
+}
+/* Eigene Fassung: die Sequenz (ohne Leistungsnachweise) oder der Modus weicht vom gemerkten Vorlagenstand ab. */
+const seqOwn = (k, C) => { const t = tplOf(k, C); return coreKey(k, seqArr(C.seq), C.mode) !== coreKey(k, t.seq, t.mode); };
+/* Die Vorlage hat sich seit dem gemerkten Stand geändert. */
+const tplNewer = (k, C) => { const t = tplOf(k, C); return JSON.stringify(t.seq) !== JSON.stringify(tplStamp(k).seq) || t.mode !== D.classes[k].mode; };
+/* Vorlage übernehmen: Kernzeilen aus der Vorlage (IDs gleicher Kürzel bleiben, damit Abweichungen und Termine der
+   Parallelklassen erhalten bleiben), eigene Leistungsnachweise hinter derselben Kernzeile wie bisher, neue
+   Leistungsnachweise der Vorlage an ihrem Platz in der Vorlage. Selbst entfernte Platzhalter kommen nicht wieder. */
+function adoptTemplate(k, C) {
+  const c = D.classes[k], base = tplOf(k, C).seq, old = C.seq;
+  const occ = codes => { const n = {}; return codes.map(code => { n[code] = n[code] || 0; return code + "#" + n[code]++; }); };
+  const oldCore = old.filter(r => isCore(k, r.code)), oldKeys = occ(oldCore.map(r => r.code)), byKey = {};
+  oldCore.forEach((r, i) => { byKey[oldKeys[i]] = r; });
+  const tCore = c.seq.filter(r => isCore(k, r[0])), tKeys = occ(tCore.map(r => r[0])), newKeys = new Set(tKeys);
+  const after = {}, put = (key, row) => { (after[key] = after[key] || []).push(row); };
+  const anchor = seen => { for (let i = seen.length - 1; i >= 0; i--) if (newKeys.has(seen[i])) return seen[i]; return "^"; };
+  const known = code => !!(c.units[code] || (C.ln || {})[code]);
+  const removed = new Set(base.filter(r => !isCore(k, r[0]) && !old.some(x => x.code === r[0])).map(r => r[0]));
+  const kept = new Set(), fresh = new Set();
+  let seen = [], ci = 0;
+  old.forEach(r => {
+    if (isCore(k, r.code)) { seen.push(oldKeys[ci++]); return; }
+    if (!known(r.code)) return;
+    const b = base.find(x => x[0] === r.code), t = c.seq.find(x => x[0] === r.code);
+    // Stunden und Strang der Vorlage, solange du sie bei diesem Leistungsnachweis nicht geändert hast
+    const row = b && t && b[1] === (r.strand === "B" ? "B" : "A") && b[2] === +r.hours ? Object.assign({}, r, { strand: t[1], hours: t[2] }) : Object.assign({}, r);
+    put(anchor(seen), row); kept.add(r.code);
+  });
+  seen = []; let ti = 0;
+  c.seq.forEach(r => {
+    if (isCore(k, r[0])) { seen.push(tKeys[ti++]); return; }
+    if (kept.has(r[0]) || removed.has(r[0])) return;
+    const row = { id: uid(), code: r[0], strand: r[1], hours: r[2] }; fresh.add(row.id);
+    put(seen.length ? seen[seen.length - 1] : "^", row);
+  });
+  const seq = (after["^"] || []).slice();
+  tCore.forEach((r, i) => { const prev = byKey[tKeys[i]]; seq.push({ id: prev ? prev.id : uid(), code: r[0], strand: r[1], hours: r[2] }); (after[tKeys[i]] || []).forEach(x => seq.push(x)); });
+  const ids = new Set(seq.map(r => r.id)), pins = kaPins(k, seq, cal());
+  (C.groups || []).forEach(G => {
+    ["adj", "pin"].forEach(f => { G[f] = G[f] || {}; Object.keys(G[f]).forEach(id => { if (!ids.has(id)) delete G[f][id]; }); });
+    Object.entries(pins).forEach(([id, d]) => { if (fresh.has(id) && !G.pin[id]) G.pin[id] = d; });
+  });
+  (C.checks || []).forEach(x => { if (x.row && !ids.has(x.row)) delete x.row; });
+  C.seq = seq; C.mode = c.mode;
+  C.tpl = Object.assign(tplStamp(k), { atoms: tplOf(k, C).atoms });
+}
+/* Beim Laden: neue Vorlage still übernehmen, wenn die eigene Sequenz nicht abweicht. true = übernommen. */
+function syncTemplate(k, C) {
+  if (!tplNewer(k, C) || seqOwn(k, C)) return false;
+  adoptTemplate(k, C); return true;
+}
+/* Eigene Atome: Prüfsumme der Vorlage merken, auf der sie beruhen (alte Daten ohne Merker: Lehrplan-Stand). */
+function stampAtoms(k, C, legacy) {
+  const t = tplOf(k, C), own = C.atoms || {};
+  Object.keys(own).forEach(code => { if (!t.atoms[code] && D.classes[k].units[code]) t.atoms[code] = legacy ? LP[k].atoms[code] || tplAtomHash(k, code) : tplAtomHash(k, code); });
+  Object.keys(t.atoms).forEach(code => { if (!own[code]) delete t.atoms[code]; });
+}
+/* Die Fachschaft hat die Atome einer Einheit geändert, für die du eigene Atome hast. */
+function atomsNewer(k, code) { k = ck(k); const C = S.cls[k], h = tplOf(k, C).atoms[code]; return !!(C.atoms[code] && h && h !== tplAtomHash(k, code)); }
+/* Eigene Leistungsnachweise, deren Kürzel inzwischen die Vorlage verwendet, bekommen ein freies Kürzel. */
+function fixLnCodes(k, C) {
+  Object.keys(C.ln || {}).forEach(code => {
+    if (!D.classes[k].units[code]) return;
+    const pre = code.replace(/\d+$/, "") || "LN", used = new Set(D.classes[k].unitOrder.concat(Object.keys(C.ln)));
+    let n = 1; while (used.has(pre + n)) n++;
+    const nc = pre + n;
+    C.ln[nc] = C.ln[code]; delete C.ln[code];
+    if (C.atoms[code]) { C.atoms[nc] = C.atoms[code]; delete C.atoms[code]; }
+    C.seq.forEach(r => { if (r.code === code) r.code = nc; });
+    (C.checks || []).forEach(x => { if (x.code === code) x.code = nc; });
+  });
+}
+/* Unterschiede der eigenen Sequenz zur Vorlage in Stichworten (ohne Leistungsnachweise). */
+function tplDiff(k, C) {
+  const c = D.classes[k], mine = C.seq.filter(r => isCore(k, r.code)).map(r => [r.code, +r.hours || 0]), theirs = c.seq.filter(r => isCore(k, r[0])).map(r => [r[0], r[2]]);
+  const out = [], mc = new Set(mine.map(r => r[0])), tc = new Set(theirs.map(r => r[0]));
+  const sum = arr => arr.reduce((m, [code, h]) => { m[code] = (m[code] || 0) + h; return m; }, {}), hm = sum(mine), ht = sum(theirs);
+  if (C.mode !== c.mode) out.push(`Modus der Vorlage: ${c.mode === "nacheinander" ? "nacheinander" : "in Strängen"}`);
+  const add = [...tc].filter(x => !mc.has(x)), del = [...mc].filter(x => !tc.has(x));
+  if (add.length) out.push("nur in der Vorlage: " + add.join(", "));
+  if (del.length) out.push("nur bei dir: " + del.join(", "));
+  const ch = [...tc].filter(x => mc.has(x) && hm[x] !== ht[x]).map(x => `${x === "P" ? "Puffer" : x} ${hm[x]} → ${ht[x]}`);
+  if (ch.length) out.push("Stunden (deine → Vorlage): " + ch.slice(0, 8).join(", ") + (ch.length > 8 ? " …" : ""));
+  const order = arr => arr.map(r => r[0]).filter(x => x !== "P" && mc.has(x) && tc.has(x)).join();
+  if (order(mine) !== order(theirs)) out.push("andere Reihenfolge");
+  return out;
+}
+/* Fachschaftsvorlage einer Klasse aus der eigenen Planung: nur Sequenz, Modus, Atome und Leistungsnachweis-Einheiten,
+   keine persönlichen Daten (Stundenplan, Termine, Ausfälle, Häkchen, Lernstand). */
+function templateExport(k) {
+  const C = S.cls[k], c = D.classes[k], own = C.ln || {}, atoms = {}, ln = {};
+  C.seq.forEach(r => {
+    const u = own[r.code] || (c.units[r.code] && c.units[r.code].tpl ? c.units[r.code] : null);
+    if (u && !ln[r.code]) ln[r.code] = { kind: u.kind || "ka", title: u.title, stunden: u.stunden.slice(), main: u.main ?? null };
+  });
+  unitOrderOf(k).forEach(code => {
+    if (!ln[code] && (!c.units[code] || c.units[code].tpl)) return;
+    const list = atomsOf(k, code).map(a => { const x = {}; ["id", "l", "t", "q", "a", "q2", "a2", "q3", "a3", "g"].forEach(f => { if (a[f] !== undefined) x[f] = a[f]; }); return x; });
+    if (ln[code] ? list.length : atomHash(list) !== LP[k].atoms[code]) atoms[code] = list;
+  });
+  return { app: "matheplaner-vorlage", v: 1, id: k, label: fullLabel(k), exported: todayIso(), mode: C.mode, seq: seqArr(C.seq), atoms, ln };
+}
+let adoptedNote = new Set(), adoptedTimer = null;
+function noteAdopted(k) {
+  adoptedNote.add(k); clearTimeout(adoptedTimer);
+  adoptedTimer = setTimeout(() => {
+    const l = [...adoptedNote].filter(x => S.cls[x]).map(x => fullLabel(x)).join(", "); adoptedNote.clear();
+    if (l) toast(`Neue Fachschaftsvorlage übernommen: ${l}. Deine Stundenpläne, Termine und Abweichungen bleiben.`);
+  }, 300);
 }
 /* Parallelklassen (höchstens 2): Sequenz, Modus und Atome teilen sie sich; jede Gruppe hat eigenen Stundenplan,
    eigene Ausfälle, Häkchen, Lernstand und Abweichungen von der Sequenz (adj: Zeilen-ID -> zusätzliche Stunden). */
@@ -668,7 +828,9 @@ function applyDoc(name, data) {
   } else if (CLASSES.includes(name)) {
     if (!Array.isArray(data.seq)) return;
     const c = Object.assign(defaultClass(name), data);
-    if (isOldLehrplanSeq(name, data.seq)) c.seq = defaultClass(name).seq;
+    const legacy = !data.tpl || !Array.isArray(data.tpl.seq);
+    if (legacy) c.tpl = { seq: LP[name].seq.map(r => r.slice()), mode: LP[name].mode, atoms: {} };
+    if (isOldLehrplanSeq(name, data.seq)) { c.seq = defaultClass(name).seq; c.tpl = tplStamp(name); }
     if (!Array.isArray(data.tt) && !Array.isArray(data.groups)) c.tt = Array.isArray(data.timetable) ? ttFromLegacy(data.timetable, cal().start) : defaultClass(name).groups[0].tt;
     delete c.timetable;
     if (!Array.isArray(data.groups) || !data.groups.length) {
@@ -679,7 +841,11 @@ function applyDoc(name, data) {
     c.groups = c.groups.filter(G => G && GIDS.includes(G.id)).map(G => { const x = Object.assign(newGroup(G.id), G); sortTT(x.tt); return x; });
     if (!c.groups.length) c.groups = [newGroup("a", "", defaultClass(name).groups[0].tt)];
     if (!data.kaV) migrateKa(name, c);
+    fixLnCodes(name, c);
+    stampAtoms(name, c, legacy);
+    const adopted = syncTemplate(name, c);
     S.cls[name] = c;
+    if (adopted) { save(name); noteAdopted(name); }
   } else if (isEngDoc(name) && CLASSES.includes(ck(clsOfDoc(name)))) {
     S.eng[clsOfDoc(name)] = { cards: data.cards || {}, log: Array.isArray(data.log) ? data.log : [] };
   }
@@ -742,6 +908,7 @@ async function initDb() {
       const p = pickYear(); if (p !== UI.year) { yearGen++; UI.year = p; resetYearState(); }
       subscribeYear();
     }
+    if (local) firstUse();
     setDbState(local ? "local" : "off");
     if (!cal().engineStart) { cal().engineStart = todayIso(); if (local) save("settings"); }
     touch(); render(); maybeOnboard(); return;
@@ -766,7 +933,7 @@ let undoStack = null;
 function snapshotFor(g) { const k = ck(g); const eng = {}; GIDS.forEach(gid => { eng[gkey(k, gid)] = clone(S.eng[gkey(k, gid)]); }); return { k, cls: clone(S.cls[k]), eng, settings: clone(S.settings) }; }
 function commit(g, opts) {
   touch();
-  if (g) save(ck(g));
+  if (g) { stampAtoms(ck(g), S.cls[ck(g)]); save(ck(g)); }
   if (g && opts && opts.eng) GIDS.forEach(gid => save(engDoc(gkey(ck(g), gid))));
   if (opts && opts.settings) save("settings");
   render();
@@ -1045,7 +1212,7 @@ async function createYear(id, copySeq, copyTT) {
   switchYear(id, true);
   CLASSES.forEach(k => {
     const P = prev.cls[k], C = S.cls[k];
-    if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); C.ln = clone(P.ln || {}); C.checks = clone(P.checks || []); }
+    if (copySeq) { C.mode = P.mode; C.seq = P.seq.map(r => Object.assign({}, r, { id: uid() })); C.atoms = clone(P.atoms || {}); C.ln = clone(P.ln || {}); C.checks = clone(P.checks || []); C.tpl = clone(tplOf(k, P)); }
     /* Parallelklassen mit Namen übernehmen; Stundenplan je Gruppe aus ihrem letzten Zeitraum oder aus der Vorlage */
     C.groups = P.groups.map(PG => {
       const last = PG.tt && PG.tt.length ? sortTT(PG.tt.slice())[PG.tt.length - 1] : null;
@@ -1057,6 +1224,24 @@ async function createYear(id, copySeq, copyTT) {
   touch(); render();
   toast(r ? `Schuljahr ${yearLabel(id)} angelegt, Ferien Sachsen übernommen.` : `Schuljahr ${yearLabel(id)} angelegt. Ferien konnten nicht geladen werden (${err}); bitte unter Einstellungen eintragen.`);
 }
+
+/* ---------------- Dateien & Sicherung ---------------- */
+/* Datei speichern: im Claude-Artefakt über die Download-Funktion, sonst (GitHub Pages, lokal) als Browser-Download. */
+function saveFile(filename, txt) {
+  if (downloads) return downloads.save({ filename, data: txt });
+  return new Promise((res, rej) => {
+    try {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "application/json" })); a.download = filename;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); res();
+    } catch (e) { rej(e); }
+  });
+}
+/* Erinnerung an die Sicherung, wenn nur im Browser gespeichert wird: nach 30 Tagen ohne Sicherung (gezählt ab der ersten Nutzung). */
+const lsRead = key => { try { return localStorage.getItem(key); } catch (e) { return null; } };
+function markBackup() { try { localStorage.setItem("mp-lastbackup", todayIso()); } catch (e) {} renderBanner(); }
+function firstUse() { let v = lsRead("mp-since"); if (!v) { v = todayIso(); try { localStorage.setItem("mp-since", v); } catch (e) {} } return v; }
+const lastBackup = () => lsRead("mp-lastbackup");
+const backupDue = () => local && diffDays(lastBackup() || firstUse(), todayIso()) >= 30;
 
 /* ---------------- toast & banner ---------------- */
 let toastTimer;
@@ -1076,6 +1261,11 @@ function renderBanner() {
     ro: "Du kannst diesen Plan ansehen, aber nicht ändern.",
     quota: "Der Speicher ist voll. Lösche alte Daten über Einstellungen → Sicherung.",
   }[dbState];
+  if (dbState === "local" && backupDue()) {
+    const lb = lastBackup();
+    el.innerHTML = `Gespeichert wird nur in diesem Browser. ${lb ? `Letzte Sicherung vor ${diffDays(lb, todayIso())} Tagen.` : "Noch keine Sicherung."} Bitte unter <a href="#einstellungen">Einstellungen → Sicherung</a> eine Datei speichern.`;
+    el.hidden = false; el.dataset.kind = "backup"; return;
+  }
   el.textContent = m || ""; el.hidden = !m; el.dataset.kind = dbState;
 }
 
@@ -1290,6 +1480,20 @@ function viewPlan() {
 }
 
 /* ---------------- views: Sequenz ---------------- */
+const tplSource = k => TPL[k] ? `Fachschaftsvorlage${TPL[k].exported ? ` (Stand ${fmt(TPL[k].exported, { day: "2-digit", month: "2-digit", year: "numeric" })})` : ""}` : "Lehrplan-Vorlage";
+const tplDiffList = d => d.length ? `<ul class="small tpldiff">${d.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="small muted">Unterschiede nur bei Leistungsnachweisen oder Strängen.</p>`;
+/* Stand der Sequenz gegenüber der Vorlage: folgt ihr, eigene Fassung oder neue Vorlage zur Entscheidung. */
+function tplBox(g) {
+  const k = ck(g), C = S.cls[k], src = tplSource(k);
+  if (tplNewer(k, C)) return `<div class="card tplnote"><h3>Neue Vorlage für ${esc(D.classes[k].label)}</h3>
+    <p class="small">Die ${esc(src)} hat sich geändert. Weil du die Sequenz selbst angepasst hast, wurde sie nicht automatisch übernommen. Unterschiede zu deiner Sequenz:</p>
+    ${tplDiffList(tplDiff(k, C))}
+    <div class="acts"><button type="button" class="btn" data-act="tpladopt" data-k="${k}">Vorlage übernehmen</button><button type="button" class="btn ghost" data-act="tplkeep" data-k="${k}">Meine Fassung behalten</button></div>
+    <p class="small muted">Beim Übernehmen bleiben deine Leistungsnachweise, Termine, Stundenpläne, Ausfälle und der Lernstand erhalten. Rückgängig ist möglich.</p></div>`;
+  if (!seqOwn(k, C)) return `<p class="small tplstate"><span class="pill new">folgt der Vorlage</span><span>Grundlage ist die ${esc(src)}. Änderungen der Fachschaft kommen automatisch; deine Leistungsnachweise, Termine und Abweichungen der Parallelklassen bleiben.</span></p>`;
+  return `<div class="tplstate small"><span class="pill">eigene Fassung</span><span>Deine Sequenz weicht von der ${esc(src)} ab. Ändert die Fachschaft die Vorlage, erscheint hier ein Hinweis und du entscheidest selbst.</span>
+    <details class="tplsum"><summary>Unterschiede zur Vorlage</summary>${tplDiffList(tplDiff(k, C))}</details></div>`;
+}
 function viewSeq() {
   const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
   const used = new Set(C.seq.map(r => r.code));
@@ -1316,6 +1520,7 @@ function viewSeq() {
   }).join("");
   const confirm = UI.confirm === "reset-" + k;
   return `<section><div class="vhead"><h1>Sequenz</h1>${clsTabs()}</div>
+    ${tplBox(k)}
     <div class="seqtop">
       <div class="modebox"><div class="lbl">Modus</div><div class="seg small">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-v="${v}">${l}</button>`).join("")}</div>
       ${multi ? `<p class="small">Die Sequenz gilt für alle Parallelklassen. Zeiträume und Kapazität unten gelten für <b>${esc(groupName(k))}</b>; „Einheit braucht 1 Std. mehr“ und Ausfälle wirken nur dort und erscheinen als Abweichung neben den Stunden.</p>` : ""}
@@ -1414,6 +1619,10 @@ function viewUnit(kc, idx) {
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
     </div>
     <h2>Stunden und Atome</h2>
+    ${atomsNewer(k, code) ? `<div class="card tplnote"><h3>Die Fachschaft hat die Atome dieser Einheit geändert</h3>
+      <p class="small">Du hast hier eigene Atome. Die ${esc(tplSource(ck(k)))} enthält inzwischen eine andere Fassung (${atomsOf(k, code).length} eigene, ${((D.classes[ck(k)].units[code] || {}).atoms || []).length} in der Vorlage).</p>
+      <div class="acts"><button type="button" class="btn" data-act="atomtpl" data-code="${esc(code)}">Atome der Vorlage übernehmen</button><button type="button" class="btn ghost" data-act="atomkeep" data-code="${esc(code)}">Meine Atome behalten</button></div>
+      <p class="small muted">Der Lernstand bleibt bei Atomen mit gleicher Kennung erhalten.</p></div>` : ""}
     <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde wird es wiederholt (Lernübersicht). Zum Verschieben ein Atom in eine andere Stunde ziehen oder ↑/↓ nutzen. Doppelstunden laut Stundenplan stehen zusammen. ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
     <div class="lessons-list">${lessons}</div></section>`;
 }
@@ -1605,13 +1814,31 @@ function viewSettings() {
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
     </div>
+    ${tplCard(k)}
     <div class="card"><h3>Sicherung</h3>
-      <p class="small">Deine Daten werden automatisch gespeichert. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).</p>
-      <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" hidden>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand ${esc(yearLabel(Y.id))} leeren</button></div>
+      <p class="small">Deine Daten werden automatisch gespeichert${local ? " – nur in diesem Browser" : ""}. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).${local ? ` Letzte Sicherung: ${lastBackup() ? fmt(lastBackup(), { day: "2-digit", month: "2-digit", year: "numeric" }) : "noch keine"}.` : ""}</p>
+      <div class="acts"><button type="button" class="btn" data-act="export">Sicherung kopieren</button><button type="button" class="btn ghost" data-act="download" id="dlbtn" ${downloads || local ? "" : "hidden"}>Als Datei speichern</button><button type="button" class="btn ghost" data-act="engreset">Lernstand ${esc(yearLabel(Y.id))} leeren</button></div>
       <textarea id="importbox" rows="3" placeholder="Sicherung hier einfügen …" aria-label="Sicherung einfügen"></textarea>
       <div class="acts"><button type="button" class="btn ghost" data-act="import">Sicherung einspielen</button>
       ${confirm ? `<span class="confirm"><span>Sequenzen, Stundenpläne und Lernstand von ${esc(yearLabel(Y.id))} auf die Vorlage zurücksetzen?</span><button type="button" class="btn danger" data-act="resetall">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="resetall">Schuljahr zurücksetzen</button>`}</div></div>
   </section>`;
+}
+
+/* Fachschaftsvorlage: was gemeinsam ist, was persönlich bleibt, Stand je eigener Klasse und Export. */
+function tplCard(g) {
+  const mine = mineList(), stamp = TPLDATA.updated ? fmt(TPLDATA.updated, { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
+  const rows = mine.map(k => {
+    const C = S.cls[k], st = tplNewer(k, C) ? `<span class="pill lnp">neue Vorlage</span>` : seqOwn(k, C) ? `<span class="pill">eigene Fassung</span>` : `<span class="pill new">folgt der Vorlage</span>`;
+    const na = Object.keys(C.atoms || {}).filter(code => atomsNewer(k, code)).length;
+    return `<tr><td>${esc(fullLabel(k))}</td><td class="small">${TPL[k] ? "Fachschaft" : "Lehrplan"}</td><td>${st}${na ? ` <span class="pill lnp">${na} Einheit${na > 1 ? "en" : ""} mit neuen Atomen</span>` : ""}</td></tr>`;
+  }).join("");
+  return `<div class="card tplcard"><h3>Fachschaftsvorlage</h3>
+    <p class="small">Die <b>Vorlage</b> ist für alle gleich: Sequenz, Stunden, Puffer, Atome und Aufgaben. Sie kommt aus dem Lehrplan oder, wo die Fachschaft eine gemeinsame Fassung beschlossen hat, aus der Fachschaftsvorlage${stamp ? ` (Stand ${esc(stamp)})` : ""}. <b>Persönlich</b> und nur bei dir gespeichert sind Stundenplan, Häkchen, Ausfälle, Termine der Leistungsnachweise, Lernstand und deine Änderungen an Sequenz und Atomen.</p>
+    <p class="small">Solange du die Sequenz einer Klasse nicht änderst, folgt sie der Vorlage: Änderungen der Fachschaft kommen beim nächsten Öffnen automatisch. Hast du sie angepasst, zeigt die Sequenz einen Hinweis und du entscheidest selbst.</p>
+    ${rows ? `<div class="tscroll"><table class="form"><thead><tr><th>Klasse</th><th>Vorlage</th><th>Stand</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
+    <h3>Eigene Planung als Vorlage weitergeben</h3>
+    <p class="small muted">Speichert Sequenz, Modus, Atome und Leistungsnachweise als Datei, ohne persönliche Daten. Wer die Fachschaftsvorlage pflegt, legt sie in <code>src/vorlage/</code> ab; danach bekommen alle sie beim nächsten Öffnen.</p>
+    <div class="acts">${g ? `<button type="button" class="btn ghost" data-act="tplexport" data-k="${ck(g)}">${esc(fullLabel(ck(g)))} als Vorlage speichern</button>` : ""}${mine.length > 1 ? `<button type="button" class="btn ghost" data-act="tplexport" data-v="all">Alle meine Klassen</button>` : ""}</div></div>`;
 }
 
 /* ---------------- Einrichtungsassistent ----------------
@@ -1854,7 +2081,18 @@ document.addEventListener("click", ev => {
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
     }
     case "confirm": UI.confirm = b.dataset.v || null; render(); break;
-    case "reset": { const d0 = defaultClass(k); S.cls[k] = Object.assign(d0, { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {}, pin: kaPins(k, d0.seq, cal()) })) }); } UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "tpladopt": { const snap = snapshotFor(k); adoptTemplate(k, S.cls[k]); undoStack = snap; commit(k); toast(`Vorlage für ${fullLabel(k)} übernommen.`, true); break; }
+    case "tplkeep": { const snap = snapshotFor(k); S.cls[k].tpl = Object.assign(tplStamp(k), { atoms: tplOf(k, S.cls[k]).atoms }); undoStack = snap; commit(k); toast("Deine Fassung bleibt. Spätere Änderungen der Vorlage werden wieder angezeigt.", true); break; }
+    case "atomtpl": { const snap = snapshotFor(k); delete S.cls[k].atoms[b.dataset.code]; undoStack = snap; commit(k); toast("Atome der Vorlage übernommen.", true); break; }
+    case "atomkeep": { const snap = snapshotFor(k); tplOf(k, S.cls[k]).atoms[b.dataset.code] = tplAtomHash(k, b.dataset.code); undoStack = snap; commit(k); toast("Deine Atome bleiben.", true); break; }
+    case "tplexport": {
+      const ks = b.dataset.v === "all" ? mineList() : [k], files = ks.map(templateExport);
+      const body = files.length === 1 ? files[0] : { app: "matheplaner-vorlage", v: 1, exported: todayIso(), classes: Object.fromEntries(files.map(f => [f.id, f])) };
+      const name = files.length === 1 ? `vorlage-${files[0].id}.json` : `vorlage-${todayIso()}.json`;
+      saveFile(name, JSON.stringify(body, null, 1)).then(() => toast(`Vorlage gespeichert: ${name}. Für die Fachschaft in src/vorlage/ ablegen.`), () => toast("Speichern abgebrochen."));
+      break;
+    }
+    case "reset": { const d0 = defaultClass(k); d0.tpl.atoms = clone(tplOf(k, S.cls[k]).atoms); S.cls[k] = Object.assign(d0, { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {}, pin: kaPins(k, d0.seq, cal()) })) }); } UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
     case "resetall": { resetYearState(); CLASSES.forEach(c => { save(c); GIDS.forEach(gid => save(engDoc(gkey(c, gid)))); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
@@ -1899,12 +2137,12 @@ document.addEventListener("click", ev => {
     case "export": {
       const txt = JSON.stringify({ app: "matheplaner", v: 2, year: UI.year, settings: S.settings, cls: S.cls, eng: S.eng });
       const box = document.getElementById("importbox");
-      navigator.clipboard.writeText(txt).then(() => toast("Sicherung in die Zwischenablage kopiert."), () => { box.value = txt; box.select(); toast("Kopieren nicht erlaubt: Text ist markiert, bitte mit Strg+C kopieren."); });
+      navigator.clipboard.writeText(txt).then(() => { markBackup(); toast("Sicherung in die Zwischenablage kopiert."); }, () => { box.value = txt; box.select(); markBackup(); toast("Kopieren nicht erlaubt: Text ist markiert, bitte mit Strg+C kopieren."); });
       break;
     }
     case "download": {
       const txt = JSON.stringify({ app: "matheplaner", v: 2, year: UI.year, settings: S.settings, cls: S.cls, eng: S.eng }, null, 1);
-      downloads.save({ filename: `matheplaner-sicherung-${todayIso()}.json`, data: txt }).then(() => toast("Datei gespeichert."), () => toast("Speichern abgebrochen."));
+      saveFile(`matheplaner-sicherung-${todayIso()}.json`, txt).then(() => { markBackup(); toast("Datei gespeichert."); }, () => toast("Speichern abgebrochen."));
       break;
     }
     case "import": {
@@ -2016,7 +2254,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, kaDates, migrateKa, defaultClass, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

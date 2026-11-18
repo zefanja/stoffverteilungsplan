@@ -298,6 +298,11 @@ details.ziele p{margin:0;font-size:14px}
 .lcheck{display:flex;align-items:center;gap:6px;font-size:14px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;background:var(--warn-bg)}
 .lcheck .mini{margin-left:auto}
 .pill.lnp{border-color:var(--warn);color:var(--warn)}
+#banner[data-kind="backup"]{background:var(--warn-bg);color:var(--warn)} #banner a{color:inherit}
+.tplnote{border-color:var(--accent);margin-bottom:14px} .tpldiff{margin:0;padding-left:18px}
+.tplstate{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;margin:0 0 14px}
+.tplstate details{flex-basis:100%} .tplstate summary{cursor:pointer;color:var(--accent)}
+.tplcard code{font-size:12px}
 .chkform{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;padding:8px;background:var(--soft);border-radius:6px}
 .chkform label{display:grid;gap:3px;font-size:13px}
 .chkform label.wide{flex:1 1 200px}
@@ -427,6 +432,7 @@ window.MathJax = {
 </script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
 <script src="data.js"></script>
+<script src="vorlage.js"></script>
 <script src="generators.js"></script>
 <script src="app.js"></script>
 </body>

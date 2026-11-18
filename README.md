@@ -15,6 +15,9 @@ und über GitHub Pages: https://zefanja.github.io/stoffverteilungsplan/
 | `dist/app.js` | App-Logik: Planberechnung, FSRS, Ansichten, Speicherung |
 | `dist/logo.svg`, `dist/logo-mark.svg` | Schullogo FELS (voll für die Seitenleiste, Felszeichen ohne Schriftzug für Kopf und Handy) |
 | `dist/data.js` | Erzeugt: Einheiten, Atome, Standard-Sequenzen, Kalender, Stundenpläne |
+| `dist/vorlage.js` | Erzeugt: Fachschaftsvorlage aus `src/vorlage/*.json` (leer = es gilt der Lehrplan) |
+| `src/vorlage/` | Gemeinsame Vorlagen der Fachschaft, je Klasse eine aus der App exportierte JSON-Datei |
+| `src/build_vorlage.js` | Prüft `src/vorlage/*.json` gegen `dist/data.js` und baut `dist/vorlage.js` |
 | `dist/generators.js` | Erzeugt: Aufgabengeneratoren für die Wiederholung (aus der Anemo-Mathe-App) |
 | `src/extract.py` | Liest Einheiten und Sequenzen aus den Excel-Stoffverteilungsplänen in `in/` |
 | `src/atoms.py` | Atome je Einheit: Stunde, Atom, Prüffrage, Lösung |
@@ -38,6 +41,7 @@ python3 -I src/fetch_ferien.py  # optional: Ferien Sachsen aktualisieren
 python3 -I src/extract.py       # in/*.xlsx -> src/plan.json
 python3 -I src/build_data.py    # plan.json + atoms.py + generator_map.json -> dist/data.js
 node src/build_generators.js    # src/anemo/generators.ts -> dist/generators.js
+node src/build_vorlage.js       # src/vorlage/*.json -> dist/vorlage.js (Fachschaftsvorlage)
 NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, Screenshots nach docs/screenshots
 # ohne Internet: MathJax lokal bereitstellen, z. B. npm pack mathjax@3.2.2 und
 # MATHJAX_JS=/pfad/package/es5/tex-svg.js voranstellen
@@ -115,7 +119,7 @@ NODE_PATH=$(npm root -g) node src/test.js   # startet einen lokalen Webserver, S
     Neue und importierte Jahre bekommen sie automatisch, gespeicherte Jahre einmalig; ein gelöschter HA-Tag kommt nicht wieder.
   - Stundenplan je Klasse in Zeiträumen („gültig ab“): je Eintrag Tag, „ab Stunde“ (Lage im Stundenplan), Dauer
     (Einzel- oder Doppelstunde, zählt als 2 Stunden) und Spur; dazu Zeiträume ohne Unterricht (Praktikum, Klassenfahrt).
-  - Sicherung als Text oder Datei.
+  - Sicherung als Text oder Datei; Fachschaftsvorlage: Stand je Klasse und Export der eigenen Planung als Vorlage (siehe „Vorlage und persönliche Daten“).
 
 Gespeichert wird in der Datenbank des Artefakts: `planner/settings` (Schuljahre mit „Meine Klassen“ in `years[].classes`, Einstellungen der Wiederholung) und je Schuljahr
 `jahr-<id>/kl6`, `jahr-<id>/kl8`, `jahr-<id>/engine-kl6`, `jahr-<id>/engine-kl8`. Das aus der Zeit vor den Schuljahren übernommene
@@ -123,6 +127,43 @@ Jahr 2026/27 nutzt weiter `planner/kl6`, `planner/kl8`, `engine/kl6`, `engine/kl
 
 Auf GitHub Pages gibt es die Datenbank des Artefakts nicht. Dort speichert die App im Browser (`localStorage`, gleiche Pfade
 mit Präfix `mp-doc:`). Diese Daten gelten nur für diesen Browser; zum Übertragen dient Einstellungen → Sicherung.
+
+## Vorlage und persönliche Daten
+
+Die App trennt drei Ebenen:
+
+| Ebene | Inhalt | Wo |
+|---|---|---|
+| Lehrplan | Einheiten, Atome, Standard-Sequenzen | `dist/data.js` (erzeugt) |
+| Fachschaftsvorlage | gemeinsam beschlossene Sequenz, Stunden, Puffer, Modus, Atome und Leistungsnachweise je Klasse | `src/vorlage/*.json` → `dist/vorlage.js` |
+| Persönlich | Stundenplan, Häkchen, Ausfälle, Termine der Leistungsnachweise, Mehrbedarf je Parallelklasse, Lernstand, eigene Änderungen an Sequenz und Atomen | Artefakt-Datenbank bzw. Browser |
+
+Die Fachschaftsvorlage ersetzt für die enthaltenen Klassen Sequenz, Modus und Atome einzelner Einheiten aus `data.js`;
+für alle anderen Klassen gilt der Lehrplan. Jedes gespeicherte Klassendokument merkt sich in `tpl` den Vorlagenstand,
+auf dem es beruht (`seq` als `[Kürzel, Strang, Stunden]`, `mode`, für Einheiten mit eigenen Atomen deren Prüfsumme in `atoms`).
+Ändert sich die Vorlage:
+
+- **Sequenz nicht selbst geändert** („folgt der Vorlage“): Die neue Vorlage wird beim Öffnen still übernommen (Hinweis unten).
+  Leistungsnachweise (Lernbereich „test“: Platzhalter und eigene Arbeiten) zählen dabei nicht als Änderung; eigene bleiben
+  hinter derselben Einheit stehen, selbst entfernte Platzhalter kommen nicht wieder. Zeilen behalten ihre IDs, damit feste
+  Termine und der Mehrbedarf der Parallelklassen erhalten bleiben.
+- **Sequenz selbst geändert** („eigene Fassung“): Die Sequenz zeigt einen Hinweis mit den Unterschieden und „Vorlage
+  übernehmen“ (rückgängig machbar) oder „Meine Fassung behalten“.
+- **Eigene Atome einer Einheit**, deren Atome die Fachschaft geändert hat: Hinweis in der Einheit mit „Atome der Vorlage
+  übernehmen“ oder „Meine Atome behalten“. Der Lernstand hängt an der Atom-ID und bleibt bei gleicher ID erhalten.
+- Eigene Leistungsnachweise, deren Kürzel die Vorlage neu verwendet, bekommen ein freies Kürzel (z. B. PR1 → PR2).
+
+Daten aus der Zeit vor der Fachschaftsvorlage gelten als auf dem Lehrplan beruhend.
+
+**Fachschaftsvorlage pflegen:** In der App unter Einstellungen → Fachschaftsvorlage „… als Vorlage speichern“ (oder
+„Alle meine Klassen“). Die Datei enthält nur Sequenz, Modus, Atome und Leistungsnachweise, keine persönlichen Daten.
+Sie kommt nach `src/vorlage/` (eine Datei je Klasse, alte ersetzen). `node src/build_vorlage.js` prüft sie gegen den
+Lehrplan (Klasse, Kürzel, Aufbau der Atome) und schreibt `dist/vorlage.js`; bei Fehlern bleibt die alte Datei stehen.
+Der Pages-Workflow führt das Skript bei jedem Push auf `main` aus, der `src/vorlage/` ändert. Eine Datei per „Upload files“
+auf GitHub hochzuladen genügt also. Für das Claude-Artefakt muss `vorlage.js` mit veröffentlicht werden.
+
+**Sicherung:** Wird nur im Browser gespeichert, erinnert der Hinweis oben 30 Tage nach der ersten Nutzung bzw. der letzten
+Sicherung daran, eine Sicherung zu speichern. „Als Datei speichern“ gibt es jetzt auch auf GitHub Pages.
 
 ## GitHub Pages einrichten
 
