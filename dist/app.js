@@ -624,7 +624,9 @@ function schedule(g) {
     }
   }
   slots.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.period - b.period);
-  const rows = C.seq.map((r, i) => Object.assign({}, r, { base: r.hours, adj: (G.adj || {})[r.id] || 0, hours: Math.max(0, r.hours + ((G.adj || {})[r.id] || 0)), idx: i, track: seqMode ? "A" : (r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
+  let lastTrack = "A";
+  const isLnCode = code => (unitOf(k, code) || {}).lb === "test";
+  const rows = C.seq.map((r, i) => Object.assign({}, r, { base: r.hours, adj: (G.adj || {})[r.id] || 0, hours: Math.max(0, r.hours + ((G.adj || {})[r.id] || 0)), idx: i, track: seqMode ? "A" : isLnCode(r.code) ? lastTrack : (lastTrack = r.strand === "B" ? "B" : "A"), start: null, end: null, overflow: 0, slots: [] }));
   const tracks = { A: [], B: [] };
   rows.forEach(r => { for (let n = 1; n <= r.hours; n++) tracks[r.track].push({ row: r, n }); });
   const cap = { A: 0, B: 0, SOL: 0 }, planned = { A: tracks.A.length, B: tracks.B.length };
@@ -633,24 +635,26 @@ function schedule(g) {
      übrigen Plätze in der Reihenfolge der Sequenz, eine Einheit läuft also um den Termin herum weiter. */
   const pin = G.pin || {};
   const put = (L, s) => { s.lesson = L; L.row.slots.push(s); if (!L.row.start) L.row.start = s.date; L.row.end = s.date; };
-  for (const tr of ["A", "B"]) {
-    const ts = slots.filter(s => s.track === tr && !s.cancelled), used = new Array(ts.length).fill(false); cap[tr] = ts.length;
-    const pinned = rows.filter(r => r.track === tr && pin[r.id] && r.hours > 0).sort((a, b) => pin[a.id] < pin[b.id] ? -1 : 1);
-    pinned.forEach(r => {
-      const Ls = tracks[tr].filter(L => L.row === r), p = ts.findIndex(s => s.date >= pin[r.id]);
-      r.pinned = pin[r.id];
-      if (p < 0) { r.overflow += Ls.length; return; }
-      let st = Math.max(0, p - lnMain(k, r.code, r.hours));
-      while (Ls.some((_, i) => used[st + i])) st++;
-      let idx = st - 1, lastDate = null;
-      Ls.forEach(L => {
-        idx++;
-        // Rückgabe nicht in derselben (Doppel-)Stunde wie die Arbeit: erst an einem späteren Tag
-        if (isRueck(k, L) && lastDate) while (idx < ts.length && (used[idx] || ts[idx].date <= lastDate)) idx++;
-        while (idx < ts.length && used[idx]) idx++;
-        const s = ts[idx]; if (!s) { r.overflow++; return; } used[idx] = true; put(L, s); lastDate = s.date;
-      });
+  /* Fest terminierte Leistungsnachweise gehören zu keinem Strang: Sie belegen am Termin die erste Mathestunde des Tages
+     (aus Strang A oder B, nie FIL), Wiederholung direkt davor, Rückgabe frühestens an einem späteren Tag. Die Einheiten
+     des Strangs, dessen Stunde belegt ist, laufen darum herum. */
+  const all = slots.filter(s => s.track !== "SOL" && !s.cancelled), usedS = new Set();
+  rows.filter(r => pin[r.id] && r.hours > 0).sort((a, b) => pin[a.id] < pin[b.id] ? -1 : 1).forEach(r => {
+    const Ls = tracks[r.track].filter(L => L.row === r), p = all.findIndex(s => s.date >= pin[r.id]);
+    r.pinned = pin[r.id];
+    if (p < 0) { r.overflow += Ls.length; return; }
+    let st = Math.max(0, p - lnMain(k, r.code, r.hours));
+    while (Ls.some((_, i) => usedS.has(all[st + i]))) st++;
+    let idx = st - 1, lastDate = null;
+    Ls.forEach(L => {
+      idx++;
+      if (isRueck(k, L) && lastDate) while (idx < all.length && (usedS.has(all[idx]) || all[idx].date <= lastDate)) idx++;
+      while (idx < all.length && usedS.has(all[idx])) idx++;
+      const s = all[idx]; if (!s) { r.overflow++; return; } usedS.add(s); put(L, s); lastDate = s.date;
     });
+  });
+  for (const tr of ["A", "B"]) {
+    const ts = slots.filter(s => s.track === tr && !s.cancelled), used = ts.map(s => usedS.has(s)); cap[tr] = ts.length;
     let j = 0;
     tracks[tr].forEach(L => {
       if (L.row.pinned) return;
@@ -666,6 +670,9 @@ function schedule(g) {
       j++; put(L, s);
     });
   }
+  // Geplante Stunden je Strang: fest terminierte Leistungsnachweise zählen dort, wo sie tatsächlich liegen
+  planned.A = 0; planned.B = 0;
+  rows.forEach(r => { if (r.pinned) { r.slots.forEach(s => { planned[s.track] = (planned[s.track] || 0) + 1; }); planned[r.track] += r.overflow; } else planned[r.track] += r.hours; });
   cap.SOL = slots.filter(s => s.track === "SOL" && !s.cancelled).length;
   let solN = 0; slots.forEach(s => { if (s.track === "SOL" && !s.cancelled) s.solIdx = solN++; });
   const intro = {};
@@ -1209,7 +1216,7 @@ function setLnDate(g, rowId, date, snap0, prefix = "") {
     else {
       // Zeile hinter die letzte Zeile desselben Strangs setzen, die vor dem Termin beginnt
       const i = C.seq.indexOf(row); C.seq.splice(i, 1);
-      let at = 0; C.seq.forEach((x, j) => { const y = sc.rows.find(z => z.id === x.id); if (y && y.track === r.track && y.start && y.start < r.start) at = j + 1; });
+      let at = 0; C.seq.forEach((x, j) => { const y = sc.rows.find(z => z.id === x.id); if (y && y.start && y.start < r.start) at = j + 1; });
       C.seq.splice(at, 0, row);
       msg = s.date === date ? `${row.code} liegt jetzt am ${fmt(date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std. Der Plan ist angepasst.`
         : `Am ${fmt(date, { weekday: "short", day: "2-digit", month: "2-digit" })} hat ${groupName(g)} keine passende Stunde. ${row.code} liegt in der nächsten: ${fmt(s.date, { weekday: "short", day: "2-digit", month: "2-digit" })}, ${s.period}. Std.`;
@@ -1584,7 +1591,7 @@ function viewSeq() {
       <td class="mono muted">${i + 1}</td>
       <td><span class="chip"><b>${esc(r.code)}</b></span></td>
       <td class="ttl">${r.pinned ? `<span class="pill lnp" title="Fester Termin">fest ${esc(fmt(r.pinned))}</span> ` : ""}${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${unitOrderOf(k).indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
-      <td><select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select></td>
+      <td>${(unitOf(k, r.code) || {}).lb === "test" ? `<span class="muted" title="${r.pinned ? "Leistungsnachweise mit Termin gehören zu keinem Strang: Sie liegen am Termin, die Einheiten laufen darum herum." : "Ohne Termin läuft der Leistungsnachweis im Strang der Einheit davor."}">–</span>` : `<select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select>`}</td>
       <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
         ${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
       <td class="mono small nowrap">${when}</td>

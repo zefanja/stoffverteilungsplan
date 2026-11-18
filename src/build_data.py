@@ -32,6 +32,32 @@ FER=json.load(open('src/ferien_sn.json'))
 SCHOOL_TYPES={"gym":dict(label="Gymnasium",short="GYM",grades=list(range(5,13))),
               "os":dict(label="Oberschule",short="OS",grades=list(range(5,11)))}
 out=dict(schoolTypes=SCHOOL_TYPES,calendar=CAL,ferienSN=dict(school=FER['school'],public=FER['public']),classes={})
+def ka_dates():
+    """Standardtermine der vier Klassenarbeiten im eingebauten Kalender (gleiche Regel wie kaDates() in app.js)."""
+    hol=lambda w: next((h for h in CAL['holidays'] if w in h['name'].lower()),None)
+    add=lambda iso,n: (dt.date.fromisoformat(iso)+dt.timedelta(n)).isoformat()
+    he,we,os_,pf=hol('herbst'),hol('weihnacht'),hol('oster'),hol('pfingst')
+    return [add(he['frm'],-10),add(we['to'],16),add(os_['frm'],-10),add(pf['to'],17)]
+def ka_track_hours(k,seq,units,mode):
+    """Stunden je Strang, die die Klassenarbeiten an ihren Standardterminen belegen: Arbeit in der ersten Stunde ab dem Termin
+    (beliebiger Strang, nie FIL), Wiederholung davor, Rückgabe frühestens an einem späteren Tag."""
+    slots=[]
+    for d in days():
+        for t in sorted(lessons_on(k,d.isoformat()),key=lambda t:t['period']):
+            if t['day']==d.isoweekday() and t['track']!="SOL": slots.append((d.isoformat(),"A" if mode=="nacheinander" else t['track']))
+    rows=[r for r in seq if units.get(r[0],{}).get('lb')=='test']
+    rank={id(r):sum(1 for x in rows[:i] if x[1]==r[1]) for i,r in enumerate(rows)}
+    order=sorted(rows,key=lambda r:(rank[id(r)],r[1])); ds=ka_dates(); used=set(); out={"A":0,"B":0}
+    for n,r in enumerate(order):
+        h=r[2]; main=1 if h>=3 else 0
+        p=next(i for i,s in enumerate(slots) if s[0]>=ds[n]); idx=max(0,p-main)-1; last=None
+        for j in range(h):
+            idx+=1
+            if j==h-1 and h>=2 and last:
+                while idx<len(slots) and (idx in used or slots[idx][0]<=last): idx+=1
+            while idx in used: idx+=1
+            used.add(idx); out[slots[idx][1]]+=1; last=slots[idx][0]
+    return out
 for k in META:
     c=P[k]; units={}
     for code,u in c['units'].items():
@@ -52,8 +78,11 @@ for k in META:
             if t['track']=="SOL": continue
             tr="A" if mode=="nacheinander" else t['track']
             cap[tr]+=1
+    # Klassenarbeiten liegen fest an ihren Standardterminen (wie kaDates() in app.js) und gehören zu keinem Strang:
+    # ihre Stunden zählen in dem Strang, dessen Stunde sie am Termin belegen.
+    kah=ka_track_hours(k,seq,units,mode)
     for tr in ("A","B"):
-        used=sum(r[2] for r in seq if ("A" if mode=="nacheinander" else r[1])==tr)
+        used=sum(r[2] for r in seq if units.get(r[0],{}).get('lb')!='test' and ("A" if mode=="nacheinander" else r[1])==tr)+kah[tr]
         diff=cap[tr]-used
         # adjust last P of that track
         for r in reversed(seq):

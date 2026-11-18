@@ -73,6 +73,18 @@ function serve(dir) {
   console.log(JSON.stringify(r));
   ok(r.kl6.cap.A === r.kl6.planned.A, 'Kl. 6 geht auf');
   ok(r.kl8.cap.A === r.kl8.planned.A && r.kl8.cap.SOL > 0, 'Kl. 8 geht auf, SOL ab 26.10.');
+  // Alle Klassen (unveränderte Vorlage): Klassenarbeiten am Termin, Rückgabe an einem späteren Tag, keine Lücken
+  const allCls = await p.evaluate(async () => { const M = window.__mp, C = window.PLAN_DATA.classes, bad = [];
+    for (const k of Object.keys(C)) {
+      const g = k + '.a', sc = M.schedule(g), last = sc.slots.filter(s => s.lesson).reduce((m, s) => s.date > m ? s.date : m, '');
+      const gaps = sc.slots.filter(s => s.track !== 'SOL' && !s.cancelled && !s.lesson && s.date <= last).length;
+      const kas = M.lnDates(g).filter(x => !x.inLesson && /^KA\d$/.test(x.code));
+      const off = kas.filter(x => !x.date || (x.pinned && x.date < x.pinned)).map(x => x.code);
+      const rueck = sc.rows.filter(r => /^KA\d$/.test(r.code) && r.slots.length >= 2).filter(r => { const s = r.slots; return s[s.length - 1].date <= s[s.length - 2].date; }).map(r => r.code);
+      if (gaps || kas.length !== 4 || off.length || rueck.length) bad.push({ k, gaps, n: kas.length, off, rueck });
+    }
+    return bad; });
+  ok(allCls.length === 0, 'Alle 19 Klassen: Klassenarbeiten am Termin, Rückgabe später, keine Lücken ' + JSON.stringify(allCls));
 
   // Formelsatz: Formeln werden als <span class="m" data-tex> ausgezeichnet und mit MathJax als SVG gesetzt
   ok(await p.evaluate(() => { const h = document.createElement('div'); h.innerHTML = window.__mp.mx('2 1/4 + x² = 0,3̅'); const m = h.querySelector('span.m'); return m && m.dataset.tex === '2\\frac{1}{4} + x^{2} = 0{,}\\overline{3}'; }), 'Formel-Erkennung: gemischte Zahl, Hochzahl, Periode');
@@ -465,6 +477,30 @@ function serve(dir) {
   const tAfter = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
   ok(tOpts === '20,30,45' && kaOpts === '45,90' && offWdh && tShort.seq === tn0 && tShort.x && tShort.x[0] >= '2026-12-08' && tShort.x[1] === 20 && tAfter === 0,
     'Test / Leistungskontrolle: 20/30/45 min, kurzer Test in einer Stunde ohne eigene Sequenzzeile, rückgängig ' + JSON.stringify([tOpts, kaOpts, offWdh, tn0, tShort, tAfter]));
+  // Leistungsnachweise mit Termin gehören zu keinem Strang: KA2 (bisher Strang B) an einem Tag mit nur Strang A
+  const nost = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl6, g = 'kl6.a', row = C.seq.find(x => x.code === 'KA2');
+    const keep = JSON.stringify(C.groups[0].pin), keepSeq = JSON.stringify(C.seq), keepTT = JSON.stringify(C.groups[0].tt);
+    C.groups[0].tt = [{ id: 'ns', frm: M.cal().start, lessons: [{ day: 1, period: 3, track: 'A' }, { day: 3, period: 2, track: 'B' }, { day: 4, period: 4, track: 'A' }, { day: 5, period: 1, track: 'B' }] }]; M.touch();
+    M.setLnDate(g, row.id, '2027-01-11');
+    const sc = M.schedule(g), r = sc.rows.find(x => x.id === row.id), main = r.slots[M.lnDates(g).find(x => x.row === row.id) ? 1 : 1];
+    const gaps = tr => sc.slots.filter(s => s.track === tr && !s.cancelled && s.date < '2027-06-01' && !s.lesson).length;
+    const res = { strand: row.strand, arbeit: main.date + '/' + main.track, gapsA: gaps('A'), gapsB: gaps('B') };
+    C.groups[0].pin = JSON.parse(keep); C.seq = JSON.parse(keepSeq); C.groups[0].tt = JSON.parse(keepTT); M.touch();
+    return res; });
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl6'; M.UI.type = 'gym'; location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  const nostUi = await p.evaluate(() => [...document.querySelectorAll('table.seq tbody tr')].filter(tr => /KA\d/.test(tr.querySelector('.chip').textContent)).map(tr => !tr.querySelector('select[data-act="strand"]')));
+  await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(150);
+  ok(nost.strand === 'B' && nost.arbeit === '2027-01-11/A' && nost.gapsA === 0 && nost.gapsB === 0 && nostUi.length === 4 && nostUi.every(Boolean),
+    'Leistungsnachweis ohne Strang: KA2 liegt am Termin in einer Stunde von Strang A, beide Stränge ohne Lücken, Sequenz zeigt keinen Strang ' + JSON.stringify([nost, nostUi]));
+  // Sequenz: Leistungsnachweise ohne Strangauswahl (GYM 6 mit zwei Strängen und weitere Klassen)
+  const uiKeep = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type]);
+  const strandUi = [];
+  for (const k of ['kl6', 'kl8', 'gym9', 'os8rs']) {
+    await p.evaluate(k => { const M = window.__mp; M.UI.cls = k; M.UI.type = window.PLAN_DATA.classes[k].type; location.hash = 'heute'; location.hash = 'sequenz'; }, k); await p.waitForTimeout(150);
+    strandUi.push(await p.evaluate(() => [...document.querySelectorAll('table.seq tbody tr')].filter(tr => /^(KA|KL|LK|PR|PJ)\d/.test(tr.querySelector('.chip').textContent.trim())).some(tr => tr.querySelector('select[data-act="strand"]'))));
+  }
+  await p.evaluate(([c, t]) => { const M = window.__mp; M.UI.cls = c; M.UI.type = t; location.hash = 'heute'; }, uiKeep); await p.waitForTimeout(150);
+  ok(strandUi.every(x => !x), 'Leistungsnachweise ohne Strangauswahl in der Sequenz ' + JSON.stringify(strandUi));
   // Gespeicherter Plan mit alten Klassenarbeiten (GYM 6: A-KA1 …) wird einmal auf die Platzhalter mit Terminen umgestellt
   const kaMig = await p.evaluate(() => { const M = window.__mp, keep = JSON.parse(JSON.stringify(M.S.cls.kl6)), old = JSON.parse(JSON.stringify(keep));
     const map = { KA1: 'A-KA1', KA2: 'B-KA1', KA3: 'A-KA2', KA4: 'B-KA2' }; old.seq.forEach(r => { if (map[r.code]) r.code = map[r.code]; });
