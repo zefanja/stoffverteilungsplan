@@ -23,6 +23,8 @@ function serve(dir) {
 (async () => {
   const srv = await serve(path.join(ROOT, 'dist')), BASE = `http://127.0.0.1:${srv.address().port}/`;
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); const p = await ctx.newPage();
+  // Termin im eigenen Kalender wählen: Knopf öffnen, zum Monat springen, Tag anklicken
+  const pickDp = async (sel, d) => { await p.click(sel); await p.waitForTimeout(80); await p.evaluate(d => { const M = window.__mp; M.UI.dp.month = d.slice(0, 7); M.dpMove(0); }, d); await p.click(`#dpop [data-d="${d}"]`); await p.waitForTimeout(250); };
   if (process.env.MATHJAX_JS) await ctx.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/mathjax\/.*tex-svg/, r => r.fulfill({ path: process.env.MATHJAX_JS, contentType: 'text/javascript' }));
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   // neuer Browser-Kontext = leerer Speicher; ein Neuladen später prüft, ob alles erhalten bleibt
@@ -512,7 +514,7 @@ function serve(dir) {
   // Leistungsnachweis mit Termin über das Formular anlegen; ein Rückgängig entfernt alles
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   const lnT0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
-  await p.selectOption('#lnkind', 'ka'); await p.selectOption('#lndur', '45'); await p.fill('#lndate', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  await p.selectOption('#lnkind', 'ka'); await p.selectOption('#lndur', '45'); await pickDp('.dpbtn[data-t="form"]', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
   const lnT1 = await p.evaluate(() => { const x = window.__mp.lnDates('kl8.a').find(y => y.code === 'KA5'); return x ? [x.date, x.pinned] : null; });
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
   const lnT2 = await p.evaluate(() => [window.__mp.S.cls.kl8.seq.length, Object.keys(window.__mp.S.cls.kl8.ln || {}).length]);
@@ -529,7 +531,7 @@ function serve(dir) {
   await p.selectOption('#lndur', '20');
   const offWdh = await p.evaluate(() => document.getElementById('lnwdh').disabled && document.getElementById('lnrueck').disabled);
   const tn0 = await p.evaluate(() => window.__mp.S.cls.kl8.seq.length);
-  await p.fill('#lntopic', 'Terme'); await p.fill('#lndate', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
+  await p.fill('#lntopic', 'Terme'); await pickDp('.dpbtn[data-t="form"]', '2026-12-08'); await p.click('[data-act="lnadd"]'); await p.waitForTimeout(250);
   const tShort = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.inLesson && y.kind === 'Test'); return { seq: M.S.cls.kl8.seq.length, x: x ? [x.date, x.dur, x.title] : null }; });
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
   const tAfter = await p.evaluate(() => (window.__mp.S.cls.kl8.checks || []).length);
@@ -569,13 +571,28 @@ function serve(dir) {
   // Leistungsnachweis per Datum festlegen: Hauptstunde am Termin, der übrige Plan läuft darum herum; lösen gibt ihn frei
   await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl8'; M.UI.gid.kl8 = 'a'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const pin0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA1'); return { date: x.date, row: x.row, t5: M.schedule('kl8.a').rows.find(r => r.code === 'T5').start }; });
-  const pinSel = `input[data-act="lndate"][data-row="${pin0.row}"]`;
-  await p.fill(pinSel, '2026-09-22'); await p.dispatchEvent(pinSel, 'change'); await p.waitForTimeout(250);
+  const pinSel = `.dpbtn[data-t="ln"][data-row="${pin0.row}"]`;
+  // Kalender: Ferien, freie Tage, Mathe-Tage und andere Leistungsnachweise markiert, Escape schließt
+  await p.click(pinSel); await p.waitForTimeout(80);
+  await p.evaluate(() => { const M = window.__mp; M.UI.dp.month = '2026-10'; M.dpMove(0); });
+  const dpMarks = await p.evaluate(() => { const q = d => document.querySelector(`#dpop [data-d="${d}"]`), M = window.__mp, sc = M.schedule('kl8.a');
+    const mathDay = Object.keys(sc.byDate).find(d => d.startsWith('2026-10') && sc.byDate[d].some(x => x.track !== 'SOL'));
+    return { herbst: q('2026-10-12').classList.contains('off') && /Herbstferien/.test(q('2026-10-12').title), math: !!mathDay && q(mathDay).classList.contains('math'),
+      we: q('2026-10-03').classList.contains('we'), legend: !!document.querySelector('#dpop .dpl') }; });
+  await p.keyboard.press('Escape'); await p.waitForTimeout(80);
+  const dpClosed = await p.evaluate(() => !document.getElementById('dpop'));
+  const dpDot = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code !== 'KA1' && y.date); return x.date; });
+  await p.click(pinSel); await p.waitForTimeout(80);
+  await p.evaluate(d => { const M = window.__mp; M.UI.dp.month = d.slice(0, 7); M.dpMove(0); }, dpDot);
+  const dotOk = await p.evaluate(d => !!document.querySelector(`#dpop [data-d="${d}"] .dpdot`), dpDot);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(80);
+  ok(Object.values(dpMarks).every(Boolean) && dpClosed && dotOk, 'Kalender für Termine: Ferien, Wochenende, Mathe-Tage und andere Leistungsnachweise markiert, Escape schließt ' + JSON.stringify([dpMarks, dpClosed, dotOk]));
+  await pickDp(pinSel, '2026-09-22');
   const pin1 = await p.evaluate(row => { const M = window.__mp, sc = M.schedule('kl8.a'), x = M.lnDates('kl8.a').find(y => y.row === row), r = sc.rows.find(y => y.id === row);
     const gaps = sc.slots.filter(s => s.track === 'A' && !s.cancelled && s.date <= '2026-12-01' && !s.lesson).length;
     return { date: x.date, pinned: x.pinned, slots: r.slots.map(s => s.date), t5: sc.rows.find(y => y.code === 'T5').start, gaps, seqPos: M.S.cls.kl8.seq.findIndex(y => y.id === row) }; }, pin0.row);
   // Tag ohne Mathestunde: nächste Stunde
-  await p.fill(pinSel, '2026-09-23'); await p.dispatchEvent(pinSel, 'change'); await p.waitForTimeout(250);
+  await pickDp(pinSel, '2026-09-23');
   const pin2 = await p.evaluate(row => window.__mp.lnDates('kl8.a').find(y => y.row === row).date, pin0.row);
   await p.click(`[data-act="lnunpin"][data-row="${pin0.row}"]`); await p.waitForTimeout(250);
   const pin3 = await p.evaluate(row => { const x = window.__mp.lnDates('kl8.a').find(y => y.row === row); return [x.date, x.pinned]; }, pin0.row);

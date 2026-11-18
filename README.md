@@ -79,7 +79,10 @@ der gewählten (Parallel-)Klasse.
   20/30 min läuft in einer Stunde mit wie eine Kurzkontrolle und kostet keine eigene Stunde.
 - **Rückgabe** liegt nie in derselben (Doppel-)Stunde wie die Arbeit, sondern frühestens in der nächsten Stunde desselben
   Strangs an einem späteren Tag; die freie Hälfte der Doppelstunde bekommt der nachfolgende Stoff.
-- **Termin ändern**: Datum eingeben genügt (Liste oder Termin-Karte der Einheit). Die Arbeitsstunde liegt dann fest an diesem
+- **Kalender für Termine**: Ein Klick auf den Termin (Liste, Termin-Karte, Formular) öffnet einen eigenen Monatskalender.
+  Ferien und schulfreie Tage sind schraffiert (Name beim Darüberfahren), Tage mit Mathe-Unterricht der gewählten Klasse
+  blau, Doppelstunden mit „2“, Tage mit anderen Leistungsnachweisen mit Punkt. Jeder Tag im Schuljahr ist wählbar.
+- **Termin ändern**: Datum im Kalender wählen genügt (Liste oder Termin-Karte der Einheit). Die Arbeitsstunde liegt dann fest an diesem
   Tag (ohne Mathestunde: in der nächsten), Wiederholung davor, Rückgabe danach; der übrige Plan läuft darum herum, eine
   Einheit auch über den Termin hinweg. Feste Termine gelten je Parallelklasse; „lösen“ gibt den Termin frei.
 - **Kein Strang**: Ein Leistungsnachweis mit Termin gehört zu keinem Strang. Er belegt am Termin die erste Mathestunde des
