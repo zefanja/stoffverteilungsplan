@@ -740,6 +740,8 @@ function serve(dir) {
   const [dl2] = await Promise.all([p3.waitForEvent('download'), p3.click('#dlbtn')]); await p3.waitForTimeout(150);
   const bk2 = await p3.evaluate(() => document.getElementById('banner').dataset.kind);
   ok(bk1[0] === 'backup' && bk1[1].includes('Noch keine Sicherung') && /sicherung/.test(dl2.suggestedFilename()) && bk2 === 'local', 'Erinnerung an die Sicherung, Datei-Download auch ohne Claude ' + JSON.stringify([bk1[0], bk2]));
+  const foot = await p3.evaluate(() => { const b = document.getElementById('banner'), f = document.getElementById('footnote'); return { bannerHidden: b.hidden, foot: !f.hidden && f.textContent.includes('Gespeichert wird in diesem Browser') }; });
+  ok(foot.bannerHidden && foot.foot, 'Hinweis „Gespeichert wird in diesem Browser“ steht im Footer statt oben ' + JSON.stringify(foot));
   ok(errs3.length === 0, 'Fachschaftsvorlage: keine Fehler in der Konsole ' + JSON.stringify(errs3));
   await ctx3.close();
   await b.close(); srv.close();

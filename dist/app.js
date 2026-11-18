@@ -1345,12 +1345,15 @@ function renderBanner() {
     ro: "Du kannst diesen Plan ansehen, aber nicht ändern.",
     quota: "Der Speicher ist voll. Lösche alte Daten über Einstellungen → Sicherung.",
   }[dbState];
-  if (dbState === "local" && backupDue()) {
+  // Der Normalfall „im Browser gespeichert“ steht unauffällig im Footer; oben bleiben nur Hinweise, die etwas verlangen
+  const due = dbState === "local" && backupDue(), ft = document.getElementById("footnote");
+  if (ft) { const on = dbState === "local" && !due; ft.innerHTML = on ? `Gespeichert wird in diesem Browser. Für ein anderes Gerät oder eine zusätzliche Sicherung: <a href="#einstellungen">Einstellungen → Sicherung</a>.` : ""; ft.hidden = !on; }
+  if (due) {
     const lb = lastBackup();
     el.innerHTML = `Gespeichert wird nur in diesem Browser. ${lb ? `Letzte Sicherung vor ${diffDays(lb, todayIso())} Tagen.` : "Noch keine Sicherung."} Bitte unter <a href="#einstellungen">Einstellungen → Sicherung</a> eine Datei speichern.`;
     el.hidden = false; el.dataset.kind = "backup"; return;
   }
-  el.textContent = m || ""; el.hidden = !m; el.dataset.kind = dbState;
+  el.textContent = dbState === "local" ? "" : m || ""; el.hidden = !m || dbState === "local"; el.dataset.kind = dbState;
 }
 
 /* ---------------- shared pieces ---------------- */
