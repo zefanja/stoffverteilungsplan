@@ -78,6 +78,8 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
 - Die Lehrkraft will: Leistungsnachweise haben keinen Strang, Einheiten „fließen drum herum“, das Datum bestimmt den
   Termin. `build_data.py` (`ka_track_hours`) rechnet deshalb die Standardtermine der KA-Platzhalter beim Pufferausgleich
   von GYM 6 mit – Regel identisch zu `kaDates()` halten, sonst geht „Kl. 6 geht auf“ kaputt.
+- `sortPinnedRows(g)` (aufgerufen in `viewSeq`) ordnet fest terminierte Leistungsnachweise in `C.seq` nach Termin ein –
+  rein kosmetisch, der Plan bleibt gleich. Tests dürfen sich deshalb nicht auf die Vorlagen-Reihenfolge der KA-Zeilen verlassen.
 - **Rückgabe-Regel** (`isRueck()`): Rückgabe/Berichtigung frühestens an einem späteren Tag als die Arbeit; die freie
   Hälfte der Doppelstunde bekommt der nachfolgende Stoff.
 - Kürzel `P` (Puffer) und `JA` (Jahresabschluss) kommen mehrfach vor: nie allein über `code` adressieren (Kontrollen
