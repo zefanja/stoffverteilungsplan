@@ -8,6 +8,8 @@ Ausführliche Funktionsbeschreibung: `README.md`.
 
 - **Sprache**: UI-Texte, Code-Kommentare, README und Antworten auf Deutsch mit echten Umlauten und „deutschen“
   Anführungszeichen. Commit-Nachrichten dürfen ASCII-Umschreibungen nutzen (ae/oe/ue).
+- **Dokumentation**: `README.md` und `CLAUDE.md` nur ändern, wenn die Lehrkraft es ausdrücklich wünscht – nicht von selbst
+  nach jeder Änderung nachziehen.
 - **Branch**: vor jeder neuen Aufgabe `git fetch origin main && git checkout -B <session-branch> origin/main`. Auf `main`
   arbeiten auch andere Sessions (z. B. #17 Fachschaftsvorlage), daher nie auf einem alten Stand weiterbauen.
 - **Abschluss**: committen, pushen, dann fragen, ob ein PR erstellt und gemergt werden soll. Die Lehrkraft antwortet fast
