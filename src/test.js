@@ -667,8 +667,12 @@ function serve(dir) {
     const M = window.__mp, g = M.curG(), days = [...new Set(M.schedule(g).slots.map(s => s.date))];
     const wait = () => new Promise(r => setTimeout(r, 80)), out = [];
     M.UI.date = '2026-11-21'; M.UI.dateAuto = null; window.dispatchEvent(new HashChangeEvent('hashchange')); await wait();
+    const pos = () => ['Vorherige', 'Nächste'].map(l => { const r = document.querySelector(`.datebar [data-act="day"][aria-label="${l} Mathestunde"]`).getBoundingClientRect(); return Math.round(r.left) + ',' + Math.round(r.top); }).join('|');
+    const pos0 = pos();
     document.querySelector('.datebar [data-act="day"][aria-label="Nächste Mathestunde"]').click(); await wait();
     out.push(M.UI.date === days.find(x => x > '2026-11-21'));
+    for (let i = 0; i < 3; i++) { document.querySelector('.datebar [data-act="day"][aria-label="Nächste Mathestunde"]').click(); await wait(); out.push(pos() === pos0); }
+    for (let i = 0; i < 3; i++) { document.querySelector('.datebar [data-act="day"][aria-label="Vorherige Mathestunde"]').click(); await wait(); }
     document.querySelector('.datebar [data-act="day"][aria-label="Vorherige Mathestunde"]').click(); await wait();
     out.push(M.UI.date === [...days].reverse().find(x => x < '2026-11-21'));
     const btn = document.querySelector('.datebar [data-act="today"]'); if (btn) { btn.click(); await wait(); }
@@ -676,7 +680,7 @@ function serve(dir) {
     out.push(M.UI.date === exp, !document.querySelector('.datebar [data-act="today"]'));
     return out;
   });
-  ok(mathNav.every(Boolean), 'Heute: Pfeile blättern zwischen Mathestunden, „Heute“ zeigt heute oder die nächste Mathestunde ' + JSON.stringify(mathNav));
+  ok(mathNav.every(Boolean), 'Heute: Pfeile blättern zwischen Mathestunden und bleiben an ihrer Stelle, „Heute“ zeigt heute oder die nächste Mathestunde ' + JSON.stringify(mathNav));
   await p.evaluate(() => { window.__mp.UI.todayAll = true; window.dispatchEvent(new HashChangeEvent('hashchange')); }); await p.waitForTimeout(150);
   await p.click('.datebar .dpbtn[data-t="today"]'); await p.waitForTimeout(100);
   const dAll = await p.evaluate(() => document.querySelector('#dpop .dpl').textContent.includes('alle meine Klassen') && document.querySelectorAll('#dpop .dpc.math').length > 0);

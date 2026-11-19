@@ -1521,9 +1521,8 @@ function viewToday() {
   const prev = mathDay(show, d, -1), next = mathDay(show, d, 1);
   return `<section class="today">
     <div class="datebar">
-      <button type="button" class="iconbtn" data-act="day" data-v="${prev || ""}" ${prev ? "" : "disabled"} aria-label="Vorherige Mathestunde" title="Vorherige Mathestunde">‹</button>
+      <div class="dnav"><button type="button" class="iconbtn" data-act="day" data-v="${prev || ""}" ${prev ? "" : "disabled"} aria-label="Vorherige Mathestunde" title="Vorherige Mathestunde">‹</button><button type="button" class="iconbtn" data-act="day" data-v="${next || ""}" ${next ? "" : "disabled"} aria-label="Nächste Mathestunde" title="Nächste Mathestunde">›</button></div>
       <div class="dt"><div class="dname">${esc(fmtLong(d))}</div><div class="dsub mono">KW ${isoWeek(d)}${isToday ? " · heute" : d === target ? " · nächste Mathestunde" : ""}</div></div>
-      <button type="button" class="iconbtn" data-act="day" data-v="${next || ""}" ${next ? "" : "disabled"} aria-label="Nächste Mathestunde" title="Nächste Mathestunde">›</button>
       ${d === target ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
       <button type="button" class="dpbtn" data-act="dp" data-t="today" data-v="${d}" aria-haspopup="dialog" aria-label="Kalender: Tag wählen"><span class="dpico" aria-hidden="true">▦</span>Kalender</button>
       <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
