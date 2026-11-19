@@ -594,6 +594,17 @@ function serve(dir) {
   const sd9b = await p.evaluate(() => [window.__mp.S.cls.gym9.mode, JSON.stringify(window.__mp.S.cls.gym9.groups[0].tt).includes('"B"')]);
   ok(sd9.lbA && sd9.lbB && sd9.ttA && sd9.ttB && sd9.mode === 'Stränge' && sd9.cap.every(x => x > 0) && sd9.planned.every(x => x > 0) && sd9b[0] === 'nacheinander' && !sd9b[1],
     'GYM 9 in Strängen: Lernbereiche und Wochenstunden auf A und B verteilt, beide Stränge haben Stunden, rückgängig ' + JSON.stringify([sd9, sd9b]));
+  // Dialog „in Strängen“: Lernbereich auf FIL nur mit FIL-Stunde im Stundenplan
+  const sdFil = await p.evaluate(() => { const M = window.__mp; M.strandDlgOpen('gym9'); const d = M.UI.strandDlg, wb = Object.keys(d.lb).pop();
+    d.lb[wb] = 'SOL';
+    const before = M.S.cls.gym9.mode; M.strandDlgApply(); const blocked = !!M.UI.strandDlg && M.S.cls.gym9.mode === before;
+    const key = Object.keys(d.tt)[0]; d.tt[key] = 'SOL'; M.strandDlgApply();
+    const C = M.S.cls.gym9, sc = M.schedule('gym9.a'), rows = C.seq.filter(r => r.strand === 'SOL');
+    return { blocked, mode: C.mode, solRows: rows.length, solTT: JSON.stringify(C.groups[0].tt).includes('"SOL"'), pSol: sc.planned.SOL, cap: sc.cap.SOL }; });
+  await p.waitForTimeout(100); await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const sdFil2 = await p.evaluate(() => [window.__mp.S.cls.gym9.mode, window.__mp.S.cls.gym9.seq.some(r => r.strand === 'SOL')]);
+  ok(sdFil.blocked && sdFil.mode === 'Stränge' && sdFil.solRows > 0 && sdFil.solTT && sdFil.pSol > 0 && sdFil.cap > 0 && sdFil2[0] === 'nacheinander' && !sdFil2[1],
+    'Dialog in Strängen: Lernbereich auf FIL erst mit FIL-Stunde speicherbar, dann in den FIL-Stunden geplant, rückgängig ' + JSON.stringify([sdFil, sdFil2]));
   // Einheiten auf FIL-Stunden (Kl. 7–9): eigene Spur, auch im Modus „nacheinander“
   const fil0 = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8, r = C.seq.find(x => x.code === 'Z4'), sc0 = M.schedule('kl8.a');
     window.__filKeep = JSON.stringify(C.seq); const pA = sc0.planned.A; r.strand = 'SOL'; M.touch();
