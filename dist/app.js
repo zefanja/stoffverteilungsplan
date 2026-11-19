@@ -480,11 +480,11 @@ function ttFromLegacy(rows, start) {
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
 const S = { settings: defaultSettings(), cls: {}, eng: {} };
-const UI = { date: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false };
+const UI = { date: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "weeks", planSel: null, planLn: null, planAdd: false, planMore: false };
 try {
   const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v;
   const t = localStorage.getItem("mp-type"); UI.type = t && TYPES[t] ? t : D.classes[UI.cls].type;
-  UI.todayAll = localStorage.getItem("mp-today") === "all"; } catch (e) {}
+  UI.todayAll = localStorage.getItem("mp-today") === "all"; if (localStorage.getItem("mp-planview") === "list") UI.planView = "list"; } catch (e) {}
 function pickYear() {
   const ys = S.settings.years; let id = null;
   try { id = localStorage.getItem("mp-year"); } catch (e) {}
@@ -1214,8 +1214,8 @@ function removeLn(k, { id, row, code }) {
     if (C.ln && C.ln[code] && !C.seq.some(y => y.code === code)) {
       delete C.ln[code]; delete C.atoms[code]; C.checks = (C.checks || []).filter(y => y.code !== code);
       msg = `${title} gelöscht.`;
-    } else msg = `${title} aus der Sequenz entfernt. Neu einfügen: „Zeile hinzufügen“ → Leistungsnachweis.`;
-    if (/^#u-/.test(location.hash)) location.hash = "#sequenz";
+    } else msg = `${title} aus dem Plan entfernt. Neu anlegen: „+ Leistungsnachweis“ im Jahresplan.`;
+    if (/^#u-/.test(location.hash)) location.hash = "#plan";
   }
   UI.confirm = null; undoStack = snap; commit(k); toast(msg, true);
 }
@@ -1523,7 +1523,7 @@ function todayTiles(g, d) {
     ${code && idx >= 0 ? `<a class="tile t1" href="#u-${k}-${idx}" title="${esc(titleOf(k, code))}"><b>${esc(code)}</b><span>${esc(titleOf(k, code))}</span></a>` : `<div class="tile t1"><b>—</b><span>aktuelle Einheit</span></div>`}
     <a class="tile t2" href="#lernuebersicht"><b>${es.dueCount}</b><span>heute fällig${es.backCount ? ` · ${es.backCount} Altbestand` : ""}</span></a>
     <a class="tile t3" href="#lernuebersicht"><b>${meanR === null ? "—" : meanR + " %"}</b><span>ø Abruf</span></a>
-    <a class="tile t4 ${r < 0 ? "neg" : ""}" href="#sequenz"><b>${r > 0 ? "+" : ""}${r}</b><span>${r < 0 ? "Std. fehlen im Schuljahr" : "Std. Reserve im Schuljahr"}</span></a>
+    <a class="tile t4 ${r < 0 ? "neg" : ""}" href="#plan"><b>${r > 0 ? "+" : ""}${r}</b><span>${r < 0 ? "Std. fehlen im Schuljahr" : "Std. Reserve im Schuljahr"}</span></a>
   </div>`;
 }
 function todayCard(k, d) {
@@ -1546,7 +1546,7 @@ function todayCard(k, d) {
   const es = engineState(k, d);
   const rv = es.pick.map(x => reviewItem(k, x)).join("");
   const res = ["A", "B"].filter(t => !(sc.seqMode && t === "B")).map(t => sc.cap[t] - sc.planned[t]);
-  const warn = res.some(r => r < 0) ? `<a class="warn" href="#sequenz" data-act="cls" data-k="${ck(k)}">Der Plan ist voller als das Schuljahr: ${-Math.min(...res)} Std. fehlen. Zur Sequenz →</a>` : "";
+  const warn = res.some(r => r < 0) ? `<a class="warn" href="#plan" data-act="cls" data-k="${ck(k)}">Der Plan ist voller als das Schuljahr: ${-Math.min(...res)} Std. fehlen. Zum Jahresplan →</a>` : "";
   return `<article class="card tcard">
     <header class="thead"><h2>${esc(UI.todayAll ? fullLabel(k) : groupName(k))}</h2><span class="badge">${sc.seqMode ? "nacheinander" : "in Strängen"}</span></header>
     ${warn}
@@ -1602,34 +1602,8 @@ function rateButtons(k, id) {
 }
 
 /* ---------------- views: Jahresplan ---------------- */
-function viewPlan() {
-  const k = curG(), sc = schedule(k), Y = cal(), today = todayIso();
-  const trs = sc.seqMode ? ["A"] : ["A", "B"]; const sol = sc.slots.some(s => s.track === "SOL");
-  let rows = "";
-  if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
-    const notes = new Set(); let school = 0;
-    for (let i = 0; i < 5; i++) { const di = sc.dayInfo[addDays(m, i)]; if (!di) continue; if (di.school) school++; else notes.add(di.note); }
-    (grp(k).tt || []).forEach(v => { if (v.frm && v.frm > Y.start && monday(v.frm) === m) notes.add("neuer Stundenplan ab " + fmt(v.frm)); });
-    const ws = sc.slots.filter(s => monday(s.date) === m);
-    const cells = trs.map(tr => {
-      const ls = ws.filter(s => s.track === tr);
-      const groups = []; ls.forEach(s => {
-        if (s.cancelled) { const g = groups.find(g => g.code === "×"); if (g) g.n++; else groups.push({ code: "×", n: 1 }); return; }
-        if (!s.lesson) return; const code = s.lesson.row.code; const g = groups.find(g => g.code === code);
-        if (g) { g.n++; if (grp(k).done[s.key]) g.done++; } else groups.push({ code, n: 1, done: grp(k).done[s.key] ? 1 : 0 });
-      });
-      return `<td>${groups.map(g => g.code === "×" ? `<span class="xchip">${g.n}× ausgefallen</span>` : `${unitLink(k, g.code)}<span class="hrs mono">${g.n} Std.${g.done ? ` · ${g.done}✓` : ""}</span>`).join("<br>")}</td>`;
-    }).join("");
-    const solCell = sol ? `<td class="small">${ws.filter(s => s.track === "SOL").map(s => s.cancelled ? "ausgefallen" : `F${solFormat(k, s)} ${esc(SOL_FORMATS[solFormat(k, s)][0])}`).join("<br>")}</td>` : "";
-    const cur = m === monday(today);
-    rows += `<tr class="${school === 0 ? "hol" : ""} ${cur ? "cur" : ""}" ${cur ? 'id="curweek"' : ""}><td class="mono">${isoWeek(m)}</td><td class="mono nowrap">${fmt(m)}–${fmt(addDays(m, 4))}</td><td class="note">${esc([...notes].join(", "))}</td>${school === 0 ? `<td colspan="${trs.length + (sol ? 1 : 0)}"></td>` : cells + solCell}</tr>`;
-  }
-  return `<section><div class="vhead"><h1>Jahresplan</h1>${clsTabs()}</div>
-    ${capCards(k)}
-    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(k, t))}</th>`).join("")}${sol ? "<th>FIL</th>" : ""}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
-}
 
-/* ---------------- views: Sequenz ---------------- */
+/* ---------------- views: Jahresplan (mit Sequenz) ---------------- */
 const tplSource = k => TPL[k] ? `Fachschaftsvorlage${TPL[k].exported ? ` (Stand ${fmt(TPL[k].exported, { day: "2-digit", month: "2-digit", year: "numeric" })})` : ""}` : "Lehrplan-Vorlage";
 const tplDiffList = d => d.length ? `<ul class="small tpldiff">${d.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="small muted">Unterschiede nur bei Leistungsnachweisen oder Strängen.</p>`;
 /* Stand der Sequenz gegenüber der Vorlage: folgt ihr, eigene Fassung oder neue Vorlage zur Entscheidung. */
@@ -1659,54 +1633,225 @@ function sortPinnedRows(g) {
   if (rest.map(r => r.id).join() === before) return false;
   C.seq = rest; touch(); save(k); return true;
 }
-function viewSeq() {
-  sortPinnedRows(curG());
-  const k = curG(), C = S.cls[ck(k)], sc = schedule(k), c = D.classes[ck(k)], multi = C.groups.length > 1;
-  const used = new Set(C.seq.map(r => r.code));
-  const isLn = code => (unitOf(k, code) || {}).lb === "test";
-  const avail = unitOrderOf(k).filter(code => !isLn(code) && code !== "P" && code !== "JA" && !used.has(code));
-  const generic = [["P", "Puffer · Wiederholung"]].concat(unitOf(k, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
-  const lbh = lbHours(k);
+/* Jahresplan und Sequenz auf einer Seite. „Wochen“ zeigt den Plan je Kalenderwoche: Ein Klick auf eine Einheit öffnet unter
+   der Woche die Bearbeiten-Leiste (Stunden, Reihenfolge im Strang, Puffer, Entfernen). Leistungsnachweise und Kontrollen
+   stehen als eigene Zeilen in ihrer Woche; man zieht sie in eine andere Woche (Termin = erste Mathestunde dieser Woche) oder
+   legt sie über „+ Leistungsnachweis“ in einer Woche an. „Liste“ zeigt dieselbe Planung als Reihenfolge (früher „Sequenz“). */
+const isLnRow = (k, code) => (unitOf(k, code) || {}).lb === "test";
+const fmtWd = d => fmt(d, { weekday: "short", day: "2-digit", month: "2-digit" });
+/* Erste Mathestunde (nicht FIL, nicht ausgefallen) in der Woche ab Montag m */
+function firstMathDay(g, m) { const s = schedule(g).slots.find(x => monday(x.date) === m && x.track !== "SOL" && !x.cancelled); return s ? s.date : null; }
+/* Woche für „+ Leistungsnachweis“ oben: die gewählte Woche (Heute-Datum) oder die nächste mit Mathe */
+function planLnWeek(g) {
+  const sc = schedule(g), m0 = monday(UI.date), ok = s => s.track !== "SOL" && !s.cancelled;
+  const s = sc.slots.find(x => x.date >= m0 && ok(x)) || sc.slots.find(ok);
+  return s ? monday(s.date) : "";
+}
+/* Nachbarzeile im selben Strang (dir −1/+1); Leistungsnachweise zählen nicht, ihr Termin bestimmt die Lage. */
+function strandNeighbor(g, idx, dir) {
+  const sc = schedule(g), k = ck(g), r = sc.rows[idx]; if (!r) return -1;
+  for (let j = idx + dir; j >= 0 && j < sc.rows.length; j += dir) { const y = sc.rows[j]; if (y.track === r.track && !isLnRow(k, y.code)) return j; }
+  return -1;
+}
+/* Zeile im eigenen Strang vor bzw. hinter die Nachbarzeile setzen */
+function moveInStrand(g, rowId, dir) {
+  const k = ck(g), C = S.cls[k], i = C.seq.findIndex(r => r.id === rowId); if (i < 0) return;
+  const j = strandNeighbor(g, i, dir); if (j < 0) return;
+  const snap = snapshotFor(k), row = C.seq[i], other = C.seq[j];
+  C.seq.splice(i, 1); const at = C.seq.indexOf(other); C.seq.splice(dir < 0 ? at : at + 1, 0, row);
+  undoStack = snap; commit(k); toast(`${row.code} steht jetzt ${dir < 0 ? "vor" : "hinter"} ${other.code}.`, true);
+}
+/* Leistungsnachweis oder Kontrolle in eine Woche gezogen: Termin = erste Mathestunde dieser Woche */
+function dropOnWeek(g, dr, m) {
+  const d = firstMathDay(g, m);
+  if (!d) { toast(`In KW ${isoWeek(m)} hat ${groupName(g)} keinen Mathe-Unterricht.`); return; }
+  UI.planSel = null;
+  if (dr.t === "chk") setCheckDate(g, dr.id, d); else setLnDate(g, dr.row, d);
+}
+/* Was +1 Std. bewirkt: Plan einmal mit einer Stunde mehr rechnen und wieder zurücksetzen. */
+function hrsPreview(g, idx) {
+  const k = ck(g), C = S.cls[k], row = C.seq[idx], r0 = schedule(g).rows[idx]; if (!row || !r0 || !r0.end) return "";
+  const tr = r0.track; let r1, res1;
+  row.hours++; touch();
+  try { const sc1 = schedule(g); r1 = sc1.rows[idx]; res1 = sc1.cap[tr] - sc1.planned[tr]; } finally { row.hours--; touch(); }
+  if (!r1) return "";
+  const end = r1.overflow ? "erst nach dem Schuljahr" : r1.end !== r0.end ? `am ${fmtWd(r1.end)} statt ${fmtWd(r0.end)}` : `weiterhin am ${fmtWd(r1.end)}`;
+  return `Mit <b>+1 Std.</b> endet ${esc(row.code)} ${end}; was danach im ${schedule(g).seqMode ? "Plan" : "Strang"} kommt, rückt eine Stunde nach. ${res1 < 0 ? `Dann ${res1 === -1 ? "fehlt" : "fehlen"} <b>${-res1} Std.</b> im Schuljahr.` : `Reserve danach: ${res1} Std.`}`;
+}
+/* Bearbeiten-Leiste unter der Woche: Einheit, Leistungsnachweis oder Kontrolle */
+function planEditor(g, sel) {
+  const k = ck(g), sc = schedule(g);
+  const close = `<button type="button" class="iconbtn sm" data-act="psel" aria-label="Schließen">×</button>`;
+  if (sel.chk) {
+    const x = lnDates(g).find(y => y.inLesson && y.id === sel.chk); if (!x) return "";
+    const ui = unitOrderOf(k).indexOf(x.code);
+    return `<div class="pcard" style="${sty("test")}"><div class="peh"><span class="pill lnp">${esc(x.kind)} · ${x.dur} min</span><b class="pet">${esc(x.title)}</b>
+      <span class="mono small muted">${x.date ? `${esc(fmtWd(x.date))}, ${x.period}. Std.` : "nicht eingeplant"}${x.code ? ` · in ${esc(x.code)}, Stunde ${x.n}` : ""}</span><span class="sp"></span>
+      ${ui >= 0 && !["P", "JA"].includes(x.code) ? `<a href="#u-${k}-${ui}">In der Einheit ansehen →</a>` : ""}${close}</div>
+      <div class="pebody"><div class="pec"><span class="lbl">Termin</span>${lnDateInput(g, x)}</div>
+      <label class="pec"><span class="lbl">Dauer</span><select data-act="chkdur" data-id="${esc(x.id)}">${CHECK_DUR.map(d => `<option value="${d}" ${x.dur === d ? "selected" : ""}>${d} min</option>`).join("")}</select></label>
+      <div class="pec">${lnDelBtn(g, x)}<span class="small muted">löschen</span></div></div>
+      <p class="small muted pnote0">Eine Kontrolle kostet keine eigene Stunde. Mit 30 min bekommt die Einheit eine Stunde dazu.</p></div>`;
+  }
+  const idx = sc.rows.findIndex(r => r.id === sel.row); if (idx < 0) return "";
+  const r = sc.rows[idx], u = unitOf(k, r.code), ui = unitOrderOf(k).indexOf(r.code), ln = isLnRow(k, r.code);
+  const when = r.overflow ? `<span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${esc(fmtWd(r.start))} – ${esc(fmtWd(r.end))}` : "nicht eingeplant";
+  const open = u && !["P", "JA"].includes(r.code) && ui >= 0 ? `<a href="#u-${k}-${ui}">${ln ? "Leistungsnachweis" : "Einheit"} öffnen →</a>` : "";
+  const head = `<div class="peh"><span class="chip"><b>${esc(r.code)}</b></span><b class="pet">${esc(titleOf(k, r.code))}</b><span class="mono small muted">${when}</span>
+    ${!sc.seqMode && !ln ? `<span class="small muted">${esc(trackName(g, r.track))}</span>` : ""}<span class="sp"></span>${open}${close}</div>`;
+  if (ln) {
+    const x = lnDates(g).find(y => !y.inLesson && y.row === r.id) || { row: r.id };
+    const ds = (LN_DURS[u.kind] || [45, 90]).filter(d => d >= 45);
+    return `<div class="pcard" style="${sty(lbOf(k, r.code))}">${head}<div class="pebody">
+      <div class="pec"><span class="lbl">Termin</span>${lnDateInput(g, x)}</div>
+      ${ds.length > 1 ? `<label class="pec"><span class="lbl">Dauer</span><select data-act="lndur" data-code="${esc(r.code)}">${ds.map(d => `<option value="${d}" ${lnDurOf(k, r.code) === d ? "selected" : ""}>${durLabel(d)}</option>`).join("")}</select></label>` : ""}
+      <div class="pec">${x.code ? lnDelBtn(g, x) : ""}<span class="small muted">löschen</span></div></div>
+      <p class="small muted pnote0">${esc((u.stunden || []).join(" · "))}. Ziehen am Griff ⋮⋮ in eine andere Woche legt den Termin auf deren erste Mathestunde.</p></div>`;
+  }
+  const prev = strandNeighbor(g, idx, -1), next = strandNeighbor(g, idx, 1), soll = u && u.stunden && u.stunden.length;
+  const isP = ["P", "JA"].includes(r.code), pv = hrsPreview(g, idx);
+  return `<div class="pcard" style="${sty(lbOf(k, r.code))}">${head}<div class="pebody">
+    <div class="pec"><span class="lbl">Stunden</span><button type="button" class="mini" data-act="hrs" data-i="${idx}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${idx}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${idx}" data-n="1" aria-label="Eine Stunde mehr">+</button>
+      ${soll && !isP ? `<span class="small muted">Soll ${soll}</span>` : ""}${r.extra ? `<span class="soll small adj">+${r.extra} für Kontrolle</span>` : ""}${r.adj ? `<span class="soll small adj">${esc(groupName(g))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}</div>
+    <div class="pec"><span class="lbl">Reihenfolge</span><button type="button" class="btn ghost sm" data-act="pmv" data-row="${esc(r.id)}" data-n="-1" ${prev < 0 ? "disabled" : ""}>↑ ${prev < 0 ? "früher" : "vor " + esc(sc.rows[prev].code)}</button><button type="button" class="btn ghost sm" data-act="pmv" data-row="${esc(r.id)}" data-n="1" ${next < 0 ? "disabled" : ""}>↓ ${next < 0 ? "später" : "nach " + esc(sc.rows[next].code)}</button></div>
+    ${!sc.seqMode ? `<label class="pec"><span class="lbl">Strang</span><select data-act="strand" data-i="${idx}" aria-label="Strang"><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select></label>` : ""}
+    <div class="pec"><button type="button" class="btn ghost sm" data-act="addp" data-i="${idx}">+ Puffer danach</button><button type="button" class="btn ghost sm pdel" data-act="del" data-i="${idx}">${isP ? "Puffer entfernen" : "Aus dem Plan nehmen"}</button></div></div>
+    ${pv ? `<p class="pnote">${pv}</p>` : ""}</div>`;
+}
+/* Formular „Leistungsnachweis in KW …“: Art, Thema, Dauer, Tag der Woche */
+function planLnForm(g, m) {
+  const sc = schedule(g), K0 = LN_KINDS.ka, first = firstMathDay(g, m);
+  const days = [0, 1, 2, 3, 4].map(i => addDays(m, i)).map(d => {
+    const ms = (sc.byDate[d] || []).filter(s => s.track !== "SOL" && !s.cancelled), info = sc.dayInfo[d], off = !ms.length;
+    const sub = off ? (info && !info.school ? info.note : "kein Mathe") : ms.length > 1 ? `${ms.length} Std.` : "1 Std.";
+    return `<label class="pday${off ? " off" : ""}"><input type="radio" name="plnday" value="${d}" ${d === first ? "checked" : ""} ${off ? "disabled" : ""}><span>${DAYS[dow(d)]} ${esc(fmt(d))}</span><span class="small mono">${esc(sub)}</span></label>`;
+  }).join("");
+  return `<div class="pcard plnf" style="${sty("test")}"><div class="peh"><b class="pet">Leistungsnachweis in KW ${isoWeek(m)}</b><span class="mono small muted">${esc(fmt(m))}–${esc(fmt(addDays(m, 4)))}</span><span class="sp"></span><button type="button" class="iconbtn sm" data-act="plnform" data-wk="" aria-label="Schließen">×</button></div>
+    <div class="pebody">
+      <label class="pec"><span class="lbl">Art</span><select id="plnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
+      <label class="pec pwide"><span class="lbl">Thema</span><input id="plntopic" placeholder="z. B. Lineare Funktionen"></label>
+      <label class="pec"><span class="lbl">Dauer</span><select id="plndur">${durOptions("ka", K0.dur)}</select></label>
+      <label class="pec"><input type="checkbox" id="plnwdh" ${K0.wdh ? "checked" : ""}> Wiederholung davor</label>
+      <label class="pec"><input type="checkbox" id="plnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe danach</label></div>
+    <div class="pdays" role="radiogroup" aria-label="Tag">${days}</div>
+    <div class="peh"><span class="small muted">Die Einheiten rücken nach. Tests mit 20 oder 30 min laufen in einer Stunde mit und kosten keine eigene Stunde.</span><span class="sp"></span><button type="button" class="btn" data-act="plnadd" data-wk="${m}">Eintragen</button></div></div>`;
+}
+/* Ein Eintrag in der Wochenzelle: Einheit, Leistungsnachweis (Zeile der Sequenz) oder Kontrolle */
+function planItem(g, m, it) {
+  const k = ck(g), sel = UI.planSel;
+  if (it.chk) {
+    const x = it.chk, on = sel && sel.chk === x.id;
+    return `<button type="button" class="pln chk${on ? " sel" : ""}" style="${sty("test")}" draggable="true" data-drag="chk" data-id="${esc(x.id)}" data-act="psel" data-chk="${esc(x.id)}" data-wk="${m}" title="Zum Verschieben in eine andere Woche ziehen">
+      <span class="grip" aria-hidden="true">⋮⋮</span><span class="pill lnp">${esc(x.kind)} · ${x.dur} min</span><span class="put">${esc(x.title)}</span><span class="when">${esc(fmtWd(x.date))}, ${x.period}. Std.</span>${x.pinned ? `<span class="pill lnp">fest</span>` : ""}</button>`;
+  }
+  const row = it.row, on = sel && sel.row === row.id, st = sty(lbOf(k, row.code));
+  const hrs = `<span class="hrs mono">${it.n} Std.${it.done ? ` · ${it.done}✓` : ""}</span>`;
+  if (isLnRow(k, row.code)) {
+    const main = row.slots[lnMain(k, row.code, row.hours)], here = main && monday(main.date) === m, u = unitOf(k, row.code);
+    const parts = [...new Set(it.ns.map(n => (u.stunden || [])[n - 1]).filter(Boolean))].join(", ");
+    return `<button type="button" class="pln${on ? " sel" : ""}${here ? "" : " part"}" style="${st}" ${here ? `draggable="true" data-drag="ln" title="Zum Verschieben in eine andere Woche ziehen"` : ""} data-act="psel" data-row="${esc(row.id)}" data-wk="${m}">
+      ${here ? `<span class="grip" aria-hidden="true">⋮⋮</span>` : ""}<b>${esc(row.code)}</b><span class="put">${esc(here ? titleOf(k, row.code) : parts || titleOf(k, row.code))}</span>${here ? `<span class="when">${esc(fmtWd(main.date))}, ${main.period}. Std.</span>${row.pinned ? `<span class="pill lnp">fest</span>` : ""}` : ""}${hrs}</button>`;
+  }
+  return `<button type="button" class="pu${on ? " sel" : ""}" style="${st}" data-act="psel" data-row="${esc(row.id)}" data-wk="${m}"><b>${esc(row.code)}</b><span class="put">${esc(titleOf(k, row.code))}</span>${hrs}</button>`;
+}
+function planWeeks(g) {
+  const k = ck(g), sc = schedule(g), Y = cal(), today = todayIso(), G = grp(g);
+  const trs = sc.seqMode ? ["A"] : ["A", "B"], sol = sc.slots.some(s => s.track === "SOL"), ncols = 3 + trs.length + (sol ? 1 : 0);
+  const byWk = {}; sc.slots.forEach(s => { const m = monday(s.date); (byWk[m] || (byWk[m] = [])).push(s); });
+  const chks = lnDates(g).filter(x => x.inLesson && x.date);
+  let rows = "";
+  if (Y.start && Y.end) for (let m = monday(Y.start); m <= Y.end; m = addDays(m, 7)) {
+    const notes = new Set(); let school = 0;
+    for (let i = 0; i < 5; i++) { const di = sc.dayInfo[addDays(m, i)]; if (!di) continue; if (di.school) school++; else notes.add(di.note); }
+    (G.tt || []).forEach(v => { if (v.frm && v.frm > Y.start && monday(v.frm) === m) notes.add("neuer Stundenplan ab " + fmt(v.frm)); });
+    const ws = byWk[m] || [], math = ws.some(s => s.track !== "SOL" && !s.cancelled);
+    const cells = trs.map(tr => {
+      const items = [];
+      ws.filter(s => s.track === tr).forEach(s => {
+        if (s.cancelled) { const x = items.find(y => y.x); if (x) x.x++; else items.push({ x: 1, key: s.date + s.period }); return; }
+        if (!s.lesson) return; const row = s.lesson.row;
+        let it = items.find(y => y.row === row); if (!it) items.push(it = { row, n: 0, done: 0, ns: [], key: s.date + String(s.period).padStart(2, "0") });
+        it.n++; it.ns.push(s.lesson.n); if (G.done[s.key]) it.done++;
+      });
+      chks.forEach(x => { const s = ws.find(y => y.date === x.date && y.period === x.period); if (s && s.track === tr) items.push({ chk: x, key: x.date + String(x.period).padStart(2, "0") + "z" }); });
+      items.sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
+      return `<td>${items.map(it => it.x ? `<span class="xchip">${it.x}× ausgefallen</span>` : planItem(g, m, it)).join("")}</td>`;
+    }).join("");
+    const solCell = sol ? `<td class="small fil">${ws.filter(s => s.track === "SOL").map(s => s.cancelled ? "ausgefallen" : `F${solFormat(g, s)} ${esc(SOL_FORMATS[solFormat(g, s)][0])}`).join("<br>")}</td>` : "";
+    const cur = m === monday(today);
+    rows += `<tr class="${school === 0 ? "hol" : ""} ${cur ? "cur" : ""}" ${cur ? 'id="curweek"' : ""} ${math ? `data-wk="${m}"` : ""}><td class="mono">${isoWeek(m)}</td><td class="mono nowrap">${fmt(m)}<span class="wend">–${fmt(addDays(m, 4))}</span></td><td class="note">${esc([...notes].join(", "))}${math ? `<button type="button" class="linkbtn small padd" data-act="plnform" data-wk="${m}">+ Leistungs&shy;nachweis</button>` : ""}</td>${school === 0 ? `<td colspan="${trs.length}"></td>${sol ? `<td class="fil"></td>` : ""}` : cells + solCell}</tr>`;
+    if (UI.planSel && UI.planSel.wk === m) { const ed = planEditor(g, UI.planSel); if (ed) rows += `<tr class="pedit"><td colspan="${ncols}">${ed}</td></tr>`; }
+    if (UI.planLn === m && math) rows += `<tr class="pedit"><td colspan="${ncols}">${planLnForm(g, m)}</td></tr>`;
+  }
+  return `<p class="small muted phint">Einheit anklicken: Stunden ändern, im Strang verschieben, Puffer einfügen. Leistungsnachweise am Griff ⋮⋮ in eine andere Woche ziehen (Termin = erste Mathestunde der Woche) oder anklicken und ein Datum wählen.</p>
+    <div class="tscroll"><table class="plan"><thead><tr><th>KW</th><th>Woche</th><th>Hinweis</th>${trs.map(t => `<th>${esc(trackName(g, t))}</th>`).join("")}${sol ? `<th class="fil">FIL</th>` : ""}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+/* Zeile hinzufügen (Liste und „+ Einheit / Puffer“ in der Wochenansicht) */
+function addRowCard(g) {
+  const k = ck(g), C = S.cls[k], sc = schedule(g), used = new Set(C.seq.map(r => r.code));
+  const avail = unitOrderOf(g).filter(code => !isLnRow(g, code) && code !== "P" && code !== "JA" && !used.has(code));
+  const generic = [["P", "Puffer · Wiederholung"]].concat(unitOf(g, "JA") || used.has("JA") ? [["JA", "Jahresabschluss"]] : []);
+  return `<div class="addrow card">
+      <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(g, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
+      <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
+      <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
+      <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
+    </div>`;
+}
+/* Liste: dieselbe Planung als Reihenfolge (frühere Seite „Sequenz“) */
+function planList(g) {
+  const k = ck(g), sc = schedule(g);
   const rows = sc.rows.map((r, i) => {
     const when = r.overflow ? `<span class="neg">${r.slots.length ? fmt(r.start) + " – " : ""}${r.overflow} Std. nach Schuljahresende</span>` : r.start ? `${fmt(r.start)} – ${fmt(r.end)}` : r.hours === 0 ? "—" : "";
     return `<tr style="${sty(lbOf(k, r.code))}">
       <td class="mono muted">${i + 1}</td>
       <td><span class="chip"><b>${esc(r.code)}</b></span></td>
-      <td class="ttl">${r.pinned ? `<span class="pill lnp" title="Fester Termin">fest ${esc(fmt(r.pinned))}</span> ` : ""}${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${ck(k)}-${unitOrderOf(k).indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
-      <td>${(unitOf(k, r.code) || {}).lb === "test" ? `<span class="muted" title="${r.pinned ? "Leistungsnachweise mit Termin gehören zu keinem Strang: Sie liegen am Termin, die Einheiten laufen darum herum." : "Ohne Termin läuft der Leistungsnachweis im Strang der Einheit davor."}">–</span>` : `<select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select>`}</td>
+      <td class="ttl">${r.pinned ? `<span class="pill lnp" title="Fester Termin">fest ${esc(fmt(r.pinned))}</span> ` : ""}${unitOf(k, r.code) && !["P", "JA"].includes(r.code) ? `<a href="#u-${k}-${unitOrderOf(k).indexOf(r.code)}">${esc(titleOf(k, r.code))}</a>` : esc(titleOf(k, r.code))}</td>
+      <td>${isLnRow(k, r.code) ? `<span class="muted" title="${r.pinned ? "Leistungsnachweise mit Termin gehören zu keinem Strang: Sie liegen am Termin, die Einheiten laufen darum herum." : "Ohne Termin läuft der Leistungsnachweis im Strang der Einheit davor."}">–</span>` : `<select data-act="strand" data-i="${i}" aria-label="Strang" ${sc.seqMode ? "disabled" : ""}><option ${r.strand !== "B" ? "selected" : ""}>A</option><option ${r.strand === "B" ? "selected" : ""}>B</option></select>`}</td>
       <td class="nowrap"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="-1" aria-label="Eine Stunde weniger">−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-i="${i}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-i="${i}" data-n="1" aria-label="Eine Stunde mehr">+</button>
-        ${r.extra ? `<span class="soll small adj" title="Kontrollen mit 30 min belegen Stunden (${esc(groupName(k))})">+${r.extra} für Kontrolle</span>` : ""}${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(k))}">${esc(groupName(k))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
+        ${r.extra ? `<span class="soll small adj" title="Kontrollen mit 30 min belegen Stunden (${esc(groupName(g))})">+${r.extra} für Kontrolle</span>` : ""}${r.adj ? `<span class="soll small adj" title="Abweichung nur für ${esc(groupName(g))}">${esc(groupName(g))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}${unitOf(k, r.code) && unitOf(k, r.code).stunden.length && r.base !== unitOf(k, r.code).stunden.length ? `<span class="soll small muted">Soll ${unitOf(k, r.code).stunden.length}</span>` : ""}</td>
       <td class="mono small nowrap">${when}</td>
       <td class="nowrap"><div class="rowacts"><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="-1" aria-label="Nach oben" ${i === 0 ? "disabled" : ""}>↑</button><button type="button" class="mini" data-act="mv" data-i="${i}" data-n="1" aria-label="Nach unten" ${i === sc.rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" class="mini" data-act="addp" data-i="${i}" title="Puffer darunter einfügen">+P</button><button type="button" class="mini del" data-act="del" data-i="${i}" aria-label="Zeile löschen">×</button></div></td>
     </tr>`;
   }).join("");
+  return `<p class="small muted">${sc.seqMode ? "Alle Stunden laufen in einem Strang, genau in der Reihenfolge unten." : "Jede Zeile läuft in ihrem Strang; innerhalb eines Strangs gilt die Reihenfolge unten."}</p>
+    <div class="tscroll"><table class="seq"><thead><tr><th>#</th><th>Kürzel</th><th>Einheit</th><th>Strang</th><th>Stunden</th><th>Zeitraum</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${addRowCard(g)}${lnCard(g)}`;
+}
+/* „Mehr …“: seltene Funktionen (Vorlage, Stunden je Lernbereich, Zurücksetzen) */
+function planMore(g, list) {
+  const k = ck(g), C = S.cls[k], c = D.classes[k], lbh = lbHours(g), multi = C.groups.length > 1;
   const lbRows = Object.entries(c.lbnames).filter(([lb]) => lbh[lb] || c.zrw[lb]).map(([lb, n]) => {
     const z = c.zrw[lb], h = lbh[lb] || 0;
     return `<div class="lbrow" style="${sty(lb)}"><span class="chip"><b>${esc(lb.startsWith("LB") ? "LB " + lb.slice(2) : lb === "WB" ? "WB" : lb === "test" ? "KA" : lb === "start" ? "Start" : "P")}</b></span><span class="n">${esc(n)}</span><span class="mono">${h} Std.${z ? ` <span class="muted">/ ${z}</span>` : ""}</span></div>`;
   }).join("");
-  const confirm = UI.confirm === "reset-" + k;
-  return `<section><div class="vhead"><h1>Sequenz</h1>${clsTabs()}</div>
-    ${tplBox(k)}
-    <div class="seqtop">
-      <div class="modebox"><div class="lbl">Modus</div><div class="seg small">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-v="${v}">${l}</button>`).join("")}</div>
-      ${multi ? `<p class="small">Die Sequenz gilt für alle Parallelklassen. Zeiträume und Kapazität unten gelten für <b>${esc(groupName(k))}</b>; „Einheit braucht 1 Std. mehr“ und Ausfälle wirken nur dort und erscheinen als Abweichung neben den Stunden.</p>` : ""}
-      <p class="small muted">${sc.seqMode ? "Alle Stunden laufen in einem Strang, genau in der Reihenfolge unten." : "Jede Zeile läuft in ihrem Strang; innerhalb eines Strangs gilt die Reihenfolge unten."}</p></div>
-      ${capCards(k)}
-    </div>
-    <div class="tscroll"><table class="seq"><thead><tr><th>#</th><th>Kürzel</th><th>Einheit</th><th>Strang</th><th>Stunden</th><th>Zeitraum</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="addrow card">
-      <label>Zeile hinzufügen <select id="addcode"><optgroup label="Allgemein">${generic.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</optgroup>${avail.length ? `<optgroup label="Noch nicht eingeplante Einheiten">${avail.map(code => `<option value="${esc(code)}">${esc(code)} · ${esc(titleOf(k, code))}</option>`).join("")}</optgroup>` : ""}</select></label>
-      <label>Strang <select id="addstrand" ${sc.seqMode ? "disabled" : ""}><option>A</option><option>B</option></select></label>
-      <label>Stunden <input id="addhrs" class="num" type="number" min="0" value="1"></label>
-      <button type="button" class="btn" data-act="addrow">Am Ende anfügen</button>
-    </div>
-    ${lnCard(k)}
+  const confirm = UI.confirm === "reset-" + g;
+  return `<details class="card pmore" ${UI.planMore ? "open" : ""}><summary><b>Mehr …</b> <span class="small muted">Vorlage, Stunden je Lernbereich, Zurücksetzen</span></summary>
+    ${!list && !tplNewer(k, C) ? tplBox(g) : ""}
+    ${multi ? `<p class="small">Die Reihenfolge gilt für alle Parallelklassen. Termine und Kapazität gelten für <b>${esc(groupName(g))}</b>; „Einheit braucht 1 Std. mehr“ und Ausfälle wirken nur dort und erscheinen als Abweichung neben den Stunden.</p>` : ""}
     <div class="grid2">
       <div class="card"><h3>Stunden je Lernbereich</h3><p class="small muted">geplant / Zeitrichtwert des Lehrplans</p>${lbRows}</div>
-      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Hier kannst du Puffer (P) auch von Hand verschieben oder kürzen.</p>
-      ${confirm ? `<div class="confirm"><span>Sequenz von ${esc(c.label)} auf die Vorlage zurücksetzen? Deine Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${ck(k)}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${k}">Auf Vorlage zurücksetzen</button>`}</div>
-    </div></section>`;
+      <div class="card"><h3>Hinterherhängen?</h3><p class="small">Auf der Heute-Seite gibt es dafür zwei Knöpfe. „Einheit braucht 1 Std. mehr“ verlängert die laufende Einheit, „Fällt aus“ streicht eine Stunde. ${S.settings.autoBuffer ? "In beiden Fällen kürzt die App automatisch den nächsten Puffer im selben Strang, damit das Schuljahr aufgeht." : "Puffer werden nicht automatisch gekürzt (Einstellungen)."} Im Jahresplan kannst du Puffer (P) auch von Hand verschieben oder kürzen.</p>
+      ${confirm ? `<div class="confirm"><span>Plan von ${esc(c.label)} auf die Vorlage zurücksetzen? Deine Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${k}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${g}">Auf Vorlage zurücksetzen</button>`}</div>
+    </div></details>`;
 }
+function viewPlan() {
+  const g = curG(); sortPinnedRows(g);
+  const k = ck(g), C = S.cls[k], list = UI.planView === "list";
+  return `<section><div class="vhead"><h1>Jahresplan</h1>${clsTabs()}</div>
+    ${tplNewer(k, C) || list ? tplBox(g) : ""}
+    <div class="ptools">
+      <div class="seg small" role="group" aria-label="Ansicht">${[["weeks", "Wochen"], ["list", "Liste"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "list") === list}" data-act="planview" data-v="${v}">${l}</button>`).join("")}</div>
+      <div class="seg small" role="group" aria-label="Modus">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>
+      <span class="sp"></span>
+      ${list ? "" : `<button type="button" class="btn ghost sm" data-act="paddrow" aria-expanded="${!!UI.planAdd}">+ Einheit / Puffer</button><button type="button" class="btn sm" data-act="plnform" data-wk="${planLnWeek(g)}">+ Leistungsnachweis</button>`}
+    </div>
+    ${capCards(g)}
+    ${!list && UI.planAdd ? addRowCard(g) : ""}
+    ${list ? planList(g) : planWeeks(g)}
+    ${planMore(g, list)}</section>`;
+}
+
 
 /* Datumsfeld eines Leistungsnachweises: Datum eingeben genügt, der Plan passt sich an. */
 function lnDateInput(k, x) {
@@ -1774,9 +1919,9 @@ function dpPick(d) {
   else { const inp = document.getElementById("lndate"), b = document.querySelector('.dpbtn[data-t="form"]'); if (inp) inp.value = d; if (b) { b.dataset.v = d; b.innerHTML = `${esc(fmtDp(d))}<span class="dpico" aria-hidden="true">▦</span>`; } }
 }
 /* Kurzer Test: Wiederholungs- und Rückgabestunde entfallen, die Felder werden ausgegraut. */
-function lnFormSync() {
-  const v = id => document.getElementById(id), d = v("lndur"); if (!d) return;
-  const short = +d.value < 45; ["lnwdh", "lnrueck"].forEach(id => { const e = v(id); if (e) { e.disabled = short; e.closest("label").classList.toggle("off", short); } });
+function lnFormSync(p = "ln") {
+  const v = id => document.getElementById(id), d = v(p + "dur"); if (!d) return;
+  const short = +d.value < 45; [p + "wdh", p + "rueck"].forEach(id => { const e = v(id); if (e) { e.disabled = short; e.closest("label").classList.toggle("off", short); } });
 }
 function lnCard(k) {
   const C = S.cls[ck(k)], sc = schedule(k), cur = currentUnit(k, UI.date);
@@ -2250,7 +2395,7 @@ function renderOverlay() {
 }
 
 /* ---------------- router & render ---------------- */
-const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["sequenz", "Sequenz"], ["einheiten", "Einheiten"], ["lernuebersicht", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
+const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["einheiten", "Einheiten"], ["lernuebersicht", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
 function route() { const h = (location.hash || "#heute").slice(1); return h || "heute"; }
 /* Ein Feld, das beim Neuaufbau den Fokus verliert, kann ein change-Ereignis auslösen; dann nach dem Durchlauf erneut zeichnen. */
 let rendering = false;
@@ -2262,10 +2407,12 @@ function render() {
 }
 function renderNow() {
   ensureSubscribed();
-  const r = route(); let html;
+  let r = route(), html;
+  // alte Adresse #sequenz: Jahresplan in der Listenansicht
+  if (r === "sequenz") { r = "plan"; UI.planView = "list"; try { localStorage.setItem("mp-planview", "list"); } catch (e) {} history.replaceState(null, "", "#plan"); }
   const m = /^u-(.+)-(\d+)$/.exec(r), mk = m && D.classes[m[1]] ? m[1] : null;
-  const VIEWS = { heute: viewToday, plan: viewPlan, sequenz: viewSeq, einheiten: viewUnits, lernuebersicht: viewEngine, einstellungen: viewSettings };
-  const TITLES = { plan: "Jahresplan", sequenz: "Sequenz", einheiten: "Einheiten", lernuebersicht: "Lernübersicht" };
+  const VIEWS = { heute: viewToday, plan: viewPlan, einheiten: viewUnits, lernuebersicht: viewEngine, einstellungen: viewSettings };
+  const TITLES = { plan: "Jahresplan", einheiten: "Einheiten", lernuebersicht: "Lernübersicht" };
   if (mk) { if (UI.cls !== mk || UI.type !== D.classes[mk].type) { UI.cls = mk; UI.type = D.classes[mk].type; try { localStorage.setItem("mp-cls", UI.cls); localStorage.setItem("mp-type", UI.type); } catch (e) {} } html = viewUnit(mk, +m[2]); }
   else if (TITLES[r] && !curClass()) html = noClassView(TITLES[r]);
   else html = (VIEWS[r] || viewToday)();
@@ -2284,7 +2431,7 @@ function renderNow() {
 }
 let lastRoute = null;
 window.addEventListener("hashchange", () => {
-  UI.editAtom = null; UI.chkForm = null; UI.confirm = null; UI.dp = null; renderDp(); render.keepScroll = false; render();
+  UI.editAtom = null; UI.chkForm = null; UI.confirm = null; UI.dp = null; UI.planSel = null; UI.planLn = null; renderDp(); render.keepScroll = false; render();
   if (route() === "plan") { const c = document.getElementById("curweek"); if (c) c.scrollIntoView({ block: "center" }); }
 });
 
@@ -2371,10 +2518,28 @@ document.addEventListener("click", ev => {
     case "obdone": obFinish(); break;
     case "obcell": obToggle(b.dataset.g, +b.dataset.d, +b.dataset.p); break;
     case "mode": S.cls[k].mode = b.dataset.v; commit(k); break;
+    case "planview": UI.planView = b.dataset.v === "list" ? "list" : "weeks"; UI.planSel = null; UI.planLn = null; try { localStorage.setItem("mp-planview", UI.planView); } catch (e) {} render(); break;
+    case "psel": {
+      const row = b.dataset.row || null, chk = b.dataset.chk || null, cur = UI.planSel;
+      UI.planSel = (row || chk) && !(cur && cur.row === row && cur.chk === chk && cur.wk === b.dataset.wk) ? { row, chk, wk: b.dataset.wk } : null;
+      UI.planLn = null; UI.confirm = null; render(); break;
+    }
+    case "pmv": moveInStrand(curG(), b.dataset.row, +b.dataset.n); break;
+    case "paddrow": UI.planAdd = !UI.planAdd; render(); break;
+    case "plnform": UI.planLn = b.dataset.wk && UI.planLn !== b.dataset.wk ? b.dataset.wk : null; UI.planSel = null; render(); if (UI.planLn) { const f = document.querySelector(".plnf"); if (f) f.scrollIntoView({ block: "nearest" }); } break;
+    case "plnadd": {
+      const v = id => document.getElementById(id), d = (document.querySelector('input[name="plnday"]:checked') || {}).value, g = curG();
+      if (!d) { toast("Bitte einen Tag mit Mathe-Unterricht wählen."); break; }
+      const dur = +v("plndur").value || 45, topic = v("plntopic").value.trim(), s0 = dateSlot(g, d);
+      UI.planLn = null;
+      if (dur < 45) { addShortTest(k, { topic, dur, date: d, g }); break; }
+      addLn(k, { kind: v("plnkind").value, topic, dur, wdh: v("plnwdh").checked, rueck: v("plnrueck").checked, afterIdx: s0 ? s0.lesson.row.idx : S.cls[k].seq.length - 1, date: d, g });
+      break;
+    }
     case "hrs": setSeq(k, s => { s[i].hours = Math.max(0, s[i].hours + +b.dataset.n); }); break;
     case "mv": setSeq(k, s => { const j = i + +b.dataset.n; if (j < 0 || j >= s.length) return; [s[i], s[j]] = [s[j], s[i]]; }); break;
     case "addp": setSeq(k, s => { s.splice(i + 1, 0, { id: uid(), code: "P", strand: s[i].strand, hours: 1 }); }); break;
-    case "del": { const snap = snapshotFor(k); const code = S.cls[k].seq[i].code; S.cls[k].seq.splice(i, 1); undoStack = snap; commit(k); toast(`${code} aus der Sequenz entfernt.`, true); break; }
+    case "del": { const snap = snapshotFor(k); const code = S.cls[k].seq[i].code; S.cls[k].seq.splice(i, 1); undoStack = snap; commit(k); toast(`${code} aus dem Plan genommen.`, true); break; }
     case "addrow": {
       const code = document.getElementById("addcode").value, strand = document.getElementById("addstrand").value, h = Math.max(0, +document.getElementById("addhrs").value || 0);
       const u = unitOf(k, code); setSeq(k, s => { s.push({ id: uid(), code, strand: S.cls[k].mode === "nacheinander" ? "A" : strand, hours: h || (u ? u.stunden.length : 1) || 1 }); }); break;
@@ -2479,8 +2644,8 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
-  if (t.id === "lnkind") { const K = LN_KINDS[t.value], v = id => document.getElementById(id); if (K) { v("lndur").innerHTML = durOptions(t.value, K.dur); v("lnwdh").checked = K.wdh; v("lnrueck").checked = K.rueck; lnFormSync(); } return; }
-  if (t.id === "lndur") { lnFormSync(); return; }
+  if (t.id === "lnkind" || t.id === "plnkind") { const p = t.id.slice(0, -4), K = LN_KINDS[t.value], v = id => document.getElementById(p + id); if (K) { v("dur").innerHTML = durOptions(t.value, K.dur); v("wdh").checked = K.wdh; v("rueck").checked = K.rueck; lnFormSync(p); } return; }
+  if (t.id === "lndur" || t.id === "plndur") { lnFormSync(t.id.slice(0, -3)); return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
@@ -2552,8 +2717,27 @@ document.addEventListener("drop", ev => {
   const t = dragAtom && ev.target.closest && ev.target.closest(".lesson[data-drop]"); if (!t || t.dataset.code !== dragAtom.code) return;
   ev.preventDefault(); const d = dragAtom; dragAtom = null; moveAtom(UI.cls, d.code, d.id, +t.dataset.drop);
 });
+/* Leistungsnachweise und Kontrollen im Jahresplan in eine andere Woche ziehen */
+let dragLn = null;
+document.addEventListener("dragstart", ev => {
+  const el = ev.target.closest && ev.target.closest("[data-drag]"); if (!el) return;
+  dragLn = { t: el.dataset.drag, row: el.dataset.row, id: el.dataset.id }; el.classList.add("dragging");
+  try { ev.dataTransfer.setData("text/plain", el.dataset.row || el.dataset.id); ev.dataTransfer.effectAllowed = "move"; } catch (e) {}
+});
+document.addEventListener("dragend", () => { dragLn = null; document.querySelectorAll(".dropwk").forEach(el => el.classList.remove("dropwk")); });
+document.addEventListener("dragover", ev => {
+  const t = dragLn && ev.target.closest && ev.target.closest("tr[data-wk]"); if (!t) return;
+  ev.preventDefault(); document.querySelectorAll(".dropwk").forEach(el => { if (el !== t) el.classList.remove("dropwk"); }); t.classList.add("dropwk");
+});
+document.addEventListener("drop", ev => {
+  const t = dragLn && ev.target.closest && ev.target.closest("tr[data-wk]"); if (!t) return;
+  ev.preventDefault(); const d = dragLn; dragLn = null; dropOnWeek(curG(), d, t.dataset.wk);
+});
+/* „Mehr …“ im Jahresplan bleibt beim Neuzeichnen offen */
+document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("pmore")) UI.planMore = ev.target.open; }, true);
 document.addEventListener("keydown", ev => {
   if (UI.dp && ev.key === "Escape") { dpClose(); return; }
+  if ((UI.planSel || UI.planLn) && ev.key === "Escape" && route() === "plan" && !ev.target.closest("input,select,textarea")) { UI.planSel = null; UI.planLn = null; render(); return; }
   if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
   if (!UI.quiz && !UI.solOpen) return;
   if (ev.key === "Escape") { closeOverlay(); return; }
@@ -2565,7 +2749,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
