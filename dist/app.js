@@ -2034,6 +2034,7 @@ function viewUnit(kc, idx) {
       <div class="acts">${UI.confirm === "lnx-" + (r ? r.id : code) ? `<span class="confirm"><span>${esc(u.title)} ${u.custom ? "mit Atomen löschen" : "aus der Sequenz entfernen"}?</span><button type="button" class="btn danger sm" data-act="lnremove" ${r ? `data-row="${esc(r.id)}"` : `data-code="${esc(code)}"`}>Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>`
         : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="lnx-${esc(r ? r.id : code)}">Leistungsnachweis löschen</button>`}</div></div>` : ""}
     ${u.custom ? lnEditCard(k, code, u) : ""}
+    ${u.lb !== "test" && r && !["P", "JA"].includes(code) ? unitPlanCard(k, code, r, u) : ""}
     <div class="grid2">
       <div>${list("Inhalte · Die Schüler können …", u.inhalte)}${list("Vertiefung", u.tiefe)}${list("Vorwissen · Retrieval", u.vorwissen)}</div>
       <div>${u.begriffe && u.begriffe.length ? `<div class="box"><h3>Fachbegriffe</h3><div class="tags">${u.begriffe.map(b => `<span>${esc(b)}</span>`).join("")}</div></div>` : ""}${list("Hinweise · Bezüge", u.hinweise)}${list("Material", u.material)}</div>
@@ -2046,6 +2047,24 @@ function viewUnit(kc, idx) {
       <p class="small muted">Der Lernstand bleibt bei Atomen mit gleicher Kennung erhalten.</p></div>` : ""}
     <p class="small muted">Atome werden in der Stunde eingeführt, der sie zugeordnet sind. Ab der folgenden Stunde wird es wiederholt (Lernübersicht). Zum Verschieben ein Atom in eine andere Stunde ziehen oder ↑/↓ nutzen. Doppelstunden laut Stundenplan stehen zusammen. ${S.cls[ck(k)].atoms[code] ? `<button type="button" class="linkbtn" data-act="atomreset" data-code="${esc(code)}">Atome dieser Einheit auf die Vorlage zurücksetzen</button>` : ""}</p>
     <div class="lessons-list">${lessons}</div></section>`;
+}
+/* Einheit: Stunden verlängern/kürzen und Leistungsnachweis anlegen (nach der Einheit oder an einem Tag). */
+function unitPlanCard(g, code, r, u) {
+  const k = ck(g), sc = schedule(g), idx = sc.rows.indexOf(r), soll = u.stunden.length, pv = hrsPreview(g, idx), K0 = LN_KINDS.ka, open = UI.unitLn === code;
+  const form = open ? `<div class="lnform ulnform"><div class="lnformh">Leistungsnachweis anlegen</div>
+      <label>Art <select id="ulnkind">${Object.entries(LN_KINDS).map(([v, K]) => `<option value="${v}">${esc(K.label)}</option>`).join("")}</select></label>
+      <label class="wide">Thema <input id="ulntopic" value="${esc(u.title)}"></label>
+      <label>Dauer <select id="ulndur">${durOptions("ka", K0.dur)}</select></label>
+      <label class="chk"><input type="checkbox" id="ulnwdh" ${K0.wdh ? "checked" : ""}> Wiederholungsstunde davor</label>
+      <label class="chk"><input type="checkbox" id="ulnrueck" ${K0.rueck ? "checked" : ""}> Rückgabe und Berichtigung</label>
+      <label>Termin <span class="dpwrap"><input type="hidden" id="lndate" value="">${dpButton({ t: "form" }, "")}</span></label>
+      <button type="button" class="btn" data-act="ulnadd" data-k="${k}" data-code="${esc(code)}" data-i="${idx}">Anlegen</button><button type="button" class="btn ghost" data-act="ulnform" data-code="">Abbrechen</button>
+      <p class="small muted wide0">Ohne Termin kommt der Leistungsnachweis direkt nach ${esc(code)}${r.end ? ` (bis ${esc(fmtWd(r.end))})` : ""}, mit Termin liegt er fest an diesem Tag. Tests mit 20 oder 30 min laufen ohne Termin in der letzten Stunde von ${esc(code)} mit und kosten keine eigene Stunde.</p></div>` : "";
+  return `<div class="card uplan"><div class="pebody">
+    <div class="pec"><span class="lbl">Stunden</span><button type="button" class="mini" data-act="hrs" data-k="${k}" data-i="${idx}" data-n="-1" aria-label="Eine Stunde weniger" ${r.base > 0 ? "" : "disabled"}>−</button><input class="num mono" type="number" min="0" max="60" value="${r.base}" data-act="hrsset" data-k="${k}" data-i="${idx}" aria-label="Stunden"><button type="button" class="mini" data-act="hrs" data-k="${k}" data-i="${idx}" data-n="1" aria-label="Eine Stunde mehr">+</button>
+      ${soll ? `<span class="small muted">Soll ${soll}</span>` : ""}${r.extra ? `<span class="soll small adj">+${r.extra} für Kontrolle</span>` : ""}${r.adj ? `<span class="soll small adj">${esc(groupName(g))}: ${r.adj > 0 ? "+" : ""}${r.adj}</span>` : ""}</div>
+    ${open ? "" : `<div class="pec"><button type="button" class="btn ghost sm" data-act="ulnform" data-code="${esc(code)}">+ Leistungsnachweis</button></div>`}</div>
+    ${pv ? `<p class="pnote">${pv}</p>` : ""}${form}</div>`;
 }
 function lnEditCard(k, code, u) {
   return `<div class="card lnedit"><h3>${esc(LN_KINDS[u.kind] ? LN_KINDS[u.kind].label : "Leistungsnachweis")} bearbeiten</h3>
@@ -2714,6 +2733,20 @@ document.addEventListener("click", ev => {
       const code = addLn(k, { kind, topic: v("lntopic").value.trim(), dur: +v("lndur").value || 45, wdh: v("lnwdh").checked, rueck: v("lnrueck").checked, afterIdx: +v("lnafter").value, date: v("lndate").value, g: curG() });
       break;
     }
+    case "ulnform": UI.unitLn = b.dataset.code || null; render(); break;
+    case "ulnadd": {
+      const v = id => document.getElementById(id), dur = +v("ulndur").value || 45, topic = v("ulntopic").value.trim(), date = v("lndate").value, row = S.cls[k].seq[i];
+      if (!row) break;
+      UI.unitLn = null;
+      if (dur < 45 && !date) {
+        const C = S.cls[k], snap = snapshotFor(k), n = Math.max(1, +row.hours || 1);
+        C.checks = C.checks || []; C.checks.push({ id: uid(), kind: "test", title: topic, code: row.code, n, dur });
+        undoStack = snap; commit(k); toast(`Test (${dur} min) in ${row.code}, Stunde ${n} eingetragen. Er kostet keine eigene Stunde.`, true); break;
+      }
+      if (dur < 45) { addShortTest(k, { topic, dur, date, g: curG() }); break; }
+      addLn(k, { kind: v("ulnkind").value, topic, dur, wdh: v("ulnwdh").checked, rueck: v("ulnrueck").checked, afterIdx: i, date, g: curG() });
+      break;
+    }
     case "lnunpin": setLnDate(curG(), b.dataset.row, ""); break;
     case "chkunpin": unpinCheck(curG(), b.dataset.id); break;
     case "dp": if (UI.dp && UI.dp.t === b.dataset.t && UI.dp.row === b.dataset.row && UI.dp.id === b.dataset.id) dpClose(); else dpOpen(b); break;
@@ -2789,8 +2822,8 @@ document.addEventListener("change", ev => {
   const t = ev.target, a = t.dataset.act;
   if (t.id === "yearsel") { if (t.value === "__new") { UI.newYear = yearOptions()[0]; location.hash = "#einstellungen"; render(); const nb = document.getElementById("newyearbox"); if (nb) nb.scrollIntoView({ block: "center" }); } else switchYear(t.value, true); return; }
   if (t.id === "newyear") { UI.newYear = t.value; return; }
-  if (t.id === "lnkind" || t.id === "plnkind") { const p = t.id.slice(0, -4), K = LN_KINDS[t.value], v = id => document.getElementById(p + id); if (K) { v("dur").innerHTML = durOptions(t.value, K.dur); v("wdh").checked = K.wdh; v("rueck").checked = K.rueck; lnFormSync(p); } return; }
-  if (t.id === "lndur" || t.id === "plndur") { lnFormSync(t.id.slice(0, -3)); return; }
+  if (t.id === "lnkind" || t.id === "plnkind" || t.id === "ulnkind") { const p = t.id.slice(0, -4), K = LN_KINDS[t.value], v = id => document.getElementById(p + id); if (K) { v("dur").innerHTML = durOptions(t.value, K.dur); v("wdh").checked = K.wdh; v("rueck").checked = K.rueck; lnFormSync(p); } return; }
+  if (t.id === "lndur" || t.id === "plndur" || t.id === "ulndur") { lnFormSync(t.id.slice(0, -3)); return; }
   if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; UI.dateAuto = null; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
