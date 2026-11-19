@@ -495,6 +495,26 @@ function serve(dir) {
   const ln2 = await p.evaluate(() => { const C = window.__mp.S.cls.kl8; return { n: C.seq.length, ln: Object.keys(C.ln || {}).length, hash: location.hash }; });
   await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
   ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#plan', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
+  // Einheit: Stunden verlängern/kürzen und Leistungsnachweis direkt nach der Einheit anlegen
+  await p.evaluate(() => { location.hash = 'u-kl8-' + window.__mp.unitOrderOf('kl8').indexOf('T2'); }); await p.waitForTimeout(200);
+  const uState = () => p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8, i = C.seq.findIndex(r => r.code === 'T2'), r = M.schedule('kl8.a').rows[i];
+    return { i, h: C.seq[i].hours, end: r.end, next: C.seq[i + 1].code, n: C.seq.length, val: +document.querySelector('.uplan input[data-act="hrsset"]').value, note: !!document.querySelector('.uplan .pnote'), chk: (C.checks || []).map(x => x.code + x.n + ':' + x.dur).join() }; });
+  const uh0 = await uState();
+  await p.click('.uplan [data-act="hrs"][data-n="1"]'); await p.waitForTimeout(150);
+  const uh1 = await uState();
+  await p.click('.uplan [data-act="hrs"][data-n="-1"]'); await p.waitForTimeout(150);
+  const uh2 = await uState();
+  await p.click('.uplan [data-act="ulnform"]'); await p.waitForTimeout(120);
+  const uTopic = await p.inputValue('#ulntopic');
+  await p.click('[data-act="ulnadd"]'); await p.waitForTimeout(200);
+  const uh3 = await p.evaluate(i => { const C = window.__mp.S.cls.kl8, row = C.seq[i + 1]; return { n: C.seq.length, code: row.code, custom: !!(C.ln && C.ln[row.code]), title: C.ln && C.ln[row.code] && C.ln[row.code].title, form: !!document.getElementById('ulnkind') }; }, uh0.i);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200);
+  await p.click('.uplan [data-act="ulnform"]'); await p.waitForTimeout(120);
+  await p.selectOption('#ulnkind', 'test'); await p.dispatchEvent('#ulnkind', 'change'); await p.waitForTimeout(80); await p.selectOption('#ulndur', '20'); await p.click('[data-act="ulnadd"]'); await p.waitForTimeout(200);
+  const uh4 = await uState();
+  await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = []; M.touch(); });
+  ok(uh0.note && uh1.h === uh0.h + 1 && uh1.val === uh1.h && uh1.end >= uh0.end && uh2.h === uh0.h && uh3.n === uh0.n + 1 && uh3.custom && /^KA\d/.test(uh3.code) && uh3.title.includes(uTopic) && !uh3.form && uh4.n === uh0.n && uh4.next === uh0.next && uh4.chk === `T2${uh0.h}:20`,
+    'Einheit: Stunden ± in der Einheit, Leistungsnachweis direkt danach, kurzer Test in der letzten Stunde ' + JSON.stringify([uh0, uh1, uh2, uTopic, uh3, uh4]));
   // In der Übersicht löschen: Klassenarbeit der Vorlage verlässt die Sequenz, Kontrolle verschwindet; Rückgängig holt sie zurück
   await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = [{ id: 'cdel', kind: 'kk', title: 'Weg', code: 'T2', n: 1 }]; M.touch(); location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const del0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA2'); return { n: M.S.cls.kl8.seq.length, row: x.row }; });
