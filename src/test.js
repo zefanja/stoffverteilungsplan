@@ -667,6 +667,19 @@ function serve(dir) {
   await p.evaluate(() => { location.hash = 'heute'; }); await p.waitForTimeout(150);
   ok(nost.strand === 'B' && nost.arbeit === '2027-01-11/A' && nost.gapsA === 0 && nost.gapsB === 0 && nostUi.length === 4 && nostUi.every(Boolean),
     'Leistungsnachweis ohne Strang: KA2 liegt am Termin in einer Stunde von Strang A, beide Stränge ohne Lücken, Sequenz zeigt keinen Strang ' + JSON.stringify([nost, nostUi]));
+  // Jahresplan scrollt nicht quer (Wochen und Liste, GYM 6 mit zwei Strängen und GYM 8, breit bis Handy)
+  const hscroll = [], vpPlan = p.viewportSize(), uiPlan = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type, window.__mp.UI.planView]);
+  for (const w of [1280, 1024, 800, 390]) {
+    await p.setViewportSize({ width: w, height: 900 });
+    for (const c of ['kl6', 'kl8']) for (const v of ['weeks', 'list']) {
+      await p.evaluate(([c, v]) => { const M = window.__mp; M.UI.cls = c; M.UI.type = 'gym'; M.UI.planView = v; location.hash = 'plan'; window.dispatchEvent(new HashChangeEvent('hashchange')); }, [c, v]); await p.waitForTimeout(120);
+      const bad = await p.evaluate(() => [document.documentElement, ...document.querySelectorAll('main .tscroll')].filter(e => e.scrollWidth > e.clientWidth + 1).map(e => (e.className || 'html') + ' ' + e.scrollWidth + '/' + e.clientWidth));
+      if (bad.length) hscroll.push([w, c, v, bad]);
+    }
+  }
+  await p.setViewportSize(vpPlan);
+  await p.evaluate(u => { const M = window.__mp; M.UI.cls = u[0]; M.UI.type = u[1]; M.UI.planView = u[2]; location.hash = 'heute'; }, uiPlan); await p.waitForTimeout(150);
+  ok(!hscroll.length, 'Jahresplan scrollt nicht quer (1280 bis 390 px) ' + JSON.stringify(hscroll));
   // Sequenz: Leistungsnachweise ohne Strangauswahl (GYM 6 mit zwei Strängen und weitere Klassen)
   const uiKeep = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type]);
   const strandUi = [];

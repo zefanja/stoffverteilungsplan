@@ -221,7 +221,8 @@ span.m.mj mjx-container{display:inline}
 table{border-collapse:collapse;width:100%}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--ink);font-weight:600;white-space:nowrap}
 td{border-bottom:1px solid var(--line);padding:6px 8px;vertical-align:middle}
-table.plan{min-width:760px;background:var(--sheet)}
+table.plan{background:var(--sheet)}
+table.plan th{white-space:normal}
 table.plan td{vertical-align:top}
 table.plan .hrs{display:inline-block;margin-left:6px;font-size:12px;color:var(--muted)}
 table.plan tr.hol td{background:var(--soft);color:var(--muted)}
@@ -237,6 +238,7 @@ table.plan .pu:hover,table.plan .pln:hover{background:var(--soft)}
 .pu b,.pln b{font-family:var(--f-mono);font-weight:500;font-size:12px;color:var(--c);background:var(--bg);padding:1px 6px;border-radius:4px;flex-shrink:0}
 .pu .put,.pln .put{font-weight:600;min-width:0}
 table.plan .pu .hrs,table.plan .pln .hrs{margin-left:auto;white-space:nowrap}
+table.plan .pu,table.plan .pln{flex-wrap:wrap;row-gap:2px}
 table.plan .pu.sel{border-color:var(--c);background:var(--bg)}
 table.plan .pln{border:1px dashed var(--line)}
 table.plan .pln.sel{border:2px solid var(--c);background:var(--sheet)}
@@ -283,11 +285,36 @@ table.plan tr.pedit td{background:var(--soft);padding:10px}
   table.plan .fil,table.plan .wend{display:none}
   table.plan td.note{font-size:11px;width:64px;max-width:64px;overflow-wrap:anywhere}
   table.plan .padd{font-size:11px}
-  table.plan .pu .put,table.plan .pln .put{flex:1 1 140px}
+  table.plan .pu .put,table.plan .pln .put{flex:1 1 auto;overflow-wrap:anywhere;hyphens:auto}
+  table.plan td.note{hyphens:auto}
+  table.plan tr>:first-child:not([colspan]){display:none}
+  table.plan .pln .when{white-space:normal}
   table.plan th,table.plan td{padding:6px 4px}
   table.plan .pu,table.plan .pln{flex-wrap:wrap;gap:2px 6px;font-size:13.5px}
 }
-table.seq{min-width:820px;background:var(--sheet)}
+table.seq{background:var(--sheet)}
+table.seq th{white-space:normal}
+table.seq td:nth-child(5){white-space:normal;min-width:120px}
+table.seq td select{max-width:150px}
+table.seq td:nth-child(6){white-space:normal}
+/* Schmale Fenster: Zeilen der Liste als Karten, damit nichts quer scrollt */
+@media (max-width:860px){
+  table.seq thead{display:none}
+  table.seq,table.seq tbody{display:block}
+  table.seq tr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 6px;border-bottom:1px solid var(--line);border-left:4px solid var(--c)}
+  table.seq td{border:0;padding:0}
+  table.seq tr td:nth-child(2){border-left:0}
+  table.seq td.ttl{flex:1 1 180px;min-width:0}
+  table.seq td:nth-child(6){flex:1 1 auto}
+}
+@media (max-width:640px){
+  table.lnlist,table.lnlist tbody{display:block}
+  table.lnlist tr{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:6px 0;border-bottom:1px solid var(--line)}
+  table.lnlist td{border:0;padding:0}
+  table.lnlist td:nth-child(3){flex:1 1 100%;order:3}
+  table.lnlist td.nowrap{white-space:normal;max-width:100%}
+  table.lnlist .lndate{flex-wrap:wrap}
+}
 table.seq tr td:nth-child(2){border-left:4px solid var(--c)}
 table.seq .ttl a{color:var(--ink);text-decoration:none} table.seq .ttl a:hover{text-decoration:underline}
 .soll{margin-left:6px}
