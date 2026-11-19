@@ -480,7 +480,7 @@ function ttFromLegacy(rows, start) {
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
 const S = { settings: defaultSettings(), cls: {}, eng: {} };
-const UI = { date: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "weeks", planSel: null, planLn: null, planAdd: false, planMore: false };
+const UI = { date: todayIso(), dateAuto: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "weeks", planSel: null, planLn: null, planAdd: false, planMore: false };
 try {
   const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v;
   const t = localStorage.getItem("mp-type"); UI.type = t && TYPES[t] ? t : D.classes[UI.cls].type;
@@ -1496,16 +1496,35 @@ function currentUnit(k, date) {
 }
 
 /* ---------------- views: Heute ---------------- */
-function viewToday() {
-  const d = UI.date, isToday = d === todayIso();
+/* Gezeigte Klassen der Heute-Seite (gewählte Parallelklasse oder alle meine Klassen). */
+function todayGroups() {
   const mine = myGroups();
-  const show = UI.todayAll ? (mine.length ? mine : CLASSES.map(k => gkey(k, "a"))) : curG() ? [curG()] : [];
+  return UI.todayAll ? (mine.length ? mine : CLASSES.map(k => gkey(k, "a"))) : curG() ? [curG()] : [];
+}
+/* Tag mit Mathestunde der Klassen gs: dir 0 = ab d (einschließlich), 1 = nach d, -1 = vor d. */
+function mathDay(gs, d, dir) {
+  let best = null;
+  gs.forEach(g => { const sl = schedule(g).slots;
+    if (dir < 0) { for (let i = sl.length - 1; i >= 0; i--) if (sl[i].date < d) { if (!best || sl[i].date > best) best = sl[i].date; break; } }
+    else { const x = sl.find(s => dir ? s.date > d : s.date >= d); if (x && (!best || x.date < best)) best = x.date; } });
+  return best;
+}
+/* „Heute“: heute, wenn die Klasse heute Mathe hat, sonst der Tag der nächsten Mathestunde. */
+const todayTarget = gs => mathDay(gs, todayIso(), 0) || todayIso();
+function viewToday() {
+  const show = todayGroups();
+  if (UI.dateAuto) {
+    if (UI.date === todayIso() || UI.date === UI.dateAuto) { UI.date = todayTarget(show); UI.dateAuto = UI.date; }
+    else UI.dateAuto = null;
+  }
+  const d = UI.date, isToday = d === todayIso(), target = todayTarget(show);
+  const prev = mathDay(show, d, -1), next = mathDay(show, d, 1);
   return `<section class="today">
     <div class="datebar">
-      <button type="button" class="iconbtn" data-act="day" data-n="-1" aria-label="Vorheriger Tag">‹</button>
-      <div class="dt"><div class="dname">${esc(fmtLong(d))}</div><div class="dsub mono">KW ${isoWeek(d)}${isToday ? " · heute" : ""}</div></div>
-      <button type="button" class="iconbtn" data-act="day" data-n="1" aria-label="Nächster Tag">›</button>
-      ${isToday ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
+      <button type="button" class="iconbtn" data-act="day" data-v="${prev || ""}" ${prev ? "" : "disabled"} aria-label="Vorherige Mathestunde" title="Vorherige Mathestunde">‹</button>
+      <div class="dt"><div class="dname">${esc(fmtLong(d))}</div><div class="dsub mono">KW ${isoWeek(d)}${isToday ? " · heute" : d === target ? " · nächste Mathestunde" : ""}</div></div>
+      <button type="button" class="iconbtn" data-act="day" data-v="${next || ""}" ${next ? "" : "disabled"} aria-label="Nächste Mathestunde" title="Nächste Mathestunde">›</button>
+      ${d === target ? "" : '<button type="button" class="btn ghost" data-act="today">Heute</button>'}
       <button type="button" class="dpbtn" data-act="dp" data-t="today" data-v="${d}" aria-haspopup="dialog" aria-label="Kalender: Tag wählen"><span class="dpico" aria-hidden="true">▦</span>Kalender</button>
       <div class="seg small">${[["one", curG() ? fullLabel(curG()) : "Gewählte Klasse"], ["all", "Alle meine Klassen"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "all") === UI.todayAll}" data-act="todaycls" data-v="${v}">${esc(l)}</button>`).join("")}</div>
     </div>
@@ -1933,7 +1952,7 @@ function renderDp() {
 }
 function dpPick(d) {
   const dp = UI.dp; if (!dp) return; UI.dp = null; renderDp();
-  if (dp.t === "today") { UI.date = d; render(); }
+  if (dp.t === "today") { UI.date = d; UI.dateAuto = null; render(); }
   else if (dp.t === "ln") setLnDate(curG(), dp.row, d);
   else if (dp.t === "chk") setCheckDate(curG(), dp.id, d);
   else { const inp = document.getElementById("lndate"), b = document.querySelector('.dpbtn[data-t="form"]'); if (inp) inp.value = d; if (b) { b.dataset.v = d; b.innerHTML = `${esc(fmtDp(d))}<span class="dpico" aria-hidden="true">▦</span>`; } }
@@ -2622,8 +2641,8 @@ document.addEventListener("click", ev => {
     case "yearadd": { const id = document.getElementById("newyear").value; createYear(id, document.getElementById("ny-seq").checked, document.getElementById("ny-tt").checked); break; }
     case "ydel": { const id = b.dataset.v; if (id === UI.year) break; S.settings.years = S.settings.years.filter(y => y.id !== id); UI.confirm = null; commit(null, { settings: true }); toast(`Schuljahr ${yearLabel(id)} aus der Liste entfernt.`); break; }
     case "ferien": importFerien(); break;
-    case "day": UI.date = addDays(UI.date, +b.dataset.n); UI.reveal = {}; render(); break;
-    case "today": UI.date = todayIso(); UI.reveal = {}; render(); break;
+    case "day": if (b.dataset.v) { UI.date = b.dataset.v; UI.dateAuto = null; UI.reveal = {}; render(); } break;
+    case "today": UI.date = UI.dateAuto = todayIso(); UI.reveal = {}; render(); break;
     case "reveal": UI.reveal[b.dataset.id] = true; render(); break;
     case "rate": rate(b.dataset.k, b.dataset.id, +b.dataset.g); break;
     case "done": toggleDone(b.dataset.k, b.dataset.key); break;
@@ -2773,7 +2792,7 @@ document.addEventListener("change", ev => {
   if (t.id === "newyear") { UI.newYear = t.value; return; }
   if (t.id === "lnkind" || t.id === "plnkind") { const p = t.id.slice(0, -4), K = LN_KINDS[t.value], v = id => document.getElementById(p + id); if (K) { v("dur").innerHTML = durOptions(t.value, K.dur); v("wdh").checked = K.wdh; v("rueck").checked = K.rueck; lnFormSync(p); } return; }
   if (t.id === "lndur" || t.id === "plndur") { lnFormSync(t.id.slice(0, -3)); return; }
-  if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; render(); } return; }
+  if (!a) { if (t.id === "pickdate" && t.value) { UI.date = t.value; UI.dateAuto = null; render(); } return; }
   const k = t.dataset.k || UI.cls, i = +t.dataset.i, f = t.dataset.f;
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
@@ -2879,7 +2898,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
