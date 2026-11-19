@@ -594,6 +594,19 @@ function serve(dir) {
   const sd9b = await p.evaluate(() => [window.__mp.S.cls.gym9.mode, JSON.stringify(window.__mp.S.cls.gym9.groups[0].tt).includes('"B"')]);
   ok(sd9.lbA && sd9.lbB && sd9.ttA && sd9.ttB && sd9.mode === 'Stränge' && sd9.cap.every(x => x > 0) && sd9.planned.every(x => x > 0) && sd9b[0] === 'nacheinander' && !sd9b[1],
     'GYM 9 in Strängen: Lernbereiche und Wochenstunden auf A und B verteilt, beide Stränge haben Stunden, rückgängig ' + JSON.stringify([sd9, sd9b]));
+  // Einheiten auf FIL-Stunden (Kl. 7–9): eigene Spur, auch im Modus „nacheinander“
+  const fil0 = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8, r = C.seq.find(x => x.code === 'Z4'), sc0 = M.schedule('kl8.a');
+    window.__filKeep = JSON.stringify(C.seq); const pA = sc0.planned.A; r.strand = 'SOL'; M.touch();
+    const sc = M.schedule('kl8.a'), row = sc.rows.find(x => x.id === r.id);
+    return { id: r.id, track: row.track, allSol: row.slots.length > 0 && row.slots.every(s => s.track === 'SOL'), pSol: sc.planned.SOL, hours: row.hours, pA: [pA, sc.planned.A], first: row.slots[0] && row.slots[0].date }; });
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'plan'; }); await p.waitForTimeout(200);
+  const filUi = await p.evaluate(id => ({ inFil: !!document.querySelector(`td.fil .pu[data-row="${id}"]`), cap: [...document.querySelectorAll('.cap')].some(c => /mit Einheiten/.test(c.textContent)) }), fil0.id);
+  await p.evaluate(d => { window.__mp.UI.date = d; location.hash = 'heute'; }, fil0.first); await p.waitForTimeout(200);
+  const filToday = await p.evaluate(() => [...document.querySelectorAll('.tcard .slot')].some(e => /Z4/.test(e.textContent) && /FIL-Stunde/.test(e.textContent)));
+  await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.seq = JSON.parse(window.__filKeep); M.UI.date = '2026-11-02'; M.touch(); location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
+  const filOpt = await p.evaluate(() => [...document.querySelectorAll('table.seq select[data-act="strand"]')].some(s => !s.disabled && [...s.options].some(o => o.value === 'SOL')));
+  ok(fil0.track === 'SOL' && fil0.allSol && fil0.pSol === fil0.hours && fil0.pA[1] === fil0.pA[0] - fil0.hours && filUi.inFil && filUi.cap && filToday && filOpt,
+    'Einheit auf FIL-Stunden: liegt nur in FIL-Stunden, im Jahresplan in der FIL-Spalte, auf der Heute-Seite als FIL-Stunde, FIL in der Strangauswahl ' + JSON.stringify([fil0, filUi, filToday, filOpt]));
   // Test / Leistungskontrolle: 20, 30 oder 45 min; kurze Tests laufen in einer Stunde mit (keine eigene Sequenzzeile)
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   await p.selectOption('#lnkind', 'test');
