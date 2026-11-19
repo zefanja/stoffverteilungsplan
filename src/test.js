@@ -580,6 +580,20 @@ function serve(dir) {
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
   const pjKa3 = await p.evaluate(c => window.__mp.lnDates('kl8.a').find(x => x.code === c).date, pjKa.code);
   ok(pjKa2[0] === pjKa2[1] && pjKa3 === pjKa.date, 'Klassenarbeit per Maus in eine andere Woche gezogen, rückgängig ' + JSON.stringify([pjKa.date, pjKa2, pjKa3]));
+  // Wechsel zu „in Strängen“: Dialog ordnet Lernbereiche und Wochenstunden zu (Klassen aus dem Lehrplan haben alles in Strang A)
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'plan'; }); await p.waitForTimeout(150);
+  await p.click('[data-act="mode"][data-v="Stränge"]'); await p.waitForTimeout(150);
+  const sdUi = await p.evaluate(() => ({ dlg: !!document.querySelector('#overlay .sdlg'), mode: window.__mp.S.cls.kl8.mode, lbs: document.querySelectorAll('#overlay [data-act="sdlb"]').length }));
+  await p.click('#overlay [data-act="sdclose"]'); await p.waitForTimeout(100);
+  const sdClosed = await p.evaluate(() => ({ dlg: !!document.querySelector('#overlay .sdlg'), mode: window.__mp.S.cls.kl8.mode }));
+  ok(sdUi.dlg && sdUi.mode === 'nacheinander' && sdUi.lbs > 1 && !sdClosed.dlg && sdClosed.mode === 'nacheinander', 'In Strängen: erst Dialog zum Zuordnen, Abbrechen ändert nichts ' + JSON.stringify([sdUi, sdClosed]));
+  const sd9 = await p.evaluate(() => { const M = window.__mp; M.strandDlgOpen('gym9'); const d = M.UI.strandDlg, lb = Object.values(d.lb), tt = Object.values(d.tt);
+    M.strandDlgApply(); const sc = M.schedule('gym9.a');
+    return { lbA: lb.includes('A'), lbB: lb.includes('B'), ttA: tt.includes('A'), ttB: tt.includes('B'), mode: M.S.cls.gym9.mode, cap: [sc.cap.A, sc.cap.B], planned: [sc.planned.A, sc.planned.B] }; });
+  await p.waitForTimeout(100); await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const sd9b = await p.evaluate(() => [window.__mp.S.cls.gym9.mode, JSON.stringify(window.__mp.S.cls.gym9.groups[0].tt).includes('"B"')]);
+  ok(sd9.lbA && sd9.lbB && sd9.ttA && sd9.ttB && sd9.mode === 'Stränge' && sd9.cap.every(x => x > 0) && sd9.planned.every(x => x > 0) && sd9b[0] === 'nacheinander' && !sd9b[1],
+    'GYM 9 in Strängen: Lernbereiche und Wochenstunden auf A und B verteilt, beide Stränge haben Stunden, rückgängig ' + JSON.stringify([sd9, sd9b]));
   // Test / Leistungskontrolle: 20, 30 oder 45 min; kurze Tests laufen in einer Stunde mit (keine eigene Sequenzzeile)
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   await p.selectOption('#lnkind', 'test');
