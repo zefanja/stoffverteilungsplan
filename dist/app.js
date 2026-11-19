@@ -2284,13 +2284,24 @@ function setClassMode(k, mode, quiet) {
 const lbShort = (k, lb) => lb.startsWith("LB") ? "LB " + lb.slice(2) : lb === "WB" ? "WB" : (D.classes[ck(k)].lbnames[lb] || lb);
 /* Stunden je Strang bei einer Zuordnung der Lernbereiche; Puffer und Jahresabschluss folgen der Einheit davor. */
 function strandHrs(k, lbMap) {
-  const h = { A: 0, B: 0 }; let last = "A";
+  const h = { A: 0, B: 0, SOL: 0 }, fil = !!D.classes[k].sol; let last = "A";
   S.cls[k].seq.forEach(r => {
-    if (r.strand === "SOL" && D.classes[k].sol) return;
-    if (isUnitRow(k, r)) { last = lbMap[unitOf(k, r.code).lb] === "B" ? "B" : "A"; h[last] += +r.hours || 0; }
-    else if (!isLnRow(k, r.code)) h[last] += +r.hours || 0;
+    if (isLnRow(k, r.code)) return;
+    const t = isUnitRow(k, r) ? lbMap[unitOf(k, r.code).lb] : null;
+    if (fil && (t === "SOL" || r.strand === "SOL")) { h.SOL += +r.hours || 0; return; }
+    if (isUnitRow(k, r)) last = t === "B" ? "B" : "A";
+    h[last] += +r.hours || 0;
   });
   return h;
+}
+/* Lernbereiche auf FIL brauchen in jedem Stundenplan-Zeitraum jeder Parallelklasse mindestens eine FIL-Stunde. */
+function strandDlgFilMissing(d) {
+  if (!Object.values(d.lb).includes("SOL")) return [];
+  const k = d.k, C = S.cls[k], multi = C.groups.length > 1, out = [];
+  C.groups.forEach(G => (G.tt || []).forEach((v, vi) => {
+    if (!v.lessons.some((l, i) => d.tt[`${G.id}|${vi}|${i}`] === "SOL")) out.push(`${multi ? groupName(gkey(k, G.id)) + ", " : ""}${(G.tt || []).length > 1 ? "Stundenplan ab " + fmt(v.frm) : "Stundenplan"}`);
+  }));
+  return out;
 }
 const sdLessons = v => v.lessons.map((l, i) => ({ l, i }));
 /* Vorschlag für die Wochenstunden: der Reihe nach (Tag, Stunde) jeweils in den Strang, der dem Stundenanteil am nächsten kommt */
@@ -2310,7 +2321,10 @@ function strandSuggestTT() {
 }
 function strandDlgOpen(k) {
   const C = S.cls[k], anyB = C.seq.some(r => isUnitRow(k, r) && r.strand === "B"), lb = {}, tt = {}, auto = {};
-  obLbs(k).forEach(({ lb: x }, i) => { lb[x] = anyB ? obLbStrand(k, x) : (i % 2 ? "B" : "A"); });
+  obLbs(k).forEach(({ lb: x }, i) => {
+    const rs = C.seq.filter(r => isUnitRow(k, r) && unitOf(k, r.code).lb === x);
+    lb[x] = D.classes[k].sol && rs.length && rs.every(r => r.strand === "SOL") ? "SOL" : anyB ? obLbStrand(k, x) : (i % 2 ? "B" : "A");
+  });
   C.groups.forEach(G => (G.tt || []).forEach((v, vi) => {
     const vk = G.id + "|" + vi, ls = sdLessons(v), ab = ls.filter(x => x.l.track !== "SOL");
     ls.forEach(x => { tt[`${vk}|${x.i}`] = x.l.track === "SOL" ? "SOL" : x.l.track === "B" ? "B" : "A"; });
@@ -2321,9 +2335,11 @@ function strandDlgOpen(k) {
 function strandDlgClose() { UI.strandDlg = null; renderOverlay(); }
 function strandDlgApply() {
   const d = UI.strandDlg; if (!d) return;
+  if (strandDlgFilMissing(d).length) { toast("Lernbereiche auf FIL brauchen FIL-Stunden im Stundenplan."); return; }
   const k = d.k, C = S.cls[k], snap = snapshotFor(k);
   C.mode = "Stränge"; C.obMode = 1;
-  C.seq.forEach(r => { if (isUnitRow(k, r) && r.strand !== "SOL") r.strand = d.lb[unitOf(k, r.code).lb] === "B" ? "B" : "A"; });
+  // Lernbereich auf FIL: alle Einheiten dorthin; sonst A/B, einzeln auf FIL gelegte Einheiten bleiben dort
+  C.seq.forEach(r => { if (!isUnitRow(k, r)) return; const t = d.lb[unitOf(k, r.code).lb]; if (t === "SOL" && D.classes[k].sol) r.strand = "SOL"; else if (r.strand !== "SOL") r.strand = t === "B" ? "B" : "A"; });
   obFixBuffers(k);
   C.groups.forEach(G => (G.tt || []).forEach((v, vi) => v.lessons.forEach((l, i) => { const t = d.tt[`${G.id}|${vi}|${i}`]; if (t) l.track = t; })));
   UI.strandDlg = null; renderOverlay(); undoStack = snap; commit(k);
@@ -2333,9 +2349,11 @@ function strandDlgHtml() {
   const d = UI.strandDlg, k = d.k, C = S.cls[k], c = D.classes[k], h = strandHrs(k, d.lb), multi = C.groups.length > 1;
   const lbH = {}; C.seq.forEach(r => { if (isUnitRow(k, r)) { const lb = unitOf(k, r.code).lb; lbH[lb] = (lbH[lb] || 0) + (+r.hours || 0); } });
   const sel = (attrs, v, label, fil) => `<select ${attrs} aria-label="${esc(label)}">${["A", "B"].concat(fil ? ["SOL"] : []).map(t => `<option value="${t}" ${v === t ? "selected" : ""}>${t === "SOL" ? "FIL" : t}</option>`).join("")}</select>`;
-  const lbRows = obLbs(k).map(({ lb, name }) => `<tr style="${sty(lb)}"><td><span class="chip"><b>${esc(lbShort(k, lb))}</b></span></td><td>${esc(name)}</td><td class="mono small muted nowrap">${lbH[lb] || 0} Std.</td><td>${sel(`data-act="sdlb" data-lb="${esc(lb)}"`, d.lb[lb], "Strang für " + name)}</td></tr>`).join("");
+  const lbRows = obLbs(k).map(({ lb, name }) => `<tr style="${sty(lb)}"><td><span class="chip"><b>${esc(lbShort(k, lb))}</b></span></td><td>${esc(name)}</td><td class="mono small muted nowrap">${lbH[lb] || 0} Std.</td><td>${sel(`data-act="sdlb" data-lb="${esc(lb)}"`, d.lb[lb], "Strang für " + name, c.sol)}</td></tr>`).join("");
   const warn = [];
   if (!h.A || !h.B) warn.push(`Strang ${h.A ? "B" : "A"} bekommt noch keinen Lernbereich.`);
+  const filMiss = strandDlgFilMissing(d);
+  if (filMiss.length) warn.push(`Ein Lernbereich liegt auf FIL, es gibt aber keine FIL-Stunde (${filMiss.join(", ")}). Wähle bei den Wochenstunden mindestens eine Stunde als FIL.`);
   const tts = C.groups.map(G => {
     const vs = G.tt || [];
     return vs.map((v, vi) => {
@@ -2348,14 +2366,14 @@ function strandDlgHtml() {
     }).join("");
   }).join("");
   return `<div class="ov-card sdlg" role="dialog" aria-modal="true" aria-label="In Strängen planen"><header><h2>${esc(c.label)}: in Strängen planen</h2><button type="button" class="iconbtn" data-act="sdclose" aria-label="Schließen">×</button></header>
-    <p class="small">Zwei Stränge laufen parallel, jeder mit eigenen Wochenstunden. Ordne die Lernbereiche und die Stunden deines Stundenplans Strang A oder B zu. Puffer folgen dem Lernbereich davor, Leistungsnachweise gehören zu keinem Strang.</p>
+    <p class="small">Zwei Stränge laufen parallel, jeder mit eigenen Wochenstunden. Ordne die Lernbereiche und die Stunden deines Stundenplans Strang A oder B zu${c.sol ? " – oder den FIL-Stunden" : ""}. Puffer folgen dem Lernbereich davor, Leistungsnachweise gehören zu keinem Strang.</p>
     <h3>Lernbereiche</h3>
     <div class="tscroll"><table class="form sdlb"><tbody>${lbRows}</tbody></table></div>
-    <p class="small muted">Geplant: Strang A ${h.A} Std. · Strang B ${h.B} Std.</p>
+    <p class="small muted">Geplant: Strang A ${h.A} Std. · Strang B ${h.B} Std.${c.sol && h.SOL ? ` · FIL ${h.SOL} Std.` : ""}</p>
     <h3>Wochenstunden</h3>
     ${tts}
     ${warn.length ? `<div class="warnbox small">${warn.map(esc).join("<br>")}</div>` : ""}
-    <div class="acts"><button type="button" class="btn" data-act="sdapply">In Strängen planen</button><button type="button" class="btn ghost" data-act="sdclose">Abbrechen</button></div>
+    <div class="acts"><button type="button" class="btn" data-act="sdapply" ${filMiss.length ? "disabled" : ""}>In Strängen planen</button><button type="button" class="btn ghost" data-act="sdclose">Abbrechen</button></div>
   </div>`;
 }
 function obPlanCard(k) {
