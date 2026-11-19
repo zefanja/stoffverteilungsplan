@@ -465,10 +465,10 @@ function serve(dir) {
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
   await p.evaluate(() => window.scrollTo(0, 1500)); await p.waitForTimeout(50);
   const sy0 = await p.evaluate(() => window.scrollY);
-  await p.click('#nav a[href="#sequenz"]'); await p.waitForTimeout(200);
+  await p.click('#nav a[href="#lernuebersicht"]'); await p.waitForTimeout(200);
   const sy1 = await p.evaluate(() => window.scrollY);
   await p.evaluate(() => window.scrollTo(0, 800)); await p.waitForTimeout(50);
-  await p.click('#nav a[href="#sequenz"]'); await p.waitForTimeout(150);
+  await p.click('#nav a[href="#lernuebersicht"]'); await p.waitForTimeout(150);
   const sy2 = await p.evaluate(() => window.scrollY);
   ok(sy0 > 0 && sy1 === 0 && sy2 === 0, 'Navigation: neue Seite beginnt oben, Klick auf die offene Seite scrollt nach oben ' + JSON.stringify([sy0, sy1, sy2]));
 
@@ -494,7 +494,7 @@ function serve(dir) {
   await p.click('.lnterm [data-act="confirm"]'); await p.waitForTimeout(100); await p.click('.lnterm [data-act="lnremove"]'); await p.waitForTimeout(200);
   const ln2 = await p.evaluate(() => { const C = window.__mp.S.cls.kl8; return { n: C.seq.length, ln: Object.keys(C.ln || {}).length, hash: location.hash }; });
   await p.evaluate(() => { window.__mp.S.cls.kl8.checks = []; window.__mp.touch(); });
-  ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#sequenz', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
+  ok(ln2.n === ln0.n && ln2.ln === 0 && ln2.hash === '#plan', 'Leistungsnachweis löschen entfernt Einheit und Sequenzzeile ' + JSON.stringify(ln2));
   // In der Übersicht löschen: Klassenarbeit der Vorlage verlässt die Sequenz, Kontrolle verschwindet; Rückgängig holt sie zurück
   await p.evaluate(() => { const M = window.__mp; M.S.cls.kl8.checks = [{ id: 'cdel', kind: 'kk', title: 'Weg', code: 'T2', n: 1 }]; M.touch(); location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   const del0 = await p.evaluate(() => { const M = window.__mp, x = M.lnDates('kl8.a').find(y => y.code === 'KA2'); return { n: M.S.cls.kl8.seq.length, row: x.row }; });
@@ -532,6 +532,54 @@ function serve(dir) {
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
   const unitsNoLn = await p.evaluate(() => ({ ln: [...document.querySelectorAll('.ucard .chip b')].some(b => /^KA\d|^LK\d/.test(b.textContent)), head: [...document.querySelectorAll('.lbh')].some(h => /Leistungsnachweis|Klassenarbeit/.test(h.textContent)) }));
   ok(!unitsNoLn.ln && !unitsNoLn.head, 'Einheitenübersicht ohne Leistungsnachweise ' + JSON.stringify(unitsNoLn));
+  // Jahresplan = Sequenz: alte Adresse #sequenz öffnet die Liste, Navigation ohne „Sequenz“
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
+  const pjAlias = await p.evaluate(() => ({ hash: location.hash, list: !!document.querySelector('table.seq'), nav: [...document.querySelectorAll('#nav a')].map(a => a.getAttribute('href')).join(), cur: (document.querySelector('#nav a[aria-current="page"]') || {}).textContent }));
+  ok(pjAlias.hash === '#plan' && pjAlias.list && !pjAlias.nav.includes('sequenz') && pjAlias.cur === 'Jahresplan', 'Alte Adresse #sequenz öffnet den Jahresplan als Liste, Navigation ohne Sequenz ' + JSON.stringify(pjAlias));
+  // Wochenansicht: Einheit anklicken öffnet die Bearbeiten-Leiste; +1 Std. mit Vorschau, Verschieben nur im Strang
+  await p.click('[data-act="planview"][data-v="weeks"]'); await p.waitForTimeout(150);
+  const pjT2 = await p.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8, r = C.seq.find(x => x.code === 'T2'); return { id: r.id, hours: r.hours, idx: C.seq.indexOf(r) }; });
+  await p.click(`.pu[data-row="${pjT2.id}"]`); await p.waitForTimeout(150);
+  const pjEd = await p.evaluate(() => { const e = document.querySelector('tr.pedit .pcard'); return e ? { txt: e.innerText, prev: !!e.querySelector('.pnote'), sel: document.querySelectorAll('.pu.sel').length } : null; });
+  await p.click('tr.pedit [data-act="hrs"][data-n="1"]'); await p.waitForTimeout(150);
+  const pjH = await p.evaluate(id => window.__mp.S.cls.kl8.seq.find(x => x.id === id).hours, pjT2.id);
+  await p.click('tr.pedit [data-act="hrs"][data-n="-1"]'); await p.waitForTimeout(150);
+  await p.click(`tr.pedit [data-act="pmv"][data-n="1"]`); await p.waitForTimeout(150);
+  const pjMv = await p.evaluate(id => { const C = window.__mp.S.cls.kl8; return C.seq.findIndex(x => x.id === id); }, pjT2.id);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const pjMv2 = await p.evaluate(id => window.__mp.S.cls.kl8.seq.findIndex(x => x.id === id), pjT2.id);
+  ok(pjEd && pjEd.txt.includes('T2') && pjEd.prev && pjEd.sel >= 1 && pjH === pjT2.hours + 1 && pjMv > pjT2.idx && pjMv2 === pjT2.idx,
+    'Wochenansicht: Bearbeiten-Leiste mit Vorschau, +1 Std., im Strang verschieben, rückgängig ' + JSON.stringify([pjEd && pjEd.txt.slice(0, 120), pjH, pjT2, pjMv, pjMv2]));
+  // Leistungsnachweis in einer Woche anlegen: Tag = erste Mathestunde der Woche vorausgewählt
+  const pjWk = '2026-12-07';
+  await p.click(`[data-act="plnform"][data-wk="${pjWk}"]`); await p.waitForTimeout(150);
+  const pjDay = await p.evaluate(wk => [(document.querySelector('input[name="plnday"]:checked') || {}).value, window.__mp.firstMathDay('kl8.a', wk)], pjWk);
+  await p.selectOption('#plnkind', 'test'); await p.selectOption('#plndur', '45'); await p.fill('#plntopic', 'Wochentest'); await p.click('[data-act="plnadd"]'); await p.waitForTimeout(250);
+  const pjLn = await p.evaluate(() => { const x = window.__mp.lnDates('kl8.a').find(y => /Wochentest/.test(y.title)); return x ? [x.date, x.pinned, x.code, !!document.querySelector(`.pln[data-drag="ln"][data-row="${x.row}"]`)] : null; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  ok(pjDay[0] && pjDay[0] === pjDay[1] && pjLn && pjLn[0] === pjDay[1] && pjLn[1] === pjDay[1] && pjLn[3] && !(await p.evaluate(() => Object.keys(window.__mp.S.cls.kl8.ln || {}).length)),
+    'Leistungsnachweis in KW anlegen: fester Termin am ersten Mathetag, als eigener Eintrag im Plan, rückgängig ' + JSON.stringify([pjDay, pjLn]));
+  // Leistungsnachweis und Kontrolle in eine andere Woche ziehen: Termin = erste Mathestunde dieser Woche; Kontrollen als eigene Zeile
+  const pjDrop = await p.evaluate(wk => { const M = window.__mp, C = M.S.cls.kl8, G = C.groups[0], keepPin = JSON.stringify(G.pin || {}), keepSeq = JSON.stringify(C.seq);
+    const ka = M.lnDates('kl8.a').find(x => x.code === 'KA1');
+    M.dropOnWeek('kl8.a', { t: 'ln', row: ka.row }, wk); const a = M.lnDates('kl8.a').find(x => x.code === 'KA1');
+    C.checks = [{ id: 'pjc', kind: 'kk', title: 'Ziehtest', code: 'T2', n: 1, dur: 20 }]; M.touch();
+    M.dropOnWeek('kl8.a', { t: 'chk', id: 'pjc' }, wk); const c = M.lnDates('kl8.a').find(x => x.id === 'pjc');
+    return { first: M.firstMathDay('kl8.a', wk), ka: a.date, kaPin: a.pinned, chk: c.date, chkPin: c.pinned, keepPin, keepSeq }; }, '2027-03-15');
+  await p.waitForTimeout(150);
+  const pjChkUi = await p.evaluate(() => !!document.querySelector('.pln.chk[data-chk="pjc"][draggable="true"]'));
+  await p.evaluate(d => { const M = window.__mp, C = M.S.cls.kl8; C.groups[0].pin = JSON.parse(d.keepPin); C.seq = JSON.parse(d.keepSeq); C.checks = []; M.touch(); M.UI.planSel = null; }, pjDrop);
+  ok(pjDrop.first && pjDrop.ka === pjDrop.first && pjDrop.kaPin === pjDrop.first && pjDrop.chk === pjDrop.first && pjDrop.chkPin === pjDrop.first && pjChkUi,
+    'Ziehen in eine Woche: Klassenarbeit und Kontrolle am ersten Mathetag, Kontrolle als eigene Zeile ' + JSON.stringify([pjDrop.first, pjDrop.ka, pjDrop.chk, pjChkUi]));
+  // Ziehen per Maus (HTML-Drag-and-drop) auf eine Woche
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'plan'; }); await p.waitForTimeout(200);
+  const pjKa = await p.evaluate(() => window.__mp.lnDates('kl8.a').find(x => !x.inLesson && x.date && x.date > '2027-01-01'));
+  const pjTarget = await p.evaluate(d => { const M = window.__mp, d0 = new Date(Date.parse(d)); let m = new Date(Date.parse(d) - ((d0.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10); for (let i = 0; i < 12; i++) { m = new Date(Date.parse(m) + 7 * 864e5).toISOString().slice(0, 10); if (i >= 3 && M.firstMathDay('kl8.a', m)) return m; } return null; }, pjKa.date);
+  await p.dragAndDrop(`.pln[data-drag="ln"][data-row="${pjKa.row}"]`, `tr[data-wk="${pjTarget}"]`, { targetPosition: { x: 20, y: 10 } }); await p.waitForTimeout(250);
+  const pjKa2 = await p.evaluate(([wk, c]) => [window.__mp.lnDates('kl8.a').find(x => x.code === c).date, window.__mp.firstMathDay('kl8.a', wk)], [pjTarget, pjKa.code]);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const pjKa3 = await p.evaluate(c => window.__mp.lnDates('kl8.a').find(x => x.code === c).date, pjKa.code);
+  ok(pjKa2[0] === pjKa2[1] && pjKa3 === pjKa.date, 'Klassenarbeit per Maus in eine andere Woche gezogen, rückgängig ' + JSON.stringify([pjKa.date, pjKa2, pjKa3]));
   // Test / Leistungskontrolle: 20, 30 oder 45 min; kurze Tests laufen in einer Stunde mit (keine eigene Sequenzzeile)
   await p.evaluate(() => { location.hash = 'heute'; location.hash = 'sequenz'; }); await p.waitForTimeout(150);
   await p.selectOption('#lnkind', 'test');
@@ -686,7 +734,7 @@ function serve(dir) {
   const ein = await p.innerText('main');
   ok(ein.includes('Klasse 7 HS') && ein.includes('Anteile und Prozente') && ein.includes('Ziele der Klassenstufe'), 'Einheiten OS 7 HS aus dem Lehrplan mit Zielen');
   await p.screenshot({ path: path.join(OUT, 's_lehrplan_os7hs.png'), fullPage: false });
-  await p.evaluate(() => location.hash = 'sequenz'); await p.waitForTimeout(200);
+  await p.evaluate(() => { window.__mp.UI.planMore = true; location.hash = 'sequenz'; }); await p.waitForTimeout(200);
   ok((await p.innerText('main')).includes('Zeitrichtwert'), 'Sequenz OS 7 HS mit Zeitrichtwerten');
   await p.evaluate(() => location.hash = 'einstellungen'); await p.waitForTimeout(150);
   // Doppelstunde: ein Eintrag mit Dauer 2 belegt zwei aufeinanderfolgende Stunden

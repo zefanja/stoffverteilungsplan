@@ -8,6 +8,8 @@ Ausführliche Funktionsbeschreibung: `README.md`.
 
 - **Sprache**: UI-Texte, Code-Kommentare, README und Antworten auf Deutsch mit echten Umlauten und „deutschen“
   Anführungszeichen. Commit-Nachrichten dürfen ASCII-Umschreibungen nutzen (ae/oe/ue).
+- **Dokumentation**: `README.md` und `CLAUDE.md` nur ändern, wenn die Lehrkraft es ausdrücklich wünscht – nicht von selbst
+  nach jeder Änderung nachziehen.
 - **Branch**: vor jeder neuen Aufgabe `git fetch origin main && git checkout -B <session-branch> origin/main`. Auf `main`
   arbeiten auch andere Sessions (z. B. #17 Fachschaftsvorlage), daher nie auf einem alten Stand weiterbauen.
 - **Abschluss**: committen, pushen, dann fragen, ob ein PR erstellt und gemergt werden soll. Die Lehrkraft antwortet fast
@@ -60,10 +62,21 @@ MATHJAX_JS=<scratchpad>/mj/package/es5/tex-svg.js NODE_PATH=/opt/node22/lib/node
   weil viele spätere Prüfungen mit ihnen rechnen.
 - `renderOverlay()` (Assistent, Quiz) ersetzt das Overlay per `innerHTML`. Der Assistent merkt sich dabei die
   Scrollposition von `#overlay`, `.ov-card` und `.obbody` im selben Schritt (sonst springt er auf dem Handy nach oben).
-- Routen: `#heute`, `#plan`, `#sequenz`, `#einheiten`, `#lernuebersicht`, `#einstellungen`, `#u-<klasse>-<index>`
+- Routen: `#heute`, `#plan` (Jahresplan mit Ansicht `UI.planView` = `weeks`/`list`; `#sequenz` leitet auf die Liste um), `#einheiten`, `#lernuebersicht`, `#einstellungen`, `#u-<klasse>-<index>`
   (Index in `unitOrderOf(k)`; eigene Leistungsnachweise hängen hinten an, damit Indizes der Vorlage stabil bleiben).
 - Test-Hilfen: `window.__mp` stellt interne Funktionen bereit (`schedule`, `lnDates`, `addLn`, `setLnDate`, `kaDates`,
   `applyDoc`, `touch` …). Neue Funktionen, die Tests brauchen, dort ergänzen.
+
+### Jahresplan (`viewPlan`)
+
+- Plan und frühere Sequenz-Seite sind eine Seite. `planWeeks(g)` (Wochen) und `planList(g)` (Liste mit `table.seq`,
+  `addRowCard`, `lnCard`); seltene Funktionen in `planMore()` (`<details class="pmore">`, offen über `UI.planMore` – Tests,
+  die dort Text lesen, setzen `UI.planMore = true`).
+- Auswahl `UI.planSel = { row | chk, wk }` → `planEditor()` als `tr.pedit` unter der Woche `wk`; Formular „+ Leistungsnachweis“
+  über `UI.planLn = <Montag>` (`planLnForm`, Felder `#plnkind`, `#plndur`, `input[name=plnday]`, Aktion `plnadd`).
+- Verschieben im Strang: `moveInStrand(g, rowId, dir)` (überspringt Leistungsnachweise). Vorschau +1 Std.: `hrsPreview()` rechnet
+  den Plan einmal mit geänderter Stunde (Zeile ändern, `touch()`, danach zurück).
+- Ziehen: Elemente mit `data-drag="ln|chk"` auf `tr[data-wk]` → `dropOnWeek(g, {t,row|id}, montag)`, Termin = `firstMathDay(g, m)`.
 
 ### Planung (`schedule(g)`, gecacht über `ver`)
 

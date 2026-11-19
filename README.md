@@ -16,7 +16,7 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
 ### Klassen und Schuljahre
 
 - **Schulart, Klassenstufe und Schuljahr** wählt man oben in der Leiste. Bei HS/RS bzw. GK/LK erscheint ein Umschalter.
-  Jahresplan, Sequenz, Einheiten, Lernübersicht und Heute folgen dieser Auswahl; „Alle meine Klassen“ zeigt auf der
+  Jahresplan, Einheiten, Lernübersicht und Heute folgen dieser Auswahl; „Alle meine Klassen“ zeigt auf der
   Heute-Seite alle eigenen Klassen.
 - **Meine Klassen** (Einstellungen, je Schuljahr): welche Klassen man unterrichtet, mit einer oder zwei Parallelklassen und
   deren Namen. Nur diese sind oben wählbar. Solange nichts festgelegt ist, gelten GYM 6 und 8 (`defaultMine`).
@@ -45,14 +45,22 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
 
 ### Planung
 
-- **Sequenz**: Reihenfolge, Stunden und Strang der Einheiten, Puffer; Modus „in Strängen“ oder „nacheinander“; Reserve je
-  Strang und Stunden je Lernbereich gegen den Zeitrichtwert. „Zeile hinzufügen“ bietet Puffer, Jahresabschluss und noch
-  nicht eingeplante Einheiten.
+- **Jahresplan** (eine Seite für Plan und Sequenz; die alte Adresse `#sequenz` öffnet die Liste):
+  - **Wochen**: Wochenübersicht je Strang mit Ferien, Stundenplanwechseln und FIL-Stunden (mit Formatvorschlag: vor und in
+    der Woche einer Klassenarbeit Format 4, danach Format 5, sonst 1–3 im Wechsel). Ein Klick auf eine Einheit markiert alle
+    ihre Wochen und öffnet darunter die Bearbeiten-Leiste: Stunden −/+ (mit Vorschau, was +1 Std. bewirkt), Reihenfolge
+    „↑ vor …“/„↓ nach …“ nur innerhalb des Strangs, Strang, „+ Puffer danach“, „Aus dem Plan nehmen“, „Einheit öffnen“.
+    Leistungsnachweise und Kontrollen stehen als eigene Zeilen in ihrer Woche: anklicken für Termin, Dauer, Löschen; am Griff
+    ⋮⋮ in eine andere Woche ziehen legt den Termin auf deren erste Mathestunde. „+ Leistungsnachweis“ (oben oder beim
+    Darüberfahren in der Hinweis-Spalte einer Woche) öffnet ein Formular mit Art, Thema, Dauer und dem Tag der Woche
+    (vorausgewählt: erster Mathetag). Auf dem Handy erscheint die Leiste als Blatt am unteren Rand.
+  - **Liste**: dieselbe Planung als Reihenfolge (früher „Sequenz“): Stunden, Strang, ↑/↓, +P, ×, „Zeile hinzufügen“ (Puffer,
+    Jahresabschluss, noch nicht eingeplante Einheiten) und die Übersicht der Leistungsnachweise.
+  - Oben Ansicht (Wochen/Liste), Modus „in Strängen“ oder „nacheinander“ und die Reserve je Strang. Unter **„Mehr …“**:
+    Stand der Fachschaftsvorlage, Stunden je Lernbereich gegen den Zeitrichtwert, „Auf Vorlage zurücksetzen“.
 - **Planberechnung** (`schedule()` in `app.js`): Kalender × Stundenplan ergeben die Unterrichtsstunden je Strang; feste
   Termine von Leistungsnachweisen belegen zuerst ihre Stunden (strangunabhängig), alle anderen Stunden der Sequenz füllen
   die übrigen Plätze ihres Strangs der Reihe nach. Ausfälle und „Einheit braucht 1 Std. mehr“ kürzen auf Wunsch automatisch den nächsten Puffer.
-- **Jahresplan**: Wochenübersicht je Strang mit Ferien, Stundenplanwechseln und FIL-Stunden (mit Formatvorschlag: vor und in
-  der Woche einer Klassenarbeit Format 4, danach Format 5, sonst 1–3 im Wechsel).
 - **Einheiten**: Inhalte aus dem Lehrplan, Stunden mit Terminen, Atome. Zwei Stunden einer Einheit in einer Doppelstunde
   stehen als ein Block („Stunde 2–3 · Doppelstunde“); eine Doppelstunde, die zwei Einheiten teilt, ist als 1./2. Teil
   markiert. Atome lassen sich per Ziehen oder mit ↑/↓ zwischen den Stunden verschieben. Leistungsnachweise stehen nicht in
@@ -63,8 +71,8 @@ und `app.js`. Die drei ersten Dateien werden aus `src/` erzeugt, `app.js` und `i
 
 ### Leistungsnachweise
 
-Alles unter Sequenz → Leistungsnachweise: oben das Formular „Leistungsnachweis anlegen“, darunter die Liste aller Termine
-der gewählten (Parallel-)Klasse.
+Im Jahresplan: in der Wochenansicht direkt in der Woche (siehe oben), in der Listenansicht unter „Leistungsnachweise“ das
+Formular „Leistungsnachweis anlegen“ und die Liste aller Termine der gewählten (Parallel-)Klasse.
 
 - **Platzhalter der Vorlage**: Jede Klasse hat vier allgemeine Platzhalter KA1–KA4 („Klassenarbeit 1–4“, in 11/12
   „Klausur 1–4“), zwei je Halbjahr. Ihre Termine setzt die App aus den Ferien als feste Termine (`kaDates()`): KA 1 kurz vor
@@ -84,7 +92,7 @@ der gewählten (Parallel-)Klasse.
   blau, Doppelstunden mit „2“, Tage mit anderen Leistungsnachweisen mit Punkt. Jeder Tag im Schuljahr ist wählbar.
   Derselbe Kalender sitzt auf der Heute-Seite („Kalender“ in der Datumsleiste) und springt zum gewählten Tag; bei „Alle meine
   Klassen“ markiert er die Mathe-Tage und Leistungsnachweise aller eigenen Klassen.
-- **Termin ändern**: Datum im Kalender wählen genügt (Liste oder Termin-Karte der Einheit). Die Arbeitsstunde liegt dann fest an diesem
+- **Termin ändern**: Datum im Kalender wählen genügt (Jahresplan, Liste oder Termin-Karte der Einheit) oder im Jahresplan in eine andere Woche ziehen. Die Arbeitsstunde liegt dann fest an diesem
   Tag (ohne Mathestunde: in der nächsten), Wiederholung davor, Rückgabe danach; der übrige Plan läuft darum herum, eine
   Einheit auch über den Termin hinweg. Feste Termine gelten je Parallelklasse; „lösen“ gibt den Termin frei.
 - **Kein Strang**: Ein Leistungsnachweis mit Termin gehört zu keinem Strang. Er belegt am Termin die erste Mathestunde des
