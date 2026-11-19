@@ -1458,7 +1458,8 @@ function trackName(k, tr) {
   const c = D.classes[ck(k)], sc = schedule(k);
   if (tr === "SOL") return "FIL-Stunde";
   if (sc.seqMode) return "Fachunterricht";
-  return tr === "A" ? "Strang A · " + c.nameA : "Strang B · " + c.nameB;
+  const nm = c.nameB ? (tr === "A" ? c.nameA : c.nameB) : obLbs(ck(k)).filter(({ lb }) => obLbStrand(ck(k), lb) === tr).map(({ lb }) => lbShort(k, lb)).join(" + ");
+  return `Strang ${tr}${nm ? " · " + nm : ""}`;
 }
 function capCards(k) {
   const sc = schedule(k), out = [];
@@ -1835,6 +1836,13 @@ function planMore(g, list) {
       ${confirm ? `<div class="confirm"><span>Plan von ${esc(c.label)} auf die Vorlage zurücksetzen? Deine Änderungen an Reihenfolge und Stunden gehen verloren.</span><button type="button" class="btn danger" data-act="reset" data-k="${k}">Zurücksetzen</button><button type="button" class="btn ghost" data-act="confirm" data-v="">Abbrechen</button></div>` : `<button type="button" class="btn ghost" data-act="confirm" data-v="reset-${g}">Auf Vorlage zurücksetzen</button>`}</div>
     </div></details>`;
 }
+/* In Strängen, aber ein Strang ohne Wochenstunden oder ohne Einheiten: Hinweis mit Zuordnen-Dialog */
+function strandWarn(g) {
+  const sc = schedule(g); if (sc.seqMode) return "";
+  const miss = ["A", "B"].filter(t => !sc.cap[t] || !sc.planned[t]); if (!miss.length) return "";
+  const why = miss.map(t => `Strang ${t} hat ${!sc.cap[t] ? "keine Wochenstunden im Stundenplan" : "keine Einheiten"}`).join(", ");
+  return `<div class="warnbox small">${esc(why)}. <button type="button" class="linkbtn small" data-act="sdopen" data-k="${ck(g)}">Lernbereiche und Stunden zuordnen …</button></div>`;
+}
 function viewPlan() {
   const g = curG(); sortPinnedRows(g);
   const k = ck(g), C = S.cls[k], list = UI.planView === "list";
@@ -1843,10 +1851,12 @@ function viewPlan() {
     <div class="ptools">
       <div class="seg small" role="group" aria-label="Ansicht">${[["weeks", "Wochen"], ["list", "Liste"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "list") === list}" data-act="planview" data-v="${v}">${l}</button>`).join("")}</div>
       <div class="seg small" role="group" aria-label="Modus">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>
+      ${C.mode === "Stränge" ? `<button type="button" class="linkbtn small" data-act="sdopen" data-k="${k}">Stränge zuordnen …</button>` : ""}
       <span class="sp"></span>
       ${list ? "" : `<button type="button" class="btn ghost sm" data-act="paddrow" aria-expanded="${!!UI.planAdd}">+ Einheit / Puffer</button><button type="button" class="btn sm" data-act="plnform" data-wk="${planLnWeek(g)}">+ Leistungsnachweis</button>`}
     </div>
     ${capCards(g)}
+    ${strandWarn(g)}
     ${!list && UI.planAdd ? addRowCard(g) : ""}
     ${list ? planList(g) : planWeeks(g)}
     ${planMore(g, list)}</section>`;
@@ -2258,6 +2268,85 @@ function setClassMode(k, mode, quiet) {
   }
   if (quiet) { touch(); save(k); } else commit(k);
 }
+/* Wechsel zu „in Strängen“: Dialog, der Lernbereiche und Wochenstunden den Strängen A und B zuordnet. In den Klassen aus
+   dem Lehrplan (alle außer GYM 6/8) liegen Einheiten und Stundenplan zunächst komplett in Strang A; ohne Zuordnung bliebe
+   Strang B leer. Zustand im Entwurf UI.strandDlg = { k, lb: {LB → A|B}, tt: {"gid|Zeitraum|Stunde" → A|B}, auto: {…} }. */
+const lbShort = (k, lb) => lb.startsWith("LB") ? "LB " + lb.slice(2) : lb === "WB" ? "WB" : (D.classes[ck(k)].lbnames[lb] || lb);
+/* Stunden je Strang bei einer Zuordnung der Lernbereiche; Puffer und Jahresabschluss folgen der Einheit davor. */
+function strandHrs(k, lbMap) {
+  const h = { A: 0, B: 0 }; let last = "A";
+  S.cls[k].seq.forEach(r => {
+    if (isUnitRow(k, r)) { last = lbMap[unitOf(k, r.code).lb] === "B" ? "B" : "A"; h[last] += +r.hours || 0; }
+    else if (!isLnRow(k, r.code)) h[last] += +r.hours || 0;
+  });
+  return h;
+}
+const sdLessons = v => v.lessons.map((l, i) => ({ l, i })).filter(x => x.l.track !== "SOL");
+/* Vorschlag für die Wochenstunden: der Reihe nach (Tag, Stunde) jeweils in den Strang, der dem Stundenanteil am nächsten kommt */
+function strandSuggestTT() {
+  const d = UI.strandDlg, k = d.k, h = strandHrs(k, d.lb), share = h.A + h.B ? h.A / (h.A + h.B) : 0.5;
+  S.cls[k].groups.forEach(G => (G.tt || []).forEach((v, vi) => {
+    const vk = G.id + "|" + vi; if (!d.auto[vk]) return;
+    const ls = sdLessons(v).sort((x, y) => (+x.l.day - +y.l.day) || (+x.l.period - +y.l.period));
+    let a = 0, b = 0;
+    ls.forEach(x => {
+      const n = lessonLen(x.l);
+      const toA = h.B === 0 ? true : h.A === 0 ? false : Math.abs((a + n) / (a + b + n) - share) <= Math.abs(a / (a + b + n) - share);
+      if (toA) a += n; else b += n;
+      d.tt[`${vk}|${x.i}`] = toA ? "A" : "B";
+    });
+  }));
+}
+function strandDlgOpen(k) {
+  const C = S.cls[k], anyB = C.seq.some(r => isUnitRow(k, r) && r.strand === "B"), lb = {}, tt = {}, auto = {};
+  obLbs(k).forEach(({ lb: x }, i) => { lb[x] = anyB ? obLbStrand(k, x) : (i % 2 ? "B" : "A"); });
+  C.groups.forEach(G => (G.tt || []).forEach((v, vi) => {
+    const ls = sdLessons(v), vk = G.id + "|" + vi;
+    if (ls.some(x => x.l.track === "B") && ls.some(x => x.l.track !== "B")) ls.forEach(x => { tt[`${vk}|${x.i}`] = x.l.track === "B" ? "B" : "A"; });
+    else auto[vk] = true;
+  }));
+  UI.strandDlg = { k, lb, tt, auto }; strandSuggestTT(); renderOverlay();
+}
+function strandDlgClose() { UI.strandDlg = null; renderOverlay(); }
+function strandDlgApply() {
+  const d = UI.strandDlg; if (!d) return;
+  const k = d.k, C = S.cls[k], snap = snapshotFor(k);
+  C.mode = "Stränge"; C.obMode = 1;
+  C.seq.forEach(r => { if (isUnitRow(k, r)) r.strand = d.lb[unitOf(k, r.code).lb] === "B" ? "B" : "A"; });
+  obFixBuffers(k);
+  C.groups.forEach(G => (G.tt || []).forEach((v, vi) => v.lessons.forEach((l, i) => { const t = d.tt[`${G.id}|${vi}|${i}`]; if (t && l.track !== "SOL") l.track = t; })));
+  UI.strandDlg = null; renderOverlay(); undoStack = snap; commit(k);
+  toast(`${D.classes[k].label} läuft jetzt in zwei Strängen. Einzelne Einheiten kannst du im Jahresplan umhängen.`, true);
+}
+function strandDlgHtml() {
+  const d = UI.strandDlg, k = d.k, C = S.cls[k], c = D.classes[k], h = strandHrs(k, d.lb), multi = C.groups.length > 1;
+  const lbH = {}; C.seq.forEach(r => { if (isUnitRow(k, r)) { const lb = unitOf(k, r.code).lb; lbH[lb] = (lbH[lb] || 0) + (+r.hours || 0); } });
+  const sel = (attrs, v, label) => `<select ${attrs} aria-label="${esc(label)}">${["A", "B"].map(t => `<option ${v === t ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+  const lbRows = obLbs(k).map(({ lb, name }) => `<tr style="${sty(lb)}"><td><span class="chip"><b>${esc(lbShort(k, lb))}</b></span></td><td>${esc(name)}</td><td class="mono small muted nowrap">${lbH[lb] || 0} Std.</td><td>${sel(`data-act="sdlb" data-lb="${esc(lb)}"`, d.lb[lb], "Strang für " + name)}</td></tr>`).join("");
+  const warn = [];
+  if (!h.A || !h.B) warn.push(`Strang ${h.A ? "B" : "A"} bekommt noch keinen Lernbereich.`);
+  const tts = C.groups.map(G => {
+    const vs = G.tt || [];
+    return vs.map((v, vi) => {
+      const vk = G.id + "|" + vi, ls = sdLessons(v).sort((x, y) => (+x.l.day - +y.l.day) || (+x.l.period - +y.l.period));
+      const w = { A: 0, B: 0 }; ls.forEach(x => { w[d.tt[`${vk}|${x.i}`] === "B" ? "B" : "A"] += lessonLen(x.l); });
+      const who = `${multi ? groupName(gkey(k, G.id)) + ", " : ""}${vs.length > 1 ? "ab " + fmt(v.frm) : "Stundenplan"}`;
+      if (ls.length && ((h.A && !w.A) || (h.B && !w.B))) warn.push(`${who}: Strang ${w.A ? "B" : "A"} hat keine Wochenstunde.`);
+      return `<div class="sdtt"><div class="small"><b>${esc(multi ? groupName(gkey(k, G.id)) : "Stundenplan")}</b>${vs.length > 1 ? ` · ab ${esc(fmt(v.frm))}` : ""} <span class="muted">· A ${w.A} Std., B ${w.B} Std. pro Woche</span></div>
+        ${ls.length ? `<div class="sdls">${ls.map(x => `<label>${DAYS[+x.l.day]} ${x.l.period}.${lessonLen(x.l) === 2 ? `–${+x.l.period + 1}.` : ""} Std. ${sel(`data-act="sdtt" data-key="${vk}|${x.i}"`, d.tt[`${vk}|${x.i}`], `Strang für ${DAYS[+x.l.day]} ${x.l.period}. Stunde`)}</label>`).join("")}</div>` : `<p class="small muted">Keine Stunden eingetragen.</p>`}</div>`;
+    }).join("");
+  }).join("");
+  return `<div class="ov-card sdlg" role="dialog" aria-modal="true" aria-label="In Strängen planen"><header><h2>${esc(c.label)}: in Strängen planen</h2><button type="button" class="iconbtn" data-act="sdclose" aria-label="Schließen">×</button></header>
+    <p class="small">Zwei Stränge laufen parallel, jeder mit eigenen Wochenstunden. Ordne die Lernbereiche und die Stunden deines Stundenplans Strang A oder B zu. Puffer folgen dem Lernbereich davor, Leistungsnachweise gehören zu keinem Strang.</p>
+    <h3>Lernbereiche</h3>
+    <div class="tscroll"><table class="form sdlb"><tbody>${lbRows}</tbody></table></div>
+    <p class="small muted">Geplant: Strang A ${h.A} Std. · Strang B ${h.B} Std.</p>
+    <h3>Wochenstunden</h3>
+    ${tts}
+    ${warn.length ? `<div class="warnbox small">${warn.map(esc).join("<br>")}</div>` : ""}
+    <div class="acts"><button type="button" class="btn" data-act="sdapply">In Strängen planen</button><button type="button" class="btn ghost" data-act="sdclose">Abbrechen</button></div>
+  </div>`;
+}
 function obPlanCard(k) {
   const C = S.cls[k], str = C.mode === "Stränge", hrs = { A: 0, B: 0 };
   if (str) C.seq.forEach(r => { if (r.code !== "JA" && (unitOf(k, r.code) || {}).lb !== "test") hrs[r.strand === "B" ? "B" : "A"] += +r.hours || 0; });
@@ -2368,6 +2457,12 @@ function renderOverlay() {
     const keep = same ? ["", ".ov-card", ".obbody"].map(sel => { const n = sel ? el.querySelector(sel) : el; return n ? n.scrollTop : 0; }) : null;
     el.hidden = false; el.innerHTML = viewOnboarding(); el.dataset.obstep = String(UI.ob.step);
     if (keep) ["", ".ov-card", ".obbody"].forEach((sel, i) => { const n = sel ? el.querySelector(sel) : el; if (n) n.scrollTop = keep[i]; });
+    return;
+  }
+  if (UI.strandDlg) {
+    const c0 = el.querySelector(".sdlg"), keep = [el.scrollTop, c0 ? c0.scrollTop : 0];
+    el.hidden = false; el.innerHTML = strandDlgHtml();
+    el.scrollTop = keep[0]; const c1 = el.querySelector(".sdlg"); if (c1 && c0) c1.scrollTop = keep[1];
     return;
   }
   if (UI.solOpen) {
@@ -2517,7 +2612,10 @@ document.addEventListener("click", ev => {
     case "obskip": UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); break;
     case "obdone": obFinish(); break;
     case "obcell": obToggle(b.dataset.g, +b.dataset.d, +b.dataset.p); break;
-    case "mode": S.cls[k].mode = b.dataset.v; commit(k); break;
+    case "mode": if (b.dataset.v === "Stränge" && S.cls[k].mode !== "Stränge") { strandDlgOpen(k); break; } S.cls[k].mode = b.dataset.v; commit(k); break;
+    case "sdopen": strandDlgOpen(k); break;
+    case "sdclose": strandDlgClose(); break;
+    case "sdapply": strandDlgApply(); break;
     case "planview": UI.planView = b.dataset.v === "list" ? "list" : "weeks"; UI.planSel = null; UI.planLn = null; try { localStorage.setItem("mp-planview", UI.planView); } catch (e) {} render(); break;
     case "psel": {
       const row = b.dataset.row || null, chk = b.dataset.chk || null, cur = UI.planSel;
@@ -2651,6 +2749,8 @@ document.addEventListener("change", ev => {
   switch (a) {
     case "strand": setSeq(k, s => { s[i].strand = t.value; }); break;
     case "oblb": setLbStrand(t.dataset.k, t.dataset.lb, t.value); break;
+    case "sdlb": { const d = UI.strandDlg; if (!d) break; d.lb[t.dataset.lb] = t.value; strandSuggestTT(); renderOverlay(); break; }
+    case "sdtt": { const d = UI.strandDlg; if (!d) break; d.tt[t.dataset.key] = t.value; delete d.auto[t.dataset.key.split("|").slice(0, 2).join("|")]; renderOverlay(); break; }
     case "lndate": if (t.value) setLnDate(curG(), t.dataset.row, t.value); break;
     case "lndur": setLnDur(ck(curG()), t.dataset.code, +t.value); break;
     case "chkdur": { const C = S.cls[ck(curG())], x = (C.checks || []).find(y => y.id === t.dataset.id); if (x) { const snap = snapshotFor(ck(curG())); x.dur = +t.value; undoStack = snap; commit(ck(curG())); toast(`${CHECK_KINDS[x.kind]}: ${x.dur} min.`, true); } break; }
@@ -2737,6 +2837,7 @@ document.addEventListener("drop", ev => {
 document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("pmore")) UI.planMore = ev.target.open; }, true);
 document.addEventListener("keydown", ev => {
   if (UI.dp && ev.key === "Escape") { dpClose(); return; }
+  if (UI.strandDlg && ev.key === "Escape") { strandDlgClose(); return; }
   if ((UI.planSel || UI.planLn) && ev.key === "Escape" && route() === "plan" && !ev.target.closest("input,select,textarea")) { UI.planSel = null; UI.planLn = null; render(); return; }
   if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
   if (!UI.quiz && !UI.solOpen) return;
@@ -2749,7 +2850,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
