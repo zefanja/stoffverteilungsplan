@@ -414,7 +414,7 @@ function serve(dir) {
     return { blocks: M.unitBlocks('kl6.a', 'A1').blocks, day: pair && pair.date, code: pair && pair.lesson.row.code }; });
   ok(JSON.stringify(dsetup.blocks) === '[[1],[2,3],[4],[5]]' && !!dsetup.day, 'Doppelstunde: Stunden 2 und 3 von A1 bilden einen Block ' + JSON.stringify(dsetup));
   await p.evaluate(() => { location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); }); await p.waitForTimeout(200);
-  const ublk = await p.evaluate(() => { const L = [...document.querySelectorAll('.lesson[data-drop]')]; return { n: L.length, dbl: document.querySelectorAll('.lesson.dbl').length, dates: L.map(x => x.querySelector('.lhead > span:last-child').textContent.trim()) }; });
+  const ublk = await p.evaluate(() => { const L = [...document.querySelectorAll('.lesson[data-drop]')]; return { n: L.length, dbl: document.querySelectorAll('.lesson.dbl').length, dates: L.map(x => x.querySelector('.lhead .lwhen').textContent.trim()) }; });
   ok(ublk.n === 4 && ublk.dbl === 1 && new Set(ublk.dates.map(d => d.slice(0, 11))).size === 4, 'Einheit: jeder Block mit eigenem Termin, Doppelstunde einmal ' + JSON.stringify(ublk));
   // ↑ schiebt das erste Atom der Doppelstunde in Stunde 1, Ziehen schiebt es zurück
   const mv1 = await p.evaluate(() => { const b = document.querySelector('.lesson.dbl [data-act="atommove"][data-l="1"]'); const id = b.dataset.id; b.click(); return { id, l: window.__mp.atomsOf('kl6', 'A1').find(a => a.id === id).l }; });
@@ -467,7 +467,7 @@ function serve(dir) {
   await p.click('[data-act="ltedit"][data-code="A1"][data-n="2"]'); await p.waitForTimeout(150);
   await p.fill('.ltinp', 'Brüche am Zahlenstrahl'); await p.press('.ltinp', 'Enter'); await p.waitForTimeout(200);
   const lt1 = await p.evaluate(() => { const M = window.__mp, sc = M.schedule('kl6.a'), r = sc.rows.find(x => x.code === 'A1'), s = r.slots[1];
-    return { t: M.stTitle('kl6', 'A1', 2), ui: [...document.querySelectorAll('.lesson .ltitle')].some(e => e.textContent.includes('Brüche am Zahlenstrahl')), info: M.lessonInfo('kl6.a', s.lesson).title, pill: !!document.querySelector('.ltitle .pill') }; });
+    return { t: M.stTitle('kl6', 'A1', 2), ui: [...document.querySelectorAll('.lesson .ltitle')].some(e => e.textContent.includes('Brüche am Zahlenstrahl')), info: M.lessonInfo('kl6.a', s.lesson).title, pill: !!document.querySelector('.ltitle .lown') }; });
   await p.click('[data-act="ltedit"][data-code="A1"][data-n="2"]'); await p.waitForTimeout(150);
   await p.click('[data-act="ltreset"]'); await p.waitForTimeout(200);
   const lt2 = await p.evaluate(() => [window.__mp.stTitle('kl6', 'A1', 2), JSON.stringify(window.__mp.S.cls.kl6.lt || {})]);
