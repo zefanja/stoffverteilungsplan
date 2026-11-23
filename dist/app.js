@@ -1976,6 +1976,37 @@ function bxPalette(g) {
   out.push(sect("P", "Puffer und Abschluss", bxSty("P"), gen.map(([code, t, n]) => `<li><div class="bx pal" style="${bxSty("P")}" draggable="true" data-bx="pal" data-code="${code}"><span class="bxrow"><span class="bxc">${code}</span><span class="bxt">${esc(t)}</span><span class="bxn">${n} Std.</span></span></div>${addBtn(`data-code="${code}"`, t)}</li>`).join("")));
   return `<aside class="bxpal" aria-label="Bausteinkiste"><div class="bxpalh"><b>Bausteinkiste</b><span class="small muted">Ziehen oder „+“. Zurück in die Kiste ziehen nimmt einen Baustein aus dem Plan.</span></div>${out.join("")}${bxNewForm(g)}</aside>`;
 }
+/* Seitenleiste „Passt das Jahr?“: Stunden je Strang, Lehrplan (Einheiten und Zeitrichtwerte je Lernbereich), Leistungsnachweise */
+function bxSide(g) {
+  const k = ck(g), c = D.classes[k], sc = schedule(g), end = lastDayOf(k);
+  const bal = bxTracks(g).map(tr => {
+    const cap = sc.cap[tr], pl = sc.planned[tr], res = cap - pl, pct = cap ? Math.min(100, Math.round(pl / cap * 100)) : 0;
+    const over = sc.rows.find(r => r.overflow && r.track === tr);
+    const note = res > 0 ? `Noch ${res} Std. frei – Platz für weitere Bausteine oder Puffer.` : res === 0 ? "Geht genau auf." :
+      `${-res} Std. zu viel${over ? `: ${over.code} reicht über den letzten Unterrichtstag${end ? ` (${fmt(end)})` : ""} hinaus` : ""}. Puffer kürzen oder einen Baustein herausnehmen.`;
+    return `<div class="bxbal${res < 0 ? " neg" : ""}"><div class="bxbalh"><b>${esc(tr === "SOL" ? "FIL-Stunden" : sc.seqMode ? "Alle Stunden" : "Strang " + tr)}</b><span class="mono">${pl} / ${cap} Std.</span></div>
+      <div class="bxbar" role="img" aria-label="${pl} von ${cap} Stunden verplant"><span style="width:${pct}%"></span></div><p class="small">${esc(note)}</p></div>`;
+  }).join("");
+  const used = new Set(sc.rows.map(r => r.code)), lbh = lbHours(g);
+  const lbs = Object.keys(c.lbnames).filter(lb => !["test", "P"].includes(lb)).map(lb => {
+    const codes = unitOrderOf(k).filter(code => code !== "P" && code !== "JA" && (unitOf(k, code) || {}).lb === lb && !isOwnUnit(unitOf(k, code)));
+    if (!codes.length && !lbh[lb]) return "";
+    const n = codes.filter(x => used.has(x)).length, full = n === codes.length, h = lbh[lb] || 0, z = c.zrw[lb];
+    const name = lb === "start" ? "Start" : lb.startsWith("LB") ? `LB ${lb.slice(2)} · ${c.lbnames[lb]}` : c.lbnames[lb];
+    return `<li style="${bxSty(lb)}"><span class="bxdot" aria-hidden="true"></span><span class="bxln">${esc(name)}<span class="small muted mono" title="geplant${z ? " / Zeitrichtwert des Lehrplans" : ""}">${h}${z ? ` / ${z}` : ""} Std.</span></span>
+      <span class="small ${full ? "bxok" : "bxwarn"}">${codes.length ? (full ? "vollständig" : `${n} von ${codes.length}`) : ""}</span></li>`;
+  }).join("");
+  const lns = lnDates(g), free = unitOrderOf(k).filter(code => (unitOf(k, code) || {}).lb === "test" && !used.has(code) && D.classes[k].units[code]);
+  const lnLi = lns.map(x => `<li><button type="button" class="linkbtn bxlnk" data-act="bxsel" data-v="${esc(x.inLesson ? "c:" + x.id : x.row)}" data-go="1"><span>${esc(x.inLesson ? `${x.kind} ${x.dur} min${x.code ? " · " + x.code : ""}` : x.title)}</span><span class="mono">${x.date ? esc(fmtWd(x.date)) : "ohne Termin"}${x.pinned ? " · fest" : ""}</span></button></li>`).join("")
+    + free.map(code => `<li class="bxwarn"><span>${esc(titleOf(k, code))}</span><span class="small">nicht im Plan</span></li>`).join("");
+  const nKa = lns.filter(x => !x.inLesson).length, nChk = lns.length - nKa;
+  const short = bxTracks(g).map(tr => { const res = sc.cap[tr] - sc.planned[tr], nm = tr === "SOL" ? "FIL" : sc.seqMode ? "Plan" : tr; return `${nm}: ${res === 0 ? "geht auf" : res > 0 ? `${res} frei` : `${-res} zu viel`}`; }).join(" · ");
+  const open = UI.bxSide !== undefined ? UI.bxSide : window.innerWidth >= 1400;
+  return `<details class="bxside" aria-label="Passt das Jahr?" ${open ? "open" : ""}><summary><h2>Passt das Jahr?</h2><span class="small bxshort${sc.planned && bxTracks(g).some(tr => sc.cap[tr] < sc.planned[tr]) ? " neg" : ""}">${esc(short)}</span></summary><div class="bxsidein">${bal}
+    <h3>Lehrplan</h3><ul class="bxlbs">${lbs}</ul>
+    <h3>Leistungsnachweise <span class="small muted">${nKa} im Plan${nChk ? ` · ${nChk} ${nChk === 1 ? "Kontrolle" : "Kontrollen"}` : ""}</span></h3>
+    <ul class="bxlns">${lnLi || `<li class="small muted">Noch keine. Aus der Kiste ziehen oder „+“.</li>`}</ul></div></details>`;
+}
 function planBlocks(g) {
   const sc = schedule(g);
   const stacks = bxTracks(g).map(tr => {
@@ -1987,7 +2018,7 @@ function planBlocks(g) {
         <span class="bxcap${res < 0 ? " neg" : ""}">${sc.planned[tr]} von ${sc.cap[tr]} Std. · ${res === 0 ? "geht genau auf" : res > 0 ? `${res} frei` : `${-res} zu viel`}</span></div>
       <div class="bxlist">${items.map(it => bxItem(g, it, tr)).join("")}<div class="bxend" data-tr="${tr}">${items.length ? "Hierher ziehen: ans Ende" : "Bausteine aus der Kiste hierher ziehen"}</div></div></section>`;
   }).join("");
-  return `<div class="bxwrap">${bxPalette(g)}<div class="bxws">${stacks}</div></div>`;
+  return `<div class="bxwrap">${bxPalette(g)}<div class="bxws">${stacks}</div>${bxSide(g)}</div>`;
 }
 /* Einfügeposition in der Sequenz: hinter der Zeile afterId, ohne afterId vor der ersten Zeile des Strangs */
 function bxInsertIdx(g, tr, afterId) {
@@ -2963,7 +2994,7 @@ document.addEventListener("click", ev => {
     case "pmv": moveInStrand(curG(), b.dataset.row, +b.dataset.n); break;
     case "bxsel": {
       const v = b.dataset.v; UI.bxSel = UI.bxSel === v && !b.dataset.go ? null : v; UI.confirm = null; render();
-      if (b.dataset.go) { const el = document.querySelector(`.bxlist .bx[data-row="${CSS.escape(v)}"]`); if (el) el.scrollIntoView({ block: "center" }); }
+      if (b.dataset.go) { const el = document.querySelector(v.startsWith("c:") ? `.bxlist .bx.chk[data-id="${CSS.escape(v.slice(2))}"]` : `.bxlist .bx[data-row="${CSS.escape(v)}"]`); if (el) el.scrollIntoView({ block: "center" }); }
       break;
     }
     case "bxadd": bxAdd(curG(), { t: "pal", code: b.dataset.code, ln: b.dataset.ln, chk: b.dataset.chk, dur: b.dataset.dur }); break;
@@ -3236,7 +3267,14 @@ document.addEventListener("drop", ev => {
   bxPlace(g, d, t.tr, after);
 });
 /* Gruppen der Bausteinkiste bleiben beim Neuzeichnen auf- oder zugeklappt */
-document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("bxgrp")) { const d = ev.target, id = d.dataset.g; if (d.open === (d.dataset.def === "1")) delete UI.bxOpen[id]; else UI.bxOpen[id] = d.open; } }, true);
+document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("bxgrp")) { const d = ev.target, id = d.dataset.g; if (d.open === (d.dataset.def === "1")) delete UI.bxOpen[id]; else UI.bxOpen[id] = d.open; } if (ev.target.classList && ev.target.classList.contains("bxside") && !ev.target.dataset.auto) UI.bxSide = ev.target.open; }, true);
+/* „Passt das Jahr?“: breit offen (rechte Spalte), schmaler zugeklappt – solange man es nicht selbst auf- oder zugeklappt hat */
+let bxResize = null;
+window.addEventListener("resize", () => { clearTimeout(bxResize); bxResize = setTimeout(() => {
+  const el = document.querySelector("details.bxside"); if (!el || UI.bxSide !== undefined) return;
+  const want = window.innerWidth >= 1400; if (el.open === want) return;
+  el.dataset.auto = "1"; el.open = want; setTimeout(() => { delete el.dataset.auto; }, 100);
+}, 150); });
 /* „Mehr …“ im Jahresplan bleibt beim Neuzeichnen offen */
 document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("pmore")) UI.planMore = ev.target.open; }, true);
 document.addEventListener("keydown", ev => {

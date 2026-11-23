@@ -719,6 +719,12 @@ function serve(dir) {
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200);
   const bxBack = await p.evaluate(() => window.__mp.S.cls.kl6.seq.length);
   ok(bxEmpty.slice(0, 5).every(n => n === 0) && bxEmpty[5] === 2 && bxBack > 40, 'Baukasten: Alles leeren legt alle Bausteine zurück in die Kiste, rückgängig ' + JSON.stringify([bxEmpty, bxBack]));
+  // Seitenleiste „Passt das Jahr?“: Stunden je Strang, Lehrplan je Lernbereich, Leistungsnachweise mit Termin
+  const bxSd = await p.evaluate(() => { const e = document.querySelector('details.bxside'); if (!e) return null; e.open = true;
+    return { bal: [...e.querySelectorAll('.bxbal b')].map(b => b.textContent).join(), lbs: e.querySelectorAll('.bxlbs li').length, full: e.querySelectorAll('.bxlbs .bxok').length,
+      lns: e.querySelectorAll('.bxlns .bxlnk').length, short: (e.querySelector('.bxshort') || {}).textContent }; });
+  ok(bxSd && bxSd.bal === 'Strang A,Strang B' && bxSd.lbs >= 5 && bxSd.full >= 5 && bxSd.lns >= 4 && /A: .*B: /.test(bxSd.short),
+    'Baukasten: Seitenleiste mit Stunden je Strang, Lehrplan und Leistungsnachweisen ' + JSON.stringify(bxSd));
   // Eigene Einheit: in der Kiste anlegen, liegt hinter dem gewählten Baustein, Einheitenseite zum Bearbeiten, Löschen
   const bxA2 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A2').id);
   await p.click(`.bxlist .bx[data-row="${bxA2}"] >> nth=0 >> .bxmain`); await p.waitForTimeout(150);
