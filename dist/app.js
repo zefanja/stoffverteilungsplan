@@ -437,7 +437,7 @@ function tplDiff(k, C) {
 function templateExport(k) {
   const C = S.cls[k], c = D.classes[k], own = C.ln || {}, atoms = {}, ln = {};
   C.seq.forEach(r => {
-    const u = own[r.code] || (c.units[r.code] && c.units[r.code].tpl ? c.units[r.code] : null);
+    const u = (own[r.code] && own[r.code].lb === "test" ? own[r.code] : null) || (c.units[r.code] && c.units[r.code].tpl ? c.units[r.code] : null);
     if (u && !ln[r.code]) ln[r.code] = { kind: u.kind || "ka", title: u.title, stunden: u.stunden.slice(), main: u.main ?? null };
   });
   unitOrderOf(k).forEach(code => {
@@ -480,7 +480,7 @@ function ttFromLegacy(rows, start) {
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
 const S = { settings: defaultSettings(), cls: {}, eng: {} };
-const UI = { date: todayIso(), dateAuto: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "blocks", planSel: null, bxSel: null, bxOpen: {}, planLn: null, planAdd: false, planMore: false };
+const UI = { date: todayIso(), dateAuto: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "blocks", planSel: null, bxSel: null, bxOpen: {}, bxNew: false, planLn: null, planAdd: false, planMore: false };
 try {
   const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v;
   const t = localStorage.getItem("mp-type"); UI.type = t && TYPES[t] ? t : D.classes[UI.cls].type;
@@ -1955,7 +1955,7 @@ function bxPalette(g) {
   const unitLi = code => {
     const u = unitOf(k, code), r = used[code], n = u.stunden ? u.stunden.length : 0;
     return `<li><div class="bx pal${u.lb === "test" ? " ln" : ""}${r ? " used" : ""}" style="${bxSty(u.lb)}" ${r ? "" : `draggable="true" data-bx="pal" data-code="${esc(code)}"`}><span class="bxrow"><span class="bxc">${esc(code)}</span><span class="bxt">${esc(u.title)}</span>${n ? `<span class="bxn">${n} Std.</span>` : ""}</span></div>
-      ${r ? `<button type="button" class="linkbtn small bxin" data-act="bxsel" data-v="${esc(r.id)}" data-go="1">${esc(tName(r))}</button>` : addBtn(`data-code="${esc(code)}"`, u.title)}</li>`;
+      ${r ? `<button type="button" class="linkbtn small bxin" data-act="bxsel" data-v="${esc(r.id)}" data-go="1">${esc(tName(r))}</button>` : addBtn(`data-code="${esc(code)}"`, u.title)}${!r && isOwnUnit(u) ? `<button type="button" class="mini del" data-act="unitdel" data-code="${esc(code)}" aria-label="Eigene Einheit ${esc(u.title)} löschen" title="Eigene Einheit löschen">×</button>` : ""}</li>`;
   };
   const sect = (id, title, sty0, inner, sub, def = true) => {
     const open = UI.bxOpen[id] !== undefined ? UI.bxOpen[id] : def;
@@ -1974,7 +1974,7 @@ function bxPalette(g) {
   out.push(sect("test", "Leistungsnachweise", bxSty("test"), lnItems, lnFree.length ? `${lnFree.length} der Vorlage frei` : ""));
   const gen = [["P", "Puffer · Wiederholung", 1]].concat(unitOf(k, "JA") || c.seq.some(r => r[0] === "JA") ? [["JA", "Jahresabschluss", 2]] : []);
   out.push(sect("P", "Puffer und Abschluss", bxSty("P"), gen.map(([code, t, n]) => `<li><div class="bx pal" style="${bxSty("P")}" draggable="true" data-bx="pal" data-code="${code}"><span class="bxrow"><span class="bxc">${code}</span><span class="bxt">${esc(t)}</span><span class="bxn">${n} Std.</span></span></div>${addBtn(`data-code="${code}"`, t)}</li>`).join("")));
-  return `<aside class="bxpal" aria-label="Bausteinkiste"><div class="bxpalh"><b>Bausteinkiste</b><span class="small muted">Ziehen oder „+“. Zurück in die Kiste ziehen nimmt einen Baustein aus dem Plan.</span></div>${out.join("")}</aside>`;
+  return `<aside class="bxpal" aria-label="Bausteinkiste"><div class="bxpalh"><b>Bausteinkiste</b><span class="small muted">Ziehen oder „+“. Zurück in die Kiste ziehen nimmt einen Baustein aus dem Plan.</span></div>${out.join("")}${bxNewForm(g)}</aside>`;
 }
 function planBlocks(g) {
   const sc = schedule(g);
@@ -2061,6 +2061,43 @@ function bxAdd(g, d) {
     after = bxLastRow(g, tr);
   }
   bxPlace(g, d, tr, after);
+}
+/* Eigene Einheit anlegen (in C.ln mit Lernbereich, Kürzel E1, E2 …) und wie „+“ in den Plan legen */
+const isOwnUnit = u => !!(u && u.custom && u.lb !== "test");
+function ownUnitCode(k) { const used = new Set(unitOrderOf(k)); let n = 1; while (used.has("E" + n)) n++; return "E" + n; }
+function addOwnUnit(g, { title, lb, hours }) {
+  const k = ck(g), C = S.cls[k]; title = String(title || "").trim();
+  if (!title) { toast("Bitte einen Titel für die Einheit eingeben."); return null; }
+  hours = Math.max(1, Math.min(40, Math.round(+hours || 1)));
+  const code = ownUnitCode(k), snap = snapshotFor(k);
+  C.ln = C.ln || {};
+  C.ln[code] = { title, lb: lb || "LB1", custom: true, stunden: Array.from({ length: hours }, (_, i) => `Stunde ${i + 1}`), inhalte: [], begriffe: [], hinweise: [] };
+  UI.bxNew = false; touch();
+  bxAdd(g, { t: "pal", code });
+  undoStack = snap; toast(`Eigene Einheit „${title}“ (${code}, ${hours} Std.) angelegt und eingeplant.`, true);
+  return code;
+}
+/* Eigene Einheit ganz löschen: aus dem Plan, mit Atomen und Kontrollen */
+function deleteOwnUnit(k, code) {
+  const C = S.cls[k], u = (C.ln || {})[code]; if (!isOwnUnit(u)) return;
+  const snap = snapshotFor(k), ids = new Set(C.seq.filter(r => r.code === code).map(r => r.id));
+  C.seq = C.seq.filter(r => r.code !== code); C.groups.forEach(G => { ids.forEach(id => { if (G.adj) delete G.adj[id]; }); });
+  delete C.ln[code]; delete C.atoms[code]; C.checks = (C.checks || []).filter(x => x.code !== code);
+  UI.confirm = null; if (ids.has(UI.bxSel)) UI.bxSel = null;
+  if (/^#u-/.test(location.hash)) location.hash = "#einheiten";
+  undoStack = snap; commit(k); toast(`Eigene Einheit „${u.title}“ gelöscht.`, true);
+}
+function bxNewForm(g) {
+  const k = ck(g), c = D.classes[k], lbs = Object.keys(c.lbnames).filter(lb => !["test", "P"].includes(lb));
+  const sel = UI.bxSel && !UI.bxSel.startsWith("c:") ? schedule(g).rows.find(r => r.id === UI.bxSel) : null;
+  const lb0 = sel && lbs.includes(lbOf(k, sel.code)) ? lbOf(k, sel.code) : lbs.find(lb => lb.startsWith("LB")) || lbs[0];
+  if (!UI.bxNew) return `<button type="button" class="bxnewbtn" data-act="bxnewopen">+ Eigene Einheit</button>`;
+  return `<div class="bxnew"><b>Eigene Einheit</b>
+    <label>Titel <input id="bxntitle" placeholder="z. B. Knobelaufgaben" maxlength="80"></label>
+    <label>Lernbereich <select id="bxnlb">${lbs.map(lb => `<option value="${esc(lb)}" ${lb === lb0 ? "selected" : ""}>${esc(lb === "start" ? "Start" : lb.startsWith("LB") ? `LB ${lb.slice(2)} · ${c.lbnames[lb]}` : c.lbnames[lb])}</option>`).join("")}</select></label>
+    <label>Stunden <input id="bxnhrs" class="num" type="number" min="1" max="40" value="4"></label>
+    <p class="small muted">${sel ? `Kommt hinter ${esc(sel.code)}.` : "Kommt ans Ende des Strangs, in dem der Lernbereich läuft."} Atome und Stundentitel ergänzt du danach in der Einheit.</p>
+    <div class="bxnewacts"><button type="button" class="btn sm" data-act="bxnew">Anlegen</button><button type="button" class="btn ghost sm" data-act="bxnewopen">Abbrechen</button></div></div>`;
 }
 /* Alles leeren: Sequenz, Kontrollen, Termine und Abweichungen; die Bausteine liegen danach wieder in der Kiste */
 function bxClear(k) {
@@ -2252,7 +2289,7 @@ function viewUnit(kc, idx) {
   });
   return `<section class="unitv" style="${sty(u.lb)}">
     <div class="ubar"><a class="btn ghost" href="#einheiten">← Einheiten</a>${idx > 0 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx - 1}">‹ ${esc(order[idx - 1])}</a>` : ""}${idx < order.length - 1 ? `<a class="btn ghost" href="#u-${ck(k)}-${idx + 1}">${esc(order[idx + 1])} ›</a>` : ""}</div>
-    <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(u.custom ? "Leistungsnachweis" : c.lbnames[u.lb] || "")}</div></div>
+    <header class="uhead"><div><span class="code mono">${esc(code)} · ${esc(c.label)}</span><h1>${esc(u.title)}</h1><div class="small">${esc(u.custom && u.lb === "test" ? "Leistungsnachweis" : (isOwnUnit(u) ? "Eigene Einheit · " : "") + (c.lbnames[u.lb] || ""))}</div></div>
       <div class="umeta mono">${r ? `${r.hours} Std. geplant${u.stunden.length ? ` (Soll ${u.stunden.length})` : ""}<br>${r.start ? fmt(r.start) + " – " + fmt(r.end) : ""}${r.overflow ? `<br><span class="neg">${r.overflow} Std. nach Schuljahresende</span>` : ""}` : "nicht in der Sequenz"}</div></header>
     ${u.lb === "test" ? `<div class="card lnterm"><h3>Termin</h3>${r && r.hours ? lnDateInput(k, lnDates(k).find(x => !x.inLesson && x.row === r.id) || { row: r.id }) : `<p class="small muted">Nicht in der Sequenz.</p>`}
       ${(() => { const ds = (LN_DURS[u.kind] || [45, 90]).filter(d => d >= 45); return ds.length > 1 ? `<label class="lndurl">Dauer <select data-act="lndur" data-code="${esc(code)}">${ds.map(d => `<option value="${d}" ${lnDurOf(k, code) === d ? "selected" : ""}>${durLabel(d)}</option>`).join("")}</select></label>` : `<p class="small muted">Dauer: ${lnDurOf(k, code)} min. Kürzere Tests (20/30 min) legst du als Test in einer Stunde an.</p>`; })()}
@@ -2293,6 +2330,15 @@ function unitPlanCard(g, code, r, u) {
     ${pv ? `<p class="pnote">${pv}</p>` : ""}${form}</div>`;
 }
 function lnEditCard(k, code, u) {
+  if (isOwnUnit(u)) {
+    const c = D.classes[ck(k)], lbs = Object.keys(c.lbnames).filter(lb => !["test", "P"].includes(lb)), conf = UI.confirm === "udel-" + code;
+    return `<div class="card lnedit"><h3>Eigene Einheit bearbeiten</h3>
+    <label>Titel <input data-act="lnset" data-code="${esc(code)}" data-f="title" value="${esc(u.title)}"></label>
+    <label>Lernbereich <select data-act="lnset" data-code="${esc(code)}" data-f="lb">${lbs.map(lb => `<option value="${esc(lb)}" ${lb === u.lb ? "selected" : ""}>${esc(c.lbnames[lb] || lb)}</option>`).join("")}</select></label>
+    <label>Stunden (eine Zeile je Stunde) <textarea rows="${Math.max(2, u.stunden.length)}" data-act="lnset" data-code="${esc(code)}" data-f="stunden">${esc(u.stunden.join("\n"))}</textarea></label>
+    <p class="small muted">Die Zahl der Zeilen ist das Soll; die geplanten Stunden änderst du im Jahresplan. Eigene Einheiten gehen nicht in die Fachschaftsvorlage.</p>
+    <div class="acts">${conf ? `<span class="confirm"><span>„${esc(u.title)}“ mit Atomen löschen?</span><button type="button" class="btn danger sm" data-act="unitdel" data-code="${esc(code)}">Löschen</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>` : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="udel-${esc(code)}">Eigene Einheit löschen</button>`}</div></div>`;
+  }
   return `<div class="card lnedit"><h3>${esc(LN_KINDS[u.kind] ? LN_KINDS[u.kind].label : "Leistungsnachweis")} bearbeiten</h3>
     <label>Titel <input data-act="lnset" data-code="${esc(code)}" data-f="title" value="${esc(u.title)}"></label>
     <label>Stunden (eine Zeile je Stunde) <textarea rows="${Math.max(2, u.stunden.length)}" data-act="lnset" data-code="${esc(code)}" data-f="stunden">${esc(u.stunden.join("\n"))}</textarea></label>
@@ -2923,6 +2969,9 @@ document.addEventListener("click", ev => {
     case "bxadd": bxAdd(curG(), { t: "pal", code: b.dataset.code, ln: b.dataset.ln, chk: b.dataset.chk, dur: b.dataset.dur }); break;
     case "bxstrand": { const C = S.cls[k], row = C.seq.find(r => r.id === b.dataset.row); if (!row) break; const snap = snapshotFor(k); row.strand = b.dataset.v; undoStack = snap; commit(k); toast(`${row.code} läuft jetzt in ${b.dataset.v === "SOL" ? "den FIL-Stunden" : "Strang " + b.dataset.v}.`, true); break; }
     case "bxclear": bxClear(k); break;
+    case "bxnewopen": UI.bxNew = !UI.bxNew; render(); if (UI.bxNew) { const t = document.getElementById("bxntitle"); if (t) { t.focus(); t.scrollIntoView({ block: "nearest" }); } } break;
+    case "bxnew": addOwnUnit(curG(), { title: document.getElementById("bxntitle").value, lb: document.getElementById("bxnlb").value, hours: document.getElementById("bxnhrs").value }); break;
+    case "unitdel": deleteOwnUnit(k, b.dataset.code); break;
     case "paddrow": UI.planAdd = !UI.planAdd; render(); break;
     case "plnform": UI.planLn = b.dataset.wk && UI.planLn !== b.dataset.wk ? b.dataset.wk : null; UI.planSel = null; render(); if (UI.planLn) { const f = document.querySelector(".plnf"); if (f) f.scrollIntoView({ block: "nearest" }); } break;
     case "plnadd": {
@@ -3072,6 +3121,7 @@ document.addEventListener("change", ev => {
     case "lnset": {
       const u = (S.cls[k].ln || {})[t.dataset.code]; if (!u) break;
       if (f === "title") { if (t.value.trim()) u.title = t.value.trim(); }
+      else if (f === "lb") { if (isOwnUnit(u) && D.classes[k].lbnames[t.value]) u.lb = t.value; }
       else { const st = t.value.split("\n").map(x => x.trim()).filter(Boolean); if (st.length) u.stunden = st; }
       commit(k); break;
     }
@@ -3191,6 +3241,7 @@ document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target
 document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("pmore")) UI.planMore = ev.target.open; }, true);
 document.addEventListener("keydown", ev => {
   if (UI.dp && ev.key === "Escape") { dpClose(); return; }
+  if (ev.key === "Enter" && ev.target.closest && ev.target.closest(".bxnew input")) { ev.preventDefault(); const b = document.querySelector('[data-act="bxnew"]'); if (b) b.click(); return; }
   if (UI.strandDlg && ev.key === "Escape") { strandDlgClose(); return; }
   if ((UI.planSel || UI.planLn || UI.bxSel) && ev.key === "Escape" && route() === "plan" && !ev.target.closest("input,select,textarea")) { UI.planSel = null; UI.planLn = null; UI.bxSel = null; render(); return; }
   if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
@@ -3204,7 +3255,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay, bxPlace, bxAdd, bxRemove, bxClear, bxStack, bxTrackOf };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay, bxPlace, bxAdd, bxRemove, bxClear, bxStack, bxTrackOf, addOwnUnit, deleteOwnUnit };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

@@ -719,6 +719,22 @@ function serve(dir) {
   await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200);
   const bxBack = await p.evaluate(() => window.__mp.S.cls.kl6.seq.length);
   ok(bxEmpty.slice(0, 5).every(n => n === 0) && bxEmpty[5] === 2 && bxBack > 40, 'Baukasten: Alles leeren legt alle Bausteine zurück in die Kiste, rückgängig ' + JSON.stringify([bxEmpty, bxBack]));
+  // Eigene Einheit: in der Kiste anlegen, liegt hinter dem gewählten Baustein, Einheitenseite zum Bearbeiten, Löschen
+  const bxA2 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A2').id);
+  await p.click(`.bxlist .bx[data-row="${bxA2}"] >> nth=0 >> .bxmain`); await p.waitForTimeout(150);
+  await p.click('[data-act="bxnewopen"]'); await p.waitForTimeout(150);
+  await p.fill('#bxntitle', 'Knobelaufgaben'); await p.selectOption('#bxnlb', 'LB2'); await p.fill('#bxnhrs', '3');
+  await p.click('[data-act="bxnew"]'); await p.waitForTimeout(250);
+  const own = await p.evaluate(id => { const M = window.__mp, C = M.S.cls.kl6, s = C.seq, i = s.findIndex(r => r.id === id), u = (C.ln || {}).E1;
+    return { next: s[i + 1] && s[i + 1].code, hrs: s[i + 1] && s[i + 1].hours, lb: u && u.lb, title: u && u.title, blk: !!document.querySelector(`.bxlist .bx[data-row="${(s[i + 1] || {}).id}"]`), idx: M.unitOrderOf('kl6').indexOf('E1') }; }, bxA2);
+  await p.evaluate(i => { location.hash = 'u-kl6-' + i; }, own.idx); await p.waitForTimeout(200);
+  const ownPage = await p.evaluate(() => ({ h: (document.querySelector('.uhead h1') || {}).textContent, card: !!document.querySelector('.lnedit select[data-f="lb"]') }));
+  await p.click('[data-act="confirm"][data-v="udel-E1"]'); await p.waitForTimeout(100);
+  await p.click('[data-act="unitdel"][data-code="E1"]'); await p.waitForTimeout(200);
+  const ownDel = await p.evaluate(() => [!!(window.__mp.S.cls.kl6.ln || {}).E1, window.__mp.S.cls.kl6.seq.some(r => r.code === 'E1'), location.hash]);
+  ok(own.next === 'E1' && own.hrs === 3 && own.lb === 'LB2' && own.title === 'Knobelaufgaben' && own.blk && ownPage.h === 'Knobelaufgaben' && ownPage.card && !ownDel[0] && !ownDel[1] && ownDel[2] === '#einheiten',
+    'Eigene Einheit: in der Kiste anlegen, hinter dem gewählten Baustein eingeplant, auf der Einheitenseite bearbeiten und löschen ' + JSON.stringify([own, ownPage, ownDel]));
+  await p.evaluate(() => { location.hash = 'plan'; }); await p.waitForTimeout(150);
   await p.evaluate(([d, u]) => { const M = window.__mp, C = M.S.cls.kl6, o = JSON.parse(d); C.seq = o.seq; C.checks = o.checks; C.groups = o.groups; Object.keys(C.ln || {}).forEach(c => { if (!C.seq.some(r => r.code === c)) delete C.ln[c]; }); M.UI.bxSel = null; M.commit('kl6'); M.UI.cls = u[0]; M.UI.type = u[1]; M.UI.planView = u[2]; location.hash = 'heute'; }, [bxKeep, bxUi]); await p.waitForTimeout(150);
   // Sequenz: Leistungsnachweise ohne Strangauswahl (GYM 6 mit zwei Strängen und weitere Klassen)
   const uiKeep = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type]);

@@ -320,6 +320,13 @@ table.plan tr.pedit td{background:var(--soft);padding:10px}
 .bxend.bxdrop{border-color:var(--accent);background:var(--accent-bg);color:var(--ink)}
 .bx.bxdrop-b::before,.bx.bxdrop-a::before{content:"";position:absolute;left:-4px;right:-4px;height:4px;border-radius:2px;background:var(--accent);z-index:3;border:0;inset-inline:-4px;opacity:1}
 .bx.bxdrop-b::before{top:-6px;bottom:auto} .bx.bxdrop-a::before{bottom:-10px;top:auto}
+.bxnewbtn{min-height:44px;border:2px dashed var(--line);border-radius:6px;background:var(--sheet);color:var(--ink);font:inherit;font-weight:600;text-align:left;padding:0 12px;cursor:pointer}
+.bxnewbtn:hover{border-color:var(--accent)}
+.bxnew{display:grid;gap:8px;padding:10px;border:2px dashed var(--accent);border-radius:8px;background:var(--accent-bg)}
+.bxnew label{display:grid;gap:3px;font-size:13px}
+.bxnew input:not(.num),.bxnew select{width:100%}
+.bxnew p{margin:0}
+.bxnewacts{display:flex;gap:8px}
 @media (max-width:860px){.bxpal{position:static;max-width:none;max-height:none;flex-basis:100%}.bxws{padding:10px}}
 .pnote{margin:0;padding:6px 10px;border-radius:6px;background:var(--lb2-bg);font-size:13px}
 .pnote0{margin:0}
