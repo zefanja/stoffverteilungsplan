@@ -461,6 +461,24 @@ function serve(dir) {
   ok(kkCap.h1 === kkCap.h0 + 1 && kkCap.extra === 1 && kkCap.perLesson[0] === 0 && kkCap.perLesson[1] <= 1 && kkCap.introduced === kkCap.nAtoms && kkUi.notes.length === 2 && kkUi.moved > 0 && kkUi.rest.some(t => t.includes('noch 15 min')),
     'Kontrollen belegen Stunden: 30 min ohne neue Atome (Einheit +1 Std.), 20 min höchstens ein Atom, kein Atom geht verloren ' + JSON.stringify([kkCap, kkUi]));
   await p.evaluate(() => { const M = window.__mp, G = M.S.cls.kl6.groups[0]; G.tt = JSON.parse(window.__ttKeep); G.done = {}; M.touch(); });
+  // Einheit: Titel einer Stunde ändern (eigener Titel, auch auf der Heute-Seite), zurück zur Vorlage; + Stunde hinzufügen unten
+  await p.evaluate(() => { location.hash = 'heute'; location.hash = 'u-kl6-' + window.PLAN_DATA.classes.kl6.unitOrder.indexOf('A1'); }); await p.waitForTimeout(250);
+  const lt0 = await p.evaluate(() => window.__mp.stTitle('kl6', 'A1', 2));
+  await p.click('[data-act="ltedit"][data-code="A1"][data-n="2"]'); await p.waitForTimeout(150);
+  await p.fill('.ltinp', 'Brüche am Zahlenstrahl'); await p.press('.ltinp', 'Enter'); await p.waitForTimeout(200);
+  const lt1 = await p.evaluate(() => { const M = window.__mp, sc = M.schedule('kl6.a'), r = sc.rows.find(x => x.code === 'A1'), s = r.slots[1];
+    return { t: M.stTitle('kl6', 'A1', 2), ui: [...document.querySelectorAll('.lesson .ltitle')].some(e => e.textContent.includes('Brüche am Zahlenstrahl')), info: M.lessonInfo('kl6.a', s.lesson).title, pill: !!document.querySelector('.ltitle .pill') }; });
+  await p.click('[data-act="ltedit"][data-code="A1"][data-n="2"]'); await p.waitForTimeout(150);
+  await p.click('[data-act="ltreset"]'); await p.waitForTimeout(200);
+  const lt2 = await p.evaluate(() => [window.__mp.stTitle('kl6', 'A1', 2), JSON.stringify(window.__mp.S.cls.kl6.lt || {})]);
+  ok(lt1.t === 'Brüche am Zahlenstrahl' && lt1.ui && lt1.info === 'Brüche am Zahlenstrahl' && lt1.pill && lt2[0] === lt0 && lt2[1] === '{}',
+    'Einheit: Titel einer Stunde ändern (auch Heute-Seite) und zurück zur Vorlage ' + JSON.stringify([lt0, lt1, lt2]));
+  const uxB0 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
+  await p.click('[data-act="uhradd"]'); await p.waitForTimeout(200);
+  const uxB1 = await p.evaluate(() => [window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours, document.querySelectorAll('.lessons-list .lesson').length, document.getElementById('toast').textContent]);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const uxB2 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A1').hours);
+  ok(uxB1[0] === uxB0 + 1 && uxB2 === uxB0 && /hat jetzt/.test(uxB1[2]), 'Einheit: „+ Stunde hinzufügen“ unten, rückgängig ' + JSON.stringify([uxB0, uxB1, uxB2]));
   // Seitenwechsel über die Navigation beginnt oben, auch beim erneuten Klick auf die offene Seite
   await p.evaluate(() => { location.hash = 'einheiten'; }); await p.waitForTimeout(150);
   await p.evaluate(() => window.scrollTo(0, 1500)); await p.waitForTimeout(50);
