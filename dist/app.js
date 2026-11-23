@@ -480,11 +480,11 @@ function ttFromLegacy(rows, start) {
 }
 const defaultEngine = () => ({ cards: {}, log: [] });
 const S = { settings: defaultSettings(), cls: {}, eng: {} };
-const UI = { date: todayIso(), dateAuto: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "weeks", planSel: null, planLn: null, planAdd: false, planMore: false };
+const UI = { date: todayIso(), dateAuto: todayIso(), cls: CLASSES[0], type: D.classes[CLASSES[0]].type, year: null, todayAll: false, reveal: {}, editAtom: null, confirm: null, quiz: null, solOpen: false, engFilter: "intro", busy: false, planView: "blocks", planSel: null, bxSel: null, bxOpen: {}, planLn: null, planAdd: false, planMore: false };
 try {
   const v = localStorage.getItem("mp-cls"); if (v && CLASSES.includes(v)) UI.cls = v;
   const t = localStorage.getItem("mp-type"); UI.type = t && TYPES[t] ? t : D.classes[UI.cls].type;
-  UI.todayAll = localStorage.getItem("mp-today") === "all"; if (localStorage.getItem("mp-planview") === "list") UI.planView = "list"; } catch (e) {}
+  UI.todayAll = localStorage.getItem("mp-today") === "all"; const pv = localStorage.getItem("mp-planview"); if (["blocks", "weeks", "list"].includes(pv)) UI.planView = pv; } catch (e) {}
 function pickYear() {
   const ys = S.settings.years; let id = null;
   try { id = localStorage.getItem("mp-year"); } catch (e) {}
@@ -1847,6 +1847,228 @@ function planList(g) {
     <div class="tscroll"><table class="seq"><thead><tr><th>#</th><th>Kürzel</th><th>Einheit</th><th>Strang</th><th>Stunden</th><th>Zeitraum</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
     ${addRowCard(g)}${lnCard(g)}`;
 }
+/* ---------------- Baukasten: Einheiten und Leistungsnachweise als Bausteine ----------------
+   Links die Bausteinkiste (Einheiten der Vorlage je Lernbereich, Leistungsnachweise, Puffer), rechts je Strang ein Stapel.
+   Die Termine rechnet schedule(); Ferien erscheinen als feste Streifen, eine Einheit über Ferien wird sichtbar geteilt.
+   Ziehen legt Bausteine ab (vor/hinter einen Baustein oder ans Ende eines Strangs), Ziehen in die Kiste nimmt sie heraus.
+   „+“ fügt hinter dem gewählten Baustein ein (Handy, Tastatur). Leistungsnachweise und Kontrollen sind eigene Bausteine. */
+const BX_CHECKS = [["kk", 20], ["test", 30]];
+const bxSty = lb => { const v = LBVAR[lb] || "buf"; return `--c:var(--${v});--bg:var(--${v}-bg);--bx:var(--${v}-bx,var(--${v}))`; };
+function bxTracks(g) { const sc = schedule(g); return (sc.seqMode ? ["A"] : ["A", "B"]).concat(D.classes[ck(g)].sol && sc.slots.some(s => s.track === "SOL") ? ["SOL"] : []); }
+/* Strang, in dem ein Baustein erscheint: Leistungsnachweise dort, wo ihre Hauptstunde liegt */
+function bxTrackOf(g, r) {
+  const k = ck(g);
+  if (isLnRow(k, r.code) && r.slots.length) { const s = r.slots[lnMain(k, r.code, r.hours)] || r.slots[0]; return s.track; }
+  return r.track;
+}
+/* Ferien (mehrtägig) zwischen zwei Unterrichtstagen */
+const bxHolidays = (a, b) => (cal().holidays || []).filter(h => h.frm && h.to && h.frm > a && h.to < b);
+/* Inhalt eines Stapels: die Stunden des Strangs der Reihe nach, zusammengefasst zu Bausteinen (eine Zeile ohne Unterbrechung
+   durch Ferien oder einen anderen Baustein). Dazwischen die Ferien, Kontrollen hinter dem Baustein, in dem sie liegen.
+   Zeilen ohne Stunde stehen hinter ihrer Vorgängerzeile im selben Strang. */
+function bxStack(g, tr) {
+  const sc = schedule(g), segs = [];
+  let cur = null;
+  sc.slots.forEach(s => {
+    if (s.track !== tr || s.cancelled || !s.lesson) return;
+    const r = s.lesson.row;
+    if (!cur || cur.r !== r || bxHolidays(cur.end, s.date).length) { cur = { t: "row", r, start: s.date, end: s.date, n: 0, slots: [] }; segs.push(cur); }
+    cur.end = s.date; cur.n++; cur.slots.push(s);
+  });
+  sc.rows.forEach(r => {
+    if (r.slots.length || bxTrackOf(g, r) !== tr) return;
+    let at = 0;
+    for (let i = segs.length - 1; i >= 0; i--) if (segs[i].r.idx < r.idx) { at = i + 1; break; }
+    segs.splice(at, 0, { t: "row", r, start: null, end: null, n: 0, slots: [] });
+  });
+  const cnt = {}, seen = {};
+  segs.forEach(sg => { cnt[sg.r.id] = (cnt[sg.r.id] || 0) + 1; });
+  const chks = lnDates(g).filter(x => x.inLesson && x.date), out = [];
+  let last = null;
+  segs.forEach(sg => {
+    if (sg.start && last) bxHolidays(last, sg.start).forEach(h => out.push({ t: "hol", h }));
+    seen[sg.r.id] = (seen[sg.r.id] || 0) + 1;
+    out.push({ t: "row", r: sg.r, sg, part: seen[sg.r.id] - 1, parts: cnt[sg.r.id] });
+    if (sg.end) last = sg.end;
+    chks.filter(x => sg.slots.some(s => s.date === x.date && s.period === x.period)).forEach(x => out.push({ t: "chk", x, r: sg.r }));
+  });
+  return out;
+}
+function bxItem(g, it, tr) {
+  const k = ck(g), sc = schedule(g);
+  if (it.t === "hol") return `<div class="bxhol"><span aria-hidden="true">▨</span><b>${esc(it.h.name || "Ferien")}</b><span class="mono">${esc(fmt(it.h.frm))} – ${esc(fmt(it.h.to))}</span></div>`;
+  if (it.t === "chk") {
+    const x = it.x, sel = UI.bxSel === "c:" + x.id;
+    const tools = sel ? `<div class="bxtools"><span class="small">Termin</span>${lnDateInput(g, x)}
+      <label class="small">Dauer <select data-act="chkdur" data-id="${esc(x.id)}">${CHECK_DUR.map(d => `<option value="${d}" ${x.dur === d ? "selected" : ""}>${d} min</option>`).join("")}</select></label>
+      <button type="button" class="btn ghost sm pdel" data-act="lnremove" data-id="${esc(x.id)}">Löschen</button></div>` : "";
+    return `<div class="bx chk${sel ? " sel" : ""}" style="${bxSty("test")}" draggable="true" data-bx="chk" data-id="${esc(x.id)}" data-in="${esc(it.r.id)}">
+      <button type="button" class="bxmain" data-act="bxsel" data-v="c:${esc(x.id)}"><span class="bxt">${esc(x.title)} · ${x.dur} min</span><span class="bxd">${esc(fmtWd(x.date))}${x.pinned ? " · fest" : ""}</span></button>${tools}</div>`;
+  }
+  const r = it.r, sg = it.sg, ln = isLnRow(k, r.code), u = unitOf(k, r.code), lastPart = !sg.slots.length || sg.slots[sg.slots.length - 1] === r.slots[r.slots.length - 1];
+  const mainSlot = ln ? r.slots[lnMain(k, r.code, r.hours)] : null;
+  const first = !sg.slots.length || (ln && mainSlot ? sg.slots.includes(mainSlot) : sg.slots[0] === r.slots[0]);
+  const sel = UI.bxSel === r.id && first, cont = !first;
+  const hrs = sg.n && sg.n < r.hours ? `${sg.n} von ${r.hours} Std.` : `${r.hours} Std.`;
+  const when = sg.start ? (sg.start === sg.end ? fmtWd(sg.start) : `${fmt(sg.start)} – ${fmt(sg.end)}`) : r.hours ? "" : "0 Std.";
+  const over = lastPart && r.overflow ? `<span class="bxd bxover">${r.overflow} Std. nach dem letzten Unterrichtstag</span>` : "";
+  let body, tools = "";
+  if (ln) {
+    const x = lnDates(g).find(y => !y.inLesson && y.row === r.id) || { row: r.id };
+    body = `<span class="bxt">${esc(titleOf(k, r.code))}</span><span class="bxn">${esc(hrs)}</span>`;
+    const sub = cont ? `Fortsetzung ${esc(r.code)} · ${esc(when)}` : `${x.date ? `${esc(x.kind)} am ${esc(fmtWd(x.date))}` : "noch ohne Termin"}${r.pinned ? " · fest" : ""}`;
+    const what = [...new Set(sg.slots.map(s => (u.stunden || [])[s.lesson.n - 1]).filter(Boolean))].join(", ");
+    body = `<span class="bxrow">${cont ? `<span class="bxt">${esc(what || "Fortsetzung")} · ${esc(r.code)}</span><span class="bxn">${esc(hrs)}</span>` : body}</span><span class="bxd">${cont ? esc(when) : sub}</span>`;
+    if (sel) {
+      const ds = (LN_DURS[u.kind] || [45, 90]).filter(d => d >= 45);
+      tools = `<div class="bxtools"><span class="small">Termin</span>${lnDateInput(g, x)}
+        ${ds.length > 1 ? `<label class="small">Dauer <select data-act="lndur" data-code="${esc(r.code)}">${ds.map(d => `<option value="${d}" ${lnDurOf(k, r.code) === d ? "selected" : ""}>${d} min</option>`).join("")}</select></label>` : ""}
+        <button type="button" class="btn ghost sm pdel" data-act="lnremove" data-row="${esc(r.id)}">Aus dem Plan nehmen</button></div>`;
+    }
+  } else {
+    body = `<span class="bxrow">${cont ? `<span class="bxt">Fortsetzung ${esc(r.code)}</span>` : `<span class="bxc">${esc(r.code)}</span><span class="bxt">${esc(titleOf(k, r.code))}</span>`}<span class="bxn">${esc(hrs)}</span></span>${when ? `<span class="bxd">${esc(when)}</span>` : ""}`;
+    if (sel) {
+      const ui = unitOrderOf(k).indexOf(r.code), soll = u && u.stunden && u.stunden.length, isP = ["P", "JA"].includes(r.code);
+      const others = bxTracks(g).filter(t => t !== tr);
+      tools = `<div class="bxtools">
+        <span class="bxhrs"><button type="button" class="mini" data-act="hrs" data-i="${r.idx}" data-n="-1" aria-label="Eine Stunde weniger">−</button><span class="mono">${r.base} Std.</span><button type="button" class="mini" data-act="hrs" data-i="${r.idx}" data-n="1" aria-label="Eine Stunde mehr">+</button></span>
+        ${soll && !isP && soll !== r.base ? `<span class="small muted">Soll ${soll}</span>` : ""}
+        <button type="button" class="mini" data-act="pmv" data-row="${esc(r.id)}" data-n="-1" aria-label="Nach oben">↑</button><button type="button" class="mini" data-act="pmv" data-row="${esc(r.id)}" data-n="1" aria-label="Nach unten">↓</button>
+        ${others.map(t => `<button type="button" class="btn ghost sm" data-act="bxstrand" data-row="${esc(r.id)}" data-v="${t}">→ ${t === "SOL" ? "FIL" : "Strang " + t}</button>`).join("")}
+        <button type="button" class="btn ghost sm" data-act="addp" data-i="${r.idx}">+ Puffer</button>
+        ${u && !isP && ui >= 0 ? `<a class="small" href="#u-${k}-${ui}">Einheit öffnen →</a>` : ""}
+        <button type="button" class="btn ghost sm pdel" data-act="del" data-i="${r.idx}">${isP ? "Entfernen" : "Aus dem Plan nehmen"}</button></div>`;
+    }
+  }
+  const cls = ["bx", ln ? "ln" : "", sel ? "sel" : "", cont ? "cont" : "", !lastPart ? "cut" : "", over ? "over" : ""].filter(Boolean).join(" ");
+  return `<div class="${cls}" style="${bxSty(lbOf(k, r.code))};--h:${Math.min(12, sg.n || r.hours || 1)}" draggable="true" data-bx="row" data-row="${esc(r.id)}">
+    <button type="button" class="bxmain" data-act="bxsel" data-v="${esc(r.id)}" aria-pressed="${sel}">${body}${over}</button>${tools}</div>`;
+}
+/* Bausteinkiste: Einheiten der Vorlage je Lernbereich (eingeplante blass), Leistungsnachweise, Kontrollen, Puffer */
+function bxPalette(g) {
+  const k = ck(g), c = D.classes[k], sc = schedule(g), used = {};
+  sc.rows.forEach(r => { if (!used[r.code]) used[r.code] = r; });
+  const groups = {};
+  unitOrderOf(k).forEach(code => { if (code === "P" || code === "JA") return; const u = unitOf(k, code); if (!u) return; (groups[u.lb] = groups[u.lb] || []).push(code); });
+  const tName = r => { const t = bxTrackOf(g, r); return sc.seqMode && t !== "SOL" ? "im Plan" : t === "SOL" ? "FIL" : "Strang " + t; };
+  const addBtn = (data, label) => `<button type="button" class="mini bxadd" data-act="bxadd" ${data} aria-label="${esc(label)} einfügen" title="Hinter dem gewählten Baustein einfügen">+</button>`;
+  const unitLi = code => {
+    const u = unitOf(k, code), r = used[code], n = u.stunden ? u.stunden.length : 0;
+    return `<li><div class="bx pal${u.lb === "test" ? " ln" : ""}${r ? " used" : ""}" style="${bxSty(u.lb)}" ${r ? "" : `draggable="true" data-bx="pal" data-code="${esc(code)}"`}><span class="bxrow"><span class="bxc">${esc(code)}</span><span class="bxt">${esc(u.title)}</span>${n ? `<span class="bxn">${n} Std.</span>` : ""}</span></div>
+      ${r ? `<button type="button" class="linkbtn small bxin" data-act="bxsel" data-v="${esc(r.id)}" data-go="1">${esc(tName(r))}</button>` : addBtn(`data-code="${esc(code)}"`, u.title)}</li>`;
+  };
+  const sect = (id, title, sty0, inner, sub, def = true) => {
+    const open = UI.bxOpen[id] !== undefined ? UI.bxOpen[id] : def;
+    return `<details class="bxgrp" data-g="${esc(id)}" data-def="${def ? 1 : 0}" ${open ? "open" : ""}><summary style="${sty0}"><span class="bxdot" aria-hidden="true"></span><span class="bxgt"><b>${esc(title)}</b>${sub ? `<span class="small muted">${esc(sub)}</span>` : ""}</span></summary><ul>${inner}</ul></details>`;
+  };
+  const lbs = Object.keys(c.lbnames).filter(lb => lb !== "P" && lb !== "test" && groups[lb]);
+  const out = lbs.map(lb => {
+    const codes = groups[lb], inPlan = codes.filter(x => used[x]).length;
+    const name = lb === "start" ? "Start" : lb.startsWith("LB") ? `LB ${lb.slice(2)} · ${c.lbnames[lb]}` : c.lbnames[lb];
+    return sect(lb, name, bxSty(lb), codes.map(unitLi).join(""), `${inPlan} von ${codes.length}`, inPlan < codes.length);
+  });
+  const lnFree = (groups.test || []).filter(code => !used[code]);
+  const lnItems = lnFree.map(unitLi).join("")
+    + Object.entries(LN_KINDS).map(([v, K]) => `<li><div class="bx pal ln" style="${bxSty("test")}" draggable="true" data-bx="pal" data-ln="${v}"><span class="bxrow"><span class="bxt">${esc(K.short)}</span><span class="bxn">${K.dur} min</span></span></div>${addBtn(`data-ln="${v}"`, K.short)}</li>`).join("")
+    + BX_CHECKS.map(([v, d]) => `<li><div class="bx pal ln chk" style="${bxSty("test")}" draggable="true" data-bx="pal" data-chk="${v}" data-dur="${d}"><span class="bxrow"><span class="bxt">${esc(CHECK_KINDS[v])}</span><span class="bxn">${d} min</span></span></div>${addBtn(`data-chk="${v}" data-dur="${d}"`, CHECK_KINDS[v])}</li>`).join("");
+  out.push(sect("test", "Leistungsnachweise", bxSty("test"), lnItems, lnFree.length ? `${lnFree.length} der Vorlage frei` : ""));
+  const gen = [["P", "Puffer · Wiederholung", 1]].concat(unitOf(k, "JA") || c.seq.some(r => r[0] === "JA") ? [["JA", "Jahresabschluss", 2]] : []);
+  out.push(sect("P", "Puffer und Abschluss", bxSty("P"), gen.map(([code, t, n]) => `<li><div class="bx pal" style="${bxSty("P")}" draggable="true" data-bx="pal" data-code="${code}"><span class="bxrow"><span class="bxc">${code}</span><span class="bxt">${esc(t)}</span><span class="bxn">${n} Std.</span></span></div>${addBtn(`data-code="${code}"`, t)}</li>`).join("")));
+  return `<aside class="bxpal" aria-label="Bausteinkiste"><div class="bxpalh"><b>Bausteinkiste</b><span class="small muted">Ziehen oder „+“. Zurück in die Kiste ziehen nimmt einen Baustein aus dem Plan.</span></div>${out.join("")}</aside>`;
+}
+function planBlocks(g) {
+  const sc = schedule(g);
+  const stacks = bxTracks(g).map(tr => {
+    const items = bxStack(g, tr), ss = sc.slots.filter(s => s.track === tr && !s.cancelled);
+    const days = [...new Set(ss.slice(0, 15).map(s => dow(s.date)))].sort().map(d => DAYS[d]).join(", ");
+    const res = sc.cap[tr] - sc.planned[tr];
+    return `<section class="bxstack" data-tr="${tr}" aria-label="${esc(trackName(g, tr))}">
+      <div class="bxhat"><b>${esc(trackName(g, tr))}</b><span>${esc(days)}${ss[0] ? ` · ab ${esc(fmtWd(ss[0].date))}` : ""}</span>
+        <span class="bxcap${res < 0 ? " neg" : ""}">${sc.planned[tr]} von ${sc.cap[tr]} Std. · ${res === 0 ? "geht genau auf" : res > 0 ? `${res} frei` : `${-res} zu viel`}</span></div>
+      <div class="bxlist">${items.map(it => bxItem(g, it, tr)).join("")}<div class="bxend" data-tr="${tr}">${items.length ? "Hierher ziehen: ans Ende" : "Bausteine aus der Kiste hierher ziehen"}</div></div></section>`;
+  }).join("");
+  return `<div class="bxwrap">${bxPalette(g)}<div class="bxws">${stacks}</div></div>`;
+}
+/* Einfügeposition in der Sequenz: hinter der Zeile afterId, ohne afterId vor der ersten Zeile des Strangs */
+function bxInsertIdx(g, tr, afterId) {
+  const C = S.cls[ck(g)];
+  if (afterId) { const i = C.seq.findIndex(r => r.id === afterId); if (i >= 0) return i + 1; }
+  const first = schedule(g).rows.find(r => bxTrackOf(g, r) === tr);
+  return first ? first.idx : C.seq.length;
+}
+/* Letzte Zeile eines Stapels (für „ans Ende“) */
+function bxLastRow(g, tr) { const rs = bxStack(g, tr).filter(it => it.t === "row"); return rs.length ? rs[rs.length - 1].r.id : null; }
+/* Baustein ablegen. d: { t: "row", row } | { t: "chk", id } | { t: "pal", code | ln | chk, dur } */
+function bxPlace(g, d, tr, afterId) {
+  const k = ck(g), C = S.cls[k], sc = schedule(g), strand = sc.seqMode && tr !== "SOL" ? "A" : tr;
+  if (d.t === "pal" && d.ln) {
+    const K = LN_KINDS[d.ln]; if (!K) return;
+    const code = addLn(k, { kind: d.ln, dur: K.dur, wdh: K.wdh, rueck: K.rueck, afterIdx: bxInsertIdx(g, tr, afterId) - 1, g });
+    const row = C.seq.find(r => r.code === code); if (row) { UI.bxSel = row.id; render(); }
+    return;
+  }
+  const snap = snapshotFor(k); let msg = "";
+  if (d.t === "row") {
+    const i = C.seq.findIndex(r => r.id === d.row); if (i < 0 || d.row === afterId) return;
+    const row = C.seq[i]; C.seq.splice(i, 1); touch();
+    C.seq.splice(bxInsertIdx(g, tr, afterId), 0, row);
+    if (isLnRow(k, row.code)) {
+      let un = false; C.groups.forEach(G => { if (G.pin && G.pin[row.id]) { delete G.pin[row.id]; un = true; } });
+      msg = `${row.code} verschoben.${un ? " Der feste Termin ist gelöst: Antippen und „Termin“ wählen, um ihn wieder festzulegen." : ""}`;
+    } else { row.strand = strand; msg = `${row.code} verschoben.`; }
+    UI.bxSel = row.id;
+  } else if (d.t === "pal" && d.code) {
+    const u = unitOf(k, d.code), hours = d.code === "P" ? 1 : d.code === "JA" ? (u && u.stunden && u.stunden.length) || 2 : (u && u.stunden && u.stunden.length) || 1;
+    const row = { id: uid(), code: d.code, strand, hours };
+    C.seq.splice(bxInsertIdx(g, tr, afterId), 0, row); UI.bxSel = row.id;
+    msg = `${d.code} eingefügt (${hours} Std.).`;
+  } else if (d.t === "chk" || (d.t === "pal" && d.chk)) {
+    const R = afterId ? C.seq.find(r => r.id === afterId) : sc.rows.find(r => bxTrackOf(g, r) === tr);
+    if (!R) { toast("Zuerst eine Einheit in den Strang legen, dann eine Kontrolle dahinter."); return; }
+    const n = afterId ? Math.max(1, R.hours) : 1;
+    let x;
+    if (d.t === "chk") { x = (C.checks || []).find(y => y.id === d.id); if (!x) return; delete x.date; }
+    else { x = { id: uid(), kind: d.chk, title: "", dur: +d.dur || 20 }; C.checks = C.checks || []; C.checks.push(x); }
+    x.code = R.code; x.n = n; if (["P", "JA"].includes(R.code)) x.row = R.id; else delete x.row;
+    UI.bxSel = "c:" + x.id;
+    msg = `${CHECK_KINDS[x.kind]} (${x.dur} min) in ${R.code}, Stunde ${n}. Sie kostet keine eigene Stunde.`;
+  } else return;
+  undoStack = snap; commit(k); toast(msg, true);
+}
+/* In die Kiste gezogen: aus dem Plan nehmen */
+function bxRemove(g, d) {
+  const k = ck(g), C = S.cls[k];
+  if (d.t === "chk") { removeLn(k, { id: d.id }); return; }
+  if (d.t !== "row") return;
+  const row = C.seq.find(r => r.id === d.row); if (!row) return;
+  if (isLnRow(k, row.code)) { removeLn(k, { row: row.id }); return; }
+  const snap = snapshotFor(k); C.seq = C.seq.filter(r => r !== row); C.groups.forEach(G => { if (G.adj) delete G.adj[row.id]; });
+  if (UI.bxSel === row.id) UI.bxSel = null;
+  undoStack = snap; commit(k); toast(`${row.code} liegt wieder in der Kiste.`, true);
+}
+/* „+“ in der Kiste: hinter dem gewählten Baustein, sonst ans Ende des passenden Strangs */
+function bxAdd(g, d) {
+  const k = ck(g), sc = schedule(g), sel = UI.bxSel;
+  let tr = "A", after = null;
+  const u0 = d.code && unitOf(k, d.code), t0 = d.code && D.classes[k].seq.find(r => r[0] === d.code);
+  const natural = sc.seqMode || !u0 || d.code === "P" || d.code === "JA" || u0.lb === "test" ? null : t0 ? (t0[1] === "B" ? "B" : "A") : u0.lb.startsWith("LB") ? obLbStrand(k, u0.lb) : null;
+  const selRow = sel && !sel.startsWith("c:") ? sc.rows.find(r => r.id === sel) : null;
+  const selChk = sel && sel.startsWith("c:") ? (S.cls[k].checks || []).find(x => x.id === sel.slice(2)) : null;
+  if (selRow && (!natural || natural === bxTrackOf(g, selRow))) { tr = bxTrackOf(g, selRow); after = selRow.id; }
+  else if (selChk && !natural) { const p = checkPos(g, selChk), r = sc.rows.find(y => y.id === p.rowId); if (r) { tr = bxTrackOf(g, r); after = r.id; } }
+  else {
+    if (natural) tr = natural;
+    after = bxLastRow(g, tr);
+  }
+  bxPlace(g, d, tr, after);
+}
+/* Alles leeren: Sequenz, Kontrollen, Termine und Abweichungen; die Bausteine liegen danach wieder in der Kiste */
+function bxClear(k) {
+  const C = S.cls[k], snap = snapshotFor(k);
+  C.seq = []; C.checks = []; C.groups.forEach(G => { G.pin = {}; G.adj = {}; });
+  UI.bxSel = null; UI.confirm = null; undoStack = snap; commit(k);
+  toast("Plan geleert. Alle Bausteine liegen wieder in der Kiste.", true);
+}
 /* „Mehr …“: seltene Funktionen (Vorlage, Stunden je Lernbereich, Zurücksetzen) */
 function planMore(g, list) {
   const k = ck(g), C = S.cls[k], c = D.classes[k], lbh = lbHours(g), multi = C.groups.length > 1;
@@ -1873,20 +2095,24 @@ function strandWarn(g) {
 }
 function viewPlan() {
   const g = curG(); sortPinnedRows(g);
-  const k = ck(g), C = S.cls[k], list = UI.planView === "list";
+  const k = ck(g), C = S.cls[k], list = UI.planView === "list", blocks = UI.planView === "blocks";
+  const clearConf = UI.confirm === "bxclear-" + k, resetConf = UI.confirm === "reset-" + g;
+  const bxTools = clearConf ? `<span class="confirm small"><span>Alle Bausteine aus dem Plan nehmen?</span><button type="button" class="btn danger sm" data-act="bxclear" data-k="${k}">Alles leeren</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>`
+    : resetConf ? `<span class="confirm small"><span>Plan wieder auf die Vorlage setzen?</span><button type="button" class="btn danger sm" data-act="reset" data-k="${k}">Vorlage laden</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="">Abbrechen</button></span>`
+    : `<button type="button" class="btn ghost sm" data-act="confirm" data-v="reset-${g}">Vorlage laden</button><button type="button" class="btn ghost sm" data-act="confirm" data-v="bxclear-${k}">Alles leeren</button>`;
   return `<section><div class="vhead"><h1>Jahresplan</h1>${clsTabs()}</div>
     ${tplNewer(k, C) || list ? tplBox(g) : ""}
     <div class="ptools">
-      <div class="seg small" role="group" aria-label="Ansicht">${[["weeks", "Wochen"], ["list", "Liste"]].map(([v, l]) => `<button type="button" aria-selected="${(v === "list") === list}" data-act="planview" data-v="${v}">${l}</button>`).join("")}</div>
+      <div class="seg small" role="group" aria-label="Ansicht">${[["blocks", "Baukasten"], ["weeks", "Wochen"], ["list", "Liste"]].map(([v, l]) => `<button type="button" aria-selected="${UI.planView === v}" data-act="planview" data-v="${v}">${l}</button>`).join("")}</div>
       <div class="seg small" role="group" aria-label="Modus">${[["Stränge", "In Strängen"], ["nacheinander", "Nacheinander"]].map(([v, l]) => `<button type="button" aria-selected="${C.mode === v}" data-act="mode" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>
       ${C.mode === "Stränge" ? `<button type="button" class="linkbtn small" data-act="sdopen" data-k="${k}">Stränge zuordnen …</button>` : ""}
       <span class="sp"></span>
-      ${list ? "" : `<button type="button" class="btn ghost sm" data-act="paddrow" aria-expanded="${!!UI.planAdd}">+ Einheit / Puffer</button><button type="button" class="btn sm" data-act="plnform" data-wk="${planLnWeek(g)}">+ Leistungsnachweis</button>`}
+      ${blocks ? bxTools : list ? "" : `<button type="button" class="btn ghost sm" data-act="paddrow" aria-expanded="${!!UI.planAdd}">+ Einheit / Puffer</button><button type="button" class="btn sm" data-act="plnform" data-wk="${planLnWeek(g)}">+ Leistungsnachweis</button>`}
     </div>
-    ${capCards(g)}
-    ${strandWarn(g)}
-    ${!list && UI.planAdd ? addRowCard(g) : ""}
-    ${list ? planList(g) : planWeeks(g)}
+    ${blocks ? "" : capCards(g)}
+    ${blocks ? "" : strandWarn(g)}
+    ${!list && !blocks && UI.planAdd ? addRowCard(g) : ""}
+    ${blocks ? planBlocks(g) : list ? planList(g) : planWeeks(g)}
     ${planMore(g, list)}</section>`;
 }
 
@@ -2682,13 +2908,21 @@ document.addEventListener("click", ev => {
     case "sdopen": strandDlgOpen(k); break;
     case "sdclose": strandDlgClose(); break;
     case "sdapply": strandDlgApply(); break;
-    case "planview": UI.planView = b.dataset.v === "list" ? "list" : "weeks"; UI.planSel = null; UI.planLn = null; try { localStorage.setItem("mp-planview", UI.planView); } catch (e) {} render(); break;
+    case "planview": UI.planView = ["blocks", "list"].includes(b.dataset.v) ? b.dataset.v : "weeks"; UI.planSel = null; UI.planLn = null; UI.bxSel = null; UI.confirm = null; try { localStorage.setItem("mp-planview", UI.planView); } catch (e) {} render(); break;
     case "psel": {
       const row = b.dataset.row || null, chk = b.dataset.chk || null, cur = UI.planSel;
       UI.planSel = (row || chk) && !(cur && cur.row === row && cur.chk === chk && cur.wk === b.dataset.wk) ? { row, chk, wk: b.dataset.wk } : null;
       UI.planLn = null; UI.confirm = null; render(); break;
     }
     case "pmv": moveInStrand(curG(), b.dataset.row, +b.dataset.n); break;
+    case "bxsel": {
+      const v = b.dataset.v; UI.bxSel = UI.bxSel === v && !b.dataset.go ? null : v; UI.confirm = null; render();
+      if (b.dataset.go) { const el = document.querySelector(`.bxlist .bx[data-row="${CSS.escape(v)}"]`); if (el) el.scrollIntoView({ block: "center" }); }
+      break;
+    }
+    case "bxadd": bxAdd(curG(), { t: "pal", code: b.dataset.code, ln: b.dataset.ln, chk: b.dataset.chk, dur: b.dataset.dur }); break;
+    case "bxstrand": { const C = S.cls[k], row = C.seq.find(r => r.id === b.dataset.row); if (!row) break; const snap = snapshotFor(k); row.strand = b.dataset.v; undoStack = snap; commit(k); toast(`${row.code} läuft jetzt in ${b.dataset.v === "SOL" ? "den FIL-Stunden" : "Strang " + b.dataset.v}.`, true); break; }
+    case "bxclear": bxClear(k); break;
     case "paddrow": UI.planAdd = !UI.planAdd; render(); break;
     case "plnform": UI.planLn = b.dataset.wk && UI.planLn !== b.dataset.wk ? b.dataset.wk : null; UI.planSel = null; render(); if (UI.planLn) { const f = document.querySelector(".plnf"); if (f) f.scrollIntoView({ block: "nearest" }); } break;
     case "plnadd": {
@@ -2720,7 +2954,7 @@ document.addEventListener("click", ev => {
       saveFile(name, JSON.stringify(body, null, 1)).then(() => toast(`Vorlage gespeichert: ${name}. Für die Fachschaft in src/vorlage/ ablegen.`), () => toast("Speichern abgebrochen."));
       break;
     }
-    case "reset": { const d0 = defaultClass(k); d0.tpl.atoms = clone(tplOf(k, S.cls[k]).atoms); S.cls[k] = Object.assign(d0, { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {}, pin: kaPins(k, d0.seq, cal()) })) }); } UI.confirm = null; commit(k); toast("Sequenz zurückgesetzt."); break;
+    case "reset": { undoStack = snapshotFor(k); const d0 = defaultClass(k); d0.tpl.atoms = clone(tplOf(k, S.cls[k]).atoms); S.cls[k] = Object.assign(d0, { atoms: S.cls[k].atoms, ln: S.cls[k].ln || {}, checks: S.cls[k].checks || [], groups: S.cls[k].groups.map(G => Object.assign(G, { adj: {}, pin: kaPins(k, d0.seq, cal()) })) }); } UI.confirm = null; UI.bxSel = null; commit(k); toast("Plan auf die Vorlage zurückgesetzt.", true); break;
     case "resetall": { resetYearState(); CLASSES.forEach(c => { save(c); GIDS.forEach(gid => save(engDoc(gkey(c, gid)))); }); cal().engineStart = cal().start; save("settings"); undoStack = null; UI.confirm = null; touch(); render(); toast(`Schuljahr ${yearLabel(cal().id)} zurückgesetzt.`); break; }
     case "engfilter": UI.engFilter = b.dataset.v; render(); break;
     case "atomnew": UI.editAtom = { code: b.dataset.code, id: "new", l: +b.dataset.l }; render(); break;
@@ -2913,12 +3147,52 @@ document.addEventListener("drop", ev => {
   const t = dragLn && ev.target.closest && ev.target.closest("tr[data-wk]"); if (!t) return;
   ev.preventDefault(); const d = dragLn; dragLn = null; dropOnWeek(curG(), d, t.dataset.wk);
 });
+/* Baukasten: Bausteine aus der Kiste in einen Strang ziehen, im Stapel verschieben, zurück in die Kiste */
+let dragBx = null;
+const bxClear0 = () => document.querySelectorAll(".bxdrop,.bxdrop-b,.bxdrop-a,.bx.dragging").forEach(el => el.classList.remove("bxdrop", "bxdrop-b", "bxdrop-a", "dragging"));
+function bxTarget(ev) {
+  const t = ev.target.closest && ev.target.closest(".bxlist .bx, .bxend, .bxpal"); if (!t) return null;
+  if (t.classList.contains("bxpal")) return dragBx.t === "pal" ? null : { el: t, cls: "bxdrop", pal: true };
+  if (t.classList.contains("bxend")) return { el: t, cls: "bxdrop", tr: t.dataset.tr, end: true };
+  const r = t.getBoundingClientRect(), before = ev.clientY < r.top + r.height / 2;
+  return { el: t, cls: before ? "bxdrop-b" : "bxdrop-a", tr: t.closest(".bxstack").dataset.tr, before };
+}
+document.addEventListener("dragstart", ev => {
+  const el = ev.target.closest && ev.target.closest("[data-bx]"); if (!el) return;
+  const ds = el.dataset;
+  dragBx = ds.bx === "row" ? { t: "row", row: ds.row } : ds.bx === "chk" ? { t: "chk", id: ds.id } : { t: "pal", code: ds.code, ln: ds.ln, chk: ds.chk, dur: ds.dur };
+  el.classList.add("dragging");
+  try { ev.dataTransfer.setData("text/plain", ds.row || ds.id || ds.code || ds.ln || ds.chk || ""); ev.dataTransfer.effectAllowed = "move"; } catch (e) {}
+});
+document.addEventListener("dragend", () => { dragBx = null; bxClear0(); });
+document.addEventListener("dragover", ev => {
+  if (!dragBx) return; const t = bxTarget(ev); if (!t) return;
+  ev.preventDefault();
+  document.querySelectorAll(".bxdrop,.bxdrop-b,.bxdrop-a").forEach(el => { if (el !== t.el) el.classList.remove("bxdrop", "bxdrop-b", "bxdrop-a"); });
+  t.el.classList.remove("bxdrop-b", "bxdrop-a"); t.el.classList.add(t.cls);
+});
+document.addEventListener("drop", ev => {
+  if (!dragBx) return; const t = bxTarget(ev); if (!t) return;
+  ev.preventDefault(); const d = dragBx, g = curG(); dragBx = null; bxClear0();
+  if (t.pal) { bxRemove(g, d); return; }
+  let after = null;
+  if (t.end) after = bxLastRow(g, t.tr);
+  else {
+    const own = t.el.dataset.row || t.el.dataset.in;
+    if (!t.before || t.el.dataset.in) after = own;
+    else { let p = t.el.previousElementSibling; while (p && !(p.classList.contains("bx") && (p.dataset.row || p.dataset.in))) p = p.previousElementSibling; after = p ? p.dataset.row || p.dataset.in : null; }
+  }
+  if (d.t === "row" && d.row === after) return;
+  bxPlace(g, d, t.tr, after);
+});
+/* Gruppen der Bausteinkiste bleiben beim Neuzeichnen auf- oder zugeklappt */
+document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("bxgrp")) { const d = ev.target, id = d.dataset.g; if (d.open === (d.dataset.def === "1")) delete UI.bxOpen[id]; else UI.bxOpen[id] = d.open; } }, true);
 /* „Mehr …“ im Jahresplan bleibt beim Neuzeichnen offen */
 document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("pmore")) UI.planMore = ev.target.open; }, true);
 document.addEventListener("keydown", ev => {
   if (UI.dp && ev.key === "Escape") { dpClose(); return; }
   if (UI.strandDlg && ev.key === "Escape") { strandDlgClose(); return; }
-  if ((UI.planSel || UI.planLn) && ev.key === "Escape" && route() === "plan" && !ev.target.closest("input,select,textarea")) { UI.planSel = null; UI.planLn = null; render(); return; }
+  if ((UI.planSel || UI.planLn || UI.bxSel) && ev.key === "Escape" && route() === "plan" && !ev.target.closest("input,select,textarea")) { UI.planSel = null; UI.planLn = null; UI.bxSel = null; render(); return; }
   if (UI.ob && ev.key === "Escape") { UI.ob = null; UI.obDismissed = true; renderOverlay(); render(); return; }
   if (!UI.quiz && !UI.solOpen) return;
   if (ev.key === "Escape") { closeOverlay(); return; }
@@ -2930,7 +3204,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay, bxPlace, bxAdd, bxRemove, bxClear, bxStack, bxTrackOf };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };

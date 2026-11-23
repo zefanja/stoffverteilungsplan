@@ -671,7 +671,7 @@ function serve(dir) {
   const hscroll = [], vpPlan = p.viewportSize(), uiPlan = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type, window.__mp.UI.planView]);
   for (const w of [1280, 1024, 800, 390]) {
     await p.setViewportSize({ width: w, height: 900 });
-    for (const c of ['kl6', 'kl8']) for (const v of ['weeks', 'list']) {
+    for (const c of ['kl6', 'kl8']) for (const v of ['blocks', 'weeks', 'list']) {
       await p.evaluate(([c, v]) => { const M = window.__mp; M.UI.cls = c; M.UI.type = 'gym'; M.UI.planView = v; location.hash = 'plan'; window.dispatchEvent(new HashChangeEvent('hashchange')); }, [c, v]); await p.waitForTimeout(120);
       const bad = await p.evaluate(() => [document.documentElement, ...document.querySelectorAll('main .tscroll')].filter(e => e.scrollWidth > e.clientWidth + 1).map(e => (e.className || 'html') + ' ' + e.scrollWidth + '/' + e.clientWidth));
       if (bad.length) hscroll.push([w, c, v, bad]);
@@ -680,6 +680,46 @@ function serve(dir) {
   await p.setViewportSize(vpPlan);
   await p.evaluate(u => { const M = window.__mp; M.UI.cls = u[0]; M.UI.type = u[1]; M.UI.planView = u[2]; location.hash = 'heute'; }, uiPlan); await p.waitForTimeout(150);
   ok(!hscroll.length, 'Jahresplan scrollt nicht quer (1280 bis 390 px) ' + JSON.stringify(hscroll));
+  // Baukasten: Stapel je Strang mit Ferien, Bausteine verschieben, aus der Kiste einfügen, Kontrolle anstecken, alles leeren
+  const bxUi = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type, window.__mp.UI.planView]);
+  await p.evaluate(() => { const M = window.__mp; M.UI.cls = 'kl6'; M.UI.type = 'gym'; M.UI.planView = 'blocks'; M.UI.bxSel = null; location.hash = 'heute'; location.hash = 'plan'; }); await p.waitForTimeout(250);
+  const bxKeep = await p.evaluate(() => JSON.stringify({ seq: window.__mp.S.cls.kl6.seq, checks: window.__mp.S.cls.kl6.checks, groups: window.__mp.S.cls.kl6.groups }));
+  const bx0 = await p.evaluate(() => ({ stacks: [...document.querySelectorAll('.bxstack')].map(e => e.dataset.tr).join(), hol: [...document.querySelectorAll('.bxstack[data-tr="A"] .bxhol b')].map(e => e.textContent),
+    ka: document.querySelectorAll('.bxlist .bx.ln').length, used: document.querySelectorAll('.bxpal .bx.used').length, seg: document.querySelector('[data-act="planview"][data-v="blocks"]').getAttribute('aria-selected') }));
+  ok(bx0.stacks === 'A,B' && bx0.hol.includes('Herbstferien') && bx0.ka >= 4 && bx0.used > 10 && bx0.seg === 'true',
+    'Baukasten: ein Stapel je Strang, Ferien als Streifen, Klassenarbeiten als eigene Bausteine, eingeplante Einheiten in der Kiste blass ' + JSON.stringify(bx0));
+  // Einheit ans Ende des anderen Strangs legen und zurück per Rückgängig
+  const bxA4 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A4').id);
+  await p.evaluate(id => { const M = window.__mp, st = M.bxStack('kl6.a', 'B').filter(x => x.t === 'row'); M.bxPlace('kl6.a', { t: 'row', row: id }, 'B', st[st.length - 1].r.id); }, bxA4); await p.waitForTimeout(250);
+  const bxMv = await p.evaluate(id => { const M = window.__mp, r = M.S.cls.kl6.seq.find(x => x.id === id), st = M.bxStack('kl6.a', 'B').filter(x => x.t === 'row'); return [r.strand, st[st.length - 1].r.code]; }, bxA4);
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(150);
+  const bxMv2 = await p.evaluate(id => window.__mp.S.cls.kl6.seq.find(x => x.id === id).strand, bxA4);
+  ok(bxMv[0] === 'B' && bxMv[1] === 'A4' && bxMv2 === 'A', 'Baukasten: Baustein ans Ende des anderen Strangs, rückgängig ' + JSON.stringify([bxMv, bxMv2]));
+  // In die Kiste ziehen nimmt die Einheit heraus; „+“ hinter dem gewählten Baustein fügt sie wieder ein
+  await p.dragAndDrop(`.bxlist .bx[data-row="${bxA4}"] >> nth=0`, '.bxpal', { targetPosition: { x: 40, y: 40 } }); await p.waitForTimeout(250);
+  const bxOut = await p.evaluate(() => !window.__mp.S.cls.kl6.seq.some(r => r.code === 'A4') && !!document.querySelector('.bxpal .bx[data-code="A4"]:not(.used)'));
+  const bxA3 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A3').id);
+  await p.click(`.bxlist .bx[data-row="${bxA3}"] >> nth=0 >> .bxmain`); await p.waitForTimeout(150);
+  await p.click('.bxpal [data-act="bxadd"][data-code="A4"]'); await p.waitForTimeout(250);
+  const bxIn = await p.evaluate(id => { const s = window.__mp.S.cls.kl6.seq, i = s.findIndex(r => r.id === id); return [s[i + 1] && s[i + 1].code, s[i + 1] && s[i + 1].hours, window.__mp.UI.bxSel === (s[i + 1] || {}).id]; }, bxA3);
+  ok(bxOut && bxIn[0] === 'A4' && bxIn[1] === 8 && bxIn[2], 'Baukasten: in die Kiste ziehen nimmt heraus, „+“ fügt hinter dem gewählten Baustein ein ' + JSON.stringify([bxOut, bxIn]));
+  // Kurzkontrolle aus der Kiste hinter A4: eigener Baustein, steckt in der letzten Stunde von A4; Klassenarbeit vor A5 ziehen
+  await p.click('.bxpal [data-act="bxadd"][data-chk="kk"]'); await p.waitForTimeout(250);
+  const bxChk = await p.evaluate(() => { const x = (window.__mp.S.cls.kl6.checks || []).slice(-1)[0]; return x ? [x.kind, x.dur, x.code, x.n, !!document.querySelector(`.bxlist .bx.chk[data-id="${x.id}"]`)] : null; });
+  const bxA5 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A5').id);
+  await p.evaluate(() => { const d = document.querySelector('details.bxgrp[data-g="test"]'); d.open = true; }); await p.waitForTimeout(100);
+  await p.dragAndDrop('.bxpal .bx[data-ln="ka"]', `.bxlist .bx[data-row="${bxA5}"] >> nth=0`, { targetPosition: { x: 150, y: 4 } }); await p.waitForTimeout(250);
+  const bxKa = await p.evaluate(id => { const M = window.__mp, s = M.S.cls.kl6.seq, i = s.findIndex(r => r.id === id); return [s[i - 1].code, ((M.S.cls.kl6.ln || {})[s[i - 1].code] || {}).lb]; }, bxA5);
+  ok(bxChk && bxChk[0] === 'kk' && bxChk[1] === 20 && bxChk[2] === 'A4' && bxChk[3] === 8 && bxChk[4] && /^KA\d/.test(bxKa[0]) && bxKa[1] === 'test',
+    'Baukasten: Kurzkontrolle und Klassenarbeit aus der Kiste als eigene Bausteine ' + JSON.stringify([bxChk, bxKa]));
+  // Alles leeren (mit Nachfrage) und rückgängig
+  await p.click('[data-act="confirm"][data-v="bxclear-kl6"]'); await p.waitForTimeout(100);
+  await p.click('[data-act="bxclear"]'); await p.waitForTimeout(250);
+  const bxEmpty = await p.evaluate(() => { const C = window.__mp.S.cls.kl6; return [C.seq.length, C.checks.length, Object.keys(C.groups[0].pin || {}).length, document.querySelectorAll('.bxlist .bx').length, document.querySelectorAll('.bxpal .bx.used').length, document.querySelectorAll('.bxend').length]; });
+  await p.click('#toast [data-act="undo"]'); await p.waitForTimeout(200);
+  const bxBack = await p.evaluate(() => window.__mp.S.cls.kl6.seq.length);
+  ok(bxEmpty.slice(0, 5).every(n => n === 0) && bxEmpty[5] === 2 && bxBack > 40, 'Baukasten: Alles leeren legt alle Bausteine zurück in die Kiste, rückgängig ' + JSON.stringify([bxEmpty, bxBack]));
+  await p.evaluate(([d, u]) => { const M = window.__mp, C = M.S.cls.kl6, o = JSON.parse(d); C.seq = o.seq; C.checks = o.checks; C.groups = o.groups; Object.keys(C.ln || {}).forEach(c => { if (!C.seq.some(r => r.code === c)) delete C.ln[c]; }); M.UI.bxSel = null; M.commit('kl6'); M.UI.cls = u[0]; M.UI.type = u[1]; M.UI.planView = u[2]; location.hash = 'heute'; }, [bxKeep, bxUi]); await p.waitForTimeout(150);
   // Sequenz: Leistungsnachweise ohne Strangauswahl (GYM 6 mit zwei Strängen und weitere Klassen)
   const uiKeep = await p.evaluate(() => [window.__mp.UI.cls, window.__mp.UI.type]);
   const strandUi = [];
