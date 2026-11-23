@@ -349,6 +349,17 @@ table.plan tr.pedit td{background:var(--soft);padding:10px}
 .bxok{color:var(--ok);white-space:nowrap} .bxwarn{color:var(--lb2);white-space:nowrap}
 .bxlns li{display:flex;justify-content:space-between;gap:8px}
 .bxlns li.bxwarn{white-space:normal}
+.ltbtn{border:0;background:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;margin-left:4px;border-radius:4px;opacity:.55}
+.lesson:hover .ltbtn,.ltbtn:focus-visible{opacity:1}
+@media (hover:none){.ltbtn{opacity:1}}
+.ltbtn:hover{color:var(--accent);background:var(--soft)}
+.ltedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:400}
+.ltinp{flex:1 1 220px;min-width:0;font:inherit;font-weight:600}
+.uaddh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:12px}
+.bxreq{list-style:none;margin:0;padding:8px 10px;display:grid;gap:4px;font-size:13px;background:var(--soft);border-radius:6px}
+.bxreq li{display:flex;justify-content:space-between;gap:8px}
+table.req th[scope="row"]{display:grid;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);border-bottom:1px solid var(--line)}
+table.req td input{width:4.2em}
 .bxlnk{display:grid;gap:1px;width:100%;text-align:left;font-size:13px}
 .bxlnk .mono{font-size:12px;color:var(--muted)}
 @media (max-width:1399px){.bxwrap{grid-template-columns:minmax(220px,280px) minmax(0,1fr);grid-template-areas:"pal side" "pal ws"}.bxpal{grid-row:1 / span 2}

@@ -1,7 +1,7 @@
 // Baut dist/vorlage.js (Fachschaftsvorlage) aus den Dateien in src/vorlage/*.json.
 // Aufruf: node src/build_vorlage.js
 // Jede Datei ist ein Export aus der App (Einstellungen → Fachschaftsvorlage → „… als Vorlage speichern“):
-// eine Klasse ({ app: "matheplaner-vorlage", id, mode, seq, atoms, ln }) oder mehrere ({ app, classes: { id: {…} } }).
+// eine Klasse ({ app: "matheplaner-vorlage", id, mode, seq, atoms, ln, req }) oder mehrere ({ app, classes: { id: {…} } }).
 // Geprüft wird gegen dist/data.js: Klasse, Kürzel der Sequenz, Einheiten der Atome und Aufbau der Atome.
 // Bei Fehlern bricht das Skript ab und dist/vorlage.js bleibt unverändert.
 const fs = require('fs');
@@ -62,7 +62,13 @@ for (const f of files) {
       });
       atoms[code] = list;
     }
-    classes[k] = { exported: isStr(t.exported) ? t.exported : (isStr(o.exported) ? o.exported : null), mode: t.mode || c.mode, seq: t.seq, atoms, ln };
+    // Vorgabe der Fachschaft: Anzahl Leistungsnachweise je Art (ka, klausur, test, praes, komplex, chk)
+    let req;
+    if (t.req !== undefined) {
+      if (!t.req || typeof t.req !== 'object') err(f, `${k}: req muss ein Objekt sein`);
+      else { req = {}; for (const [v, n] of Object.entries(t.req)) { if (![...KINDS, 'chk'].includes(v)) err(f, `${k}: Vorgabe für unbekannte Art "${v}"`); else if (!Number.isInteger(n) || n < 0) err(f, `${k}: Vorgabe ${v} muss eine ganze Zahl ab 0 sein`); else if (n) req[v] = n; } }
+    }
+    classes[k] = Object.assign({ exported: isStr(t.exported) ? t.exported : (isStr(o.exported) ? o.exported : null), mode: t.mode || c.mode, seq: t.seq, atoms, ln }, req && Object.keys(req).length ? { req } : {});
     from[k] = f;
     const d = classes[k].exported;
     if (d && (!updated || d > updated)) updated = d;
