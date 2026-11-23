@@ -2937,7 +2937,7 @@ function renderOverlay() {
 }
 
 /* ---------------- router & render ---------------- */
-const NAV = [["heute", "Heute"], ["plan", "Jahresplan"], ["einheiten", "Einheiten"], ["lernuebersicht", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
+const NAV = [["heute", "Heute"], ["einheiten", "Einheiten"], ["plan", "Jahresplan"], ["lernuebersicht", "Lernübersicht"], ["einstellungen", "Einstellungen"]];
 function route() { const h = (location.hash || "#heute").slice(1); return h || "heute"; }
 /* Ein Feld, das beim Neuaufbau den Fokus verliert, kann ein change-Ereignis auslösen; dann nach dem Durchlauf erneut zeichnen. */
 let rendering = false;
