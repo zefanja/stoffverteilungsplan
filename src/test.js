@@ -725,6 +725,13 @@ function serve(dir) {
       lns: e.querySelectorAll('.bxlns .bxlnk').length, short: (e.querySelector('.bxshort') || {}).textContent }; });
   ok(bxSd && bxSd.bal === 'Strang A,Strang B' && bxSd.lbs >= 5 && bxSd.full >= 5 && bxSd.lns >= 4 && /A: .*B: /.test(bxSd.short),
     'Baukasten: Seitenleiste mit Stunden je Strang, Lehrplan und Leistungsnachweisen ' + JSON.stringify(bxSd));
+  // Vorgabe der Fachschaft in „Passt das Jahr?“: erfüllt / nicht erfüllt, Kurzfassung nennt das Fehlende
+  const reqUi = await p.evaluate(async () => { const M = window.__mp, keep = JSON.stringify(M.S.settings.lnReq || null), n = M.lnCount('kl6.a').ka || 0;
+    M.setLnReq('gym-6', 'ka', n); const a = [...document.querySelectorAll('.bxreq li')].map(li => li.textContent.trim());
+    M.setLnReq('gym-6', 'ka', n + 1); const b = [...document.querySelectorAll('.bxreq .bxwarn')].length, sh = document.querySelector('.bxshort').textContent;
+    M.S.settings.lnReq = JSON.parse(keep) || undefined; M.commit(null, { settings: true }); return { n, a, b, sh }; });
+  ok(reqUi.n >= 4 && reqUi.a.length === 1 && reqUi.a[0].includes(reqUi.n + ' / ' + reqUi.n) && reqUi.b === 1 && reqUi.sh.includes('KA ' + reqUi.n + '/' + (reqUi.n + 1)),
+    'Baukasten: Vorgabe der Fachschaft in der Seitenleiste ' + JSON.stringify(reqUi));
   // Eigene Einheit: in der Kiste anlegen, liegt hinter dem gewählten Baustein, Einheitenseite zum Bearbeiten, Löschen
   const bxA2 = await p.evaluate(() => window.__mp.S.cls.kl6.seq.find(r => r.code === 'A2').id);
   await p.click(`.bxlist .bx[data-row="${bxA2}"] >> nth=0 >> .bxmain`); await p.waitForTimeout(150);
@@ -987,6 +994,10 @@ function serve(dir) {
   const sett = await p3.innerText('main');
   ok(sett.includes('Fachschaftsvorlage') && sett.includes('eigene Fassung'), 'Einstellungen: Karte Fachschaftsvorlage mit Stand je Klasse');
   await p3.screenshot({ path: path.join(OUT, 's_vorlage_einstellungen.png'), fullPage: true });
+  // Vorgabe der Fachschaft in den Einstellungen (eine Zeile je Schulart und Stufe), geht mit in die Vorlage
+  await p3.fill('#reqcard input[data-key="gym-8"][data-kind="ka"]', '4'); await p3.dispatchEvent('#reqcard input[data-key="gym-8"][data-kind="ka"]', 'change'); await p3.waitForTimeout(150);
+  const reqSet = await p3.evaluate(() => [window.__mp.lnReq('kl8'), JSON.stringify(window.__mp.S.settings.lnReq), document.querySelectorAll('#reqcard tbody tr').length]);
+  ok(reqSet[0].ka === 4 && reqSet[1].includes('"gym-8"') && reqSet[2] >= 1, 'Einstellungen: Vorgabe der Fachschaft je Schulart und Stufe ' + JSON.stringify(reqSet));
   const [dl] = await Promise.all([p3.waitForEvent('download'), p3.click('[data-act="tplexport"][data-k="kl8"]')]);
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'mpv-')), file = path.join(tmp, 'vorlage-kl8.json');
   await dl.saveAs(file);
@@ -997,13 +1008,14 @@ function serve(dir) {
   require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'src', 'build_vorlage.js')], { env: Object.assign({}, process.env, { VORLAGE_SRC: tmp, VORLAGE_OUT: out }) });
   const built = fs.readFileSync(out, 'utf8'); const sb = { window: {} }; require('vm').runInNewContext(built, sb);
   tplBody = sb.window.PLAN_TEMPLATE;
+  ok(ex.req && ex.req.ka === 4 && tplBody.classes.kl8.req && tplBody.classes.kl8.req.ka === 4, 'Export und build_vorlage.js: Vorgabe der Fachschaft (req) ' + JSON.stringify([ex.req, tplBody.classes.kl8.req]));
   fs.writeFileSync(path.join(tmp, 'kaputt.json'), JSON.stringify({ app: 'matheplaner-vorlage', id: 'kl8', mode: 'Stränge', seq: [['XYZ', 'A', 1]], atoms: {} }));
   let failed = false; try { require('child_process').execFileSync(process.execPath, [path.join(ROOT, 'src', 'build_vorlage.js')], { env: Object.assign({}, process.env, { VORLAGE_SRC: tmp, VORLAGE_OUT: out }), stdio: 'pipe' }); } catch (e) { failed = String(e.stderr).includes('XYZ'); }
   ok(failed && fs.readFileSync(out, 'utf8') === built, 'build_vorlage.js prüft die Dateien und bricht bei unbekannten Kürzeln ab');
   const p4 = await ctx3.newPage(); await p4.evaluate(() => localStorage.clear()).catch(() => {});
   await p4.goto(BASE + 'index.html#sequenz'); await p4.evaluate(() => localStorage.clear()); await p4.reload(); await p4.waitForTimeout(400);
-  const fresh = await p4.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; return { seq: C.seq.map(r => [r.code, r.strand, r.hours]), atom: M.atomsOf('kl8', 'T2')[0].t, unit: !!window.PLAN_DATA.classes.kl8.units.PR2 }; });
-  ok(JSON.stringify(fresh.seq) === JSON.stringify(mySeq) && fresh.atom.includes('eigene Fassung') && fresh.unit, 'Neue Lehrkraft startet mit der exportierten Fachschaftsvorlage');
+  const fresh = await p4.evaluate(() => { const M = window.__mp, C = M.S.cls.kl8; return { seq: C.seq.map(r => [r.code, r.strand, r.hours]), atom: M.atomsOf('kl8', 'T2')[0].t, unit: !!window.PLAN_DATA.classes.kl8.units.PR2, req: M.lnReq('kl8').ka }; });
+  ok(JSON.stringify(fresh.seq) === JSON.stringify(mySeq) && fresh.atom.includes('eigene Fassung') && fresh.unit && fresh.req === 4, 'Neue Lehrkraft startet mit der exportierten Fachschaftsvorlage (auch Vorgabe der Fachschaft)');
   await p4.close();
   // 6. Erinnerung an die Sicherung nach 30 Tagen, wenn nur im Browser gespeichert wird
   tplBody = { updated: null, classes: {} };

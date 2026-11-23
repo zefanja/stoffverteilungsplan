@@ -35,7 +35,7 @@ Object.entries(TPLDATA.classes || {}).forEach(([k, t]) => {
   }
   if (t.mode === "nacheinander" || t.mode === "Stränge") c.mode = t.mode;
   Object.entries(t.atoms || {}).forEach(([code, list]) => { if (c.units[code] && Array.isArray(list)) c.units[code].atoms = list; });
-  TPL[k] = { exported: t.exported || null, by: t.by || "" };
+  TPL[k] = { exported: t.exported || null, by: t.by || "", req: t.req && typeof t.req === "object" ? t.req : null };
 });
 
 /* ---------------- utils ---------------- */
@@ -445,7 +445,8 @@ function templateExport(k) {
     const list = atomsOf(k, code).map(a => { const x = {}; ["id", "l", "t", "q", "a", "q2", "a2", "q3", "a3", "g"].forEach(f => { if (a[f] !== undefined) x[f] = a[f]; }); return x; });
     if (ln[code] ? list.length : atomHash(list) !== LP[k].atoms[code]) atoms[code] = list;
   });
-  return { app: "matheplaner-vorlage", v: 1, id: k, label: fullLabel(k), exported: todayIso(), mode: C.mode, seq: seqArr(C.seq), atoms, ln };
+  const req = lnReq(k);
+  return Object.assign({ app: "matheplaner-vorlage", v: 1, id: k, label: fullLabel(k), exported: todayIso(), mode: C.mode, seq: seqArr(C.seq), atoms, ln }, Object.keys(req).length ? { req } : {});
 }
 let adoptedNote = new Set(), adoptedTimer = null;
 function noteAdopted(k) {
@@ -1141,6 +1142,31 @@ const LN_KINDS = {
   komplex: { label: "Komplexe Leistung / Projekt", short: "Projekt", prefix: "PJ", hours: 2, dur: 90, wdh: false, rueck: false }
 };
 const CHECK_KINDS = { kk: "Kurzkontrolle", test: "Test", muendl: "Mündliche Kontrolle", ha: "Hausaufgabenkontrolle", sonst: "Sonstige Bewertung" };
+/* Vorgabe der Fachschaft: Anzahl Leistungsnachweise je Art, pro Schulart und Klassenstufe (S.settings.lnReq["gym-6"]).
+   Ohne eigene Einstellung gilt, was die Fachschaftsvorlage mitbringt. "chk" = Kontrollen in einer Stunde (Kurzkontrollen, kurze Tests). */
+const REQ_KINDS = [["ka", "Klassenarbeiten", "KA"], ["klausur", "Klausuren", "Klausur"], ["test", "Tests (45 min)", "Test"], ["praes", "Präsentationen", "Präs."], ["komplex", "Projekte / komplexe Leistungen", "Projekt"], ["chk", "Kurzkontrollen und kurze Tests", "Kontrolle"]];
+const reqKey = k => `${D.classes[ck(k)].type}-${D.classes[ck(k)].grade}`;
+const reqLabel = key => { const [t, g] = key.split("-"); return `${(TYPES[t] || {}).short || t.toUpperCase()} ${g}`; };
+function tplReq(key) { const k = CLASSES.find(c => reqKey(c) === key && TPL[c] && TPL[c].req); return k ? TPL[k].req : null; }
+function lnReq(k) {
+  const key = reqKey(k), own = (S.settings.lnReq || {})[key], src = own || tplReq(key) || {}, out = {};
+  REQ_KINDS.forEach(([v]) => { const n = Math.round(+src[v] || 0); if (n > 0) out[v] = n; });
+  return out;
+}
+/* Leistungsnachweise im Plan je Art (Platzhalter der Vorlage ohne Art zählen als Klassenarbeit) */
+function lnCount(g) {
+  const k = ck(g), n = {};
+  lnDates(g).forEach(x => { const v = x.inLesson ? "chk" : ((unitOf(k, x.code) || {}).kind || "ka"); n[v] = (n[v] || 0) + 1; });
+  return n;
+}
+function setLnReq(key, kind, val) {
+  const n = Math.max(0, Math.min(30, Math.round(+val || 0)));
+  S.settings.lnReq = S.settings.lnReq || {};
+  const cur = S.settings.lnReq[key] || Object.assign({}, tplReq(key) || {});
+  if (n) cur[kind] = n; else delete cur[kind];
+  S.settings.lnReq[key] = cur;
+  commit(null, { settings: true });
+}
 /* Wählbare Dauer je Art; unter 45 min läuft der Leistungsnachweis in einer Stunde mit (wie eine Kurzkontrolle). */
 const LN_DURS = { ka: [45, 90], klausur: [45, 90], test: [20, 30, 45], praes: [45, 90], komplex: [45, 90] };
 const durLabel = d => d < 45 ? `${d} min (in einer Stunde)` : `${d} min (${d / 45} ${d === 45 ? "Stunde" : "Stunden"})`;
@@ -1999,12 +2025,18 @@ function bxSide(g) {
   const lns = lnDates(g), free = unitOrderOf(k).filter(code => (unitOf(k, code) || {}).lb === "test" && !used.has(code) && D.classes[k].units[code]);
   const lnLi = lns.map(x => `<li><button type="button" class="linkbtn bxlnk" data-act="bxsel" data-v="${esc(x.inLesson ? "c:" + x.id : x.row)}" data-go="1"><span>${esc(x.inLesson ? `${x.kind} ${x.dur} min${x.code ? " · " + x.code : ""}` : x.title)}</span><span class="mono">${x.date ? esc(fmtWd(x.date)) : "ohne Termin"}${x.pinned ? " · fest" : ""}</span></button></li>`).join("")
     + free.map(code => `<li class="bxwarn"><span>${esc(titleOf(k, code))}</span><span class="small">nicht im Plan</span></li>`).join("");
-  const nKa = lns.filter(x => !x.inLesson).length, nChk = lns.length - nKa;
-  const short = bxTracks(g).map(tr => { const res = sc.cap[tr] - sc.planned[tr], nm = tr === "SOL" ? "FIL" : sc.seqMode ? "Plan" : tr; return `${nm}: ${res === 0 ? "geht auf" : res > 0 ? `${res} frei` : `${-res} zu viel`}`; }).join(" · ");
+  const nKa = lns.filter(x => !x.inLesson).length, nChk = lns.length - nKa, req = lnReq(k), cnt = lnCount(g);
+  const reqRows = REQ_KINDS.filter(([v]) => req[v]).map(([v, l]) => { const n = cnt[v] || 0, ok = n >= req[v];
+    return `<li><span>${esc(l)}</span><span class="mono ${ok ? "bxok" : "bxwarn"}">${n} / ${req[v]}${ok ? " ✓" : ""}</span></li>`; }).join("");
+  const reqMiss = REQ_KINDS.filter(([v]) => req[v] && (cnt[v] || 0) < req[v]).map(([v, , sh]) => `${sh} ${cnt[v] || 0}/${req[v]}`);
+  const reqBox = reqRows ? `<ul class="bxreq" aria-label="Vorgabe der Fachschaft für ${esc(reqLabel(reqKey(k)))}">${reqRows}</ul><button type="button" class="linkbtn small" data-act="goreq">Vorgabe ändern …</button>`
+    : `<button type="button" class="linkbtn small" data-act="goreq">Vorgabe der Fachschaft einstellen …</button>`;
+  const short = bxTracks(g).map(tr => { const res = sc.cap[tr] - sc.planned[tr], nm = tr === "SOL" ? "FIL" : sc.seqMode ? "Plan" : tr; return `${nm}: ${res === 0 ? "geht auf" : res > 0 ? `${res} frei` : `${-res} zu viel`}`; }).concat(reqMiss).join(" · ");
   const open = UI.bxSide !== undefined ? UI.bxSide : window.innerWidth >= 1400;
-  return `<details class="bxside" aria-label="Passt das Jahr?" ${open ? "open" : ""}><summary><h2>Passt das Jahr?</h2><span class="small bxshort${sc.planned && bxTracks(g).some(tr => sc.cap[tr] < sc.planned[tr]) ? " neg" : ""}">${esc(short)}</span></summary><div class="bxsidein">${bal}
+  return `<details class="bxside" aria-label="Passt das Jahr?" ${open ? "open" : ""}><summary><h2>Passt das Jahr?</h2><span class="small bxshort${reqMiss.length || bxTracks(g).some(tr => sc.cap[tr] < sc.planned[tr]) ? " neg" : ""}">${esc(short)}</span></summary><div class="bxsidein">${bal}
     <h3>Lehrplan</h3><ul class="bxlbs">${lbs}</ul>
     <h3>Leistungsnachweise <span class="small muted">${nKa} im Plan${nChk ? ` · ${nChk} ${nChk === 1 ? "Kontrolle" : "Kontrollen"}` : ""}</span></h3>
+    ${reqBox}
     <ul class="bxlns">${lnLi || `<li class="small muted">Noch keine. Aus der Kiste ziehen oder „+“.</li>`}</ul></div></details>`;
 }
 function planBlocks(g) {
@@ -2557,6 +2589,7 @@ function viewSettings() {
         <button type="button" class="linkbtn" data-act="freeadd">+ Freien Tag hinzufügen</button>
         <p class="small muted">Ferien Sachsen sind für 2025/26 bis 2029/30 eingebaut, spätere Jahre lädt die App von openholidaysapi.org. Schulinterne freie Tage bitte selbst ergänzen.</p></div>
     </div>
+    ${reqCard()}
     ${tplCard(k)}
     <div class="card"><h3>Sicherung</h3>
       <p class="small">Deine Daten werden automatisch gespeichert${local ? " – nur in diesem Browser" : ""}. Eine Sicherung enthält die Einstellungen aller Schuljahre und die Klassen und den Lernstand des angezeigten Schuljahres (${esc(yearLabel(Y.id))}).${local ? ` Letzte Sicherung: ${lastBackup() ? fmt(lastBackup(), { day: "2-digit", month: "2-digit", year: "numeric" }) : "noch keine"}.` : ""}</p>
@@ -2567,6 +2600,19 @@ function viewSettings() {
   </section>`;
 }
 
+/* Vorgaben der Fachschaft: Leistungsnachweise je Art, eine Zeile je Schulart und Stufe der eigenen Klassen */
+function reqCard() {
+  const keys = [...new Set(mineList().map(reqKey))];
+  const rows = keys.map(key => {
+    const k = CLASSES.find(c => reqKey(c) === key), req = lnReq(k), tpl = tplReq(key), own = !!(S.settings.lnReq || {})[key];
+    return `<tr><th scope="row">${esc(reqLabel(key))}${tpl ? `<span class="small muted">${own ? "angepasst" : "aus der Fachschaftsvorlage"}</span>` : ""}</th>${REQ_KINDS.map(([v, l, sh]) =>
+      `<td><input class="num mono" type="number" min="0" max="30" inputmode="numeric" value="${req[v] || ""}" placeholder="–" data-act="lnreq" data-key="${esc(key)}" data-kind="${v}" aria-label="${esc(reqLabel(key))}: ${esc(l)}"></td>`).join("")}</tr>`;
+  }).join("");
+  return `<div class="card" id="reqcard"><h3>Vorgaben der Fachschaft</h3>
+    <p class="small">Wie viele Leistungsnachweise je Art und Schuljahr vorgesehen sind, je Schulart und Klassenstufe. Der Jahresplan (Baukasten, „Passt das Jahr?“) zeigt, ob der Plan sie erfüllt. Leer = keine Vorgabe.</p>
+    ${rows ? `<div class="tscroll"><table class="form req"><thead><tr><th>Stufe</th>${REQ_KINDS.map(([, l, sh]) => `<th title="${esc(l)}">${esc(sh)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="small muted">${noClassMsg()}</p>`}
+    <p class="small muted">KA = Klassenarbeiten, Test = Tests mit 45 min, Kontrolle = Kurzkontrollen und kurze Tests in einer Stunde. Gilt für alle Schuljahre und geht mit in die Fachschaftsvorlage.</p></div>`;
+}
 /* Fachschaftsvorlage: was gemeinsam ist, was persönlich bleibt, Stand je eigener Klasse und Export. */
 function tplCard(g) {
   const mine = mineList(), stamp = TPLDATA.updated ? fmt(TPLDATA.updated, { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
@@ -3000,6 +3046,7 @@ document.addEventListener("click", ev => {
     case "bxadd": bxAdd(curG(), { t: "pal", code: b.dataset.code, ln: b.dataset.ln, chk: b.dataset.chk, dur: b.dataset.dur }); break;
     case "bxstrand": { const C = S.cls[k], row = C.seq.find(r => r.id === b.dataset.row); if (!row) break; const snap = snapshotFor(k); row.strand = b.dataset.v; undoStack = snap; commit(k); toast(`${row.code} läuft jetzt in ${b.dataset.v === "SOL" ? "den FIL-Stunden" : "Strang " + b.dataset.v}.`, true); break; }
     case "bxclear": bxClear(k); break;
+    case "goreq": location.hash = "#einstellungen"; setTimeout(() => { const c = document.getElementById("reqcard"); if (c) { window.scrollTo(0, c.getBoundingClientRect().top + window.scrollY - 70); const i = c.querySelector(`input[data-key="${reqKey(UI.cls)}"]`); if (i) i.focus({ preventScroll: true }); } }, 60); break;
     case "bxnewopen": UI.bxNew = !UI.bxNew; render(); if (UI.bxNew) { const t = document.getElementById("bxntitle"); if (t) { t.focus(); t.scrollIntoView({ block: "nearest" }); } } break;
     case "bxnew": addOwnUnit(curG(), { title: document.getElementById("bxntitle").value, lb: document.getElementById("bxnlb").value, hours: document.getElementById("bxnhrs").value }); break;
     case "unitdel": deleteOwnUnit(k, b.dataset.code); break;
@@ -3161,6 +3208,7 @@ document.addEventListener("change", ev => {
     case "perlesson": S.settings.perLesson = Math.max(1, Math.min(15, Math.round(+t.value || 10))); commit(null, { settings: true }); break;
     case "cal": if (t.value) { cal()[f] = t.value; commit(null, { settings: true }); } break;
     case "autobuf": S.settings.autoBuffer = t.checked; commit(null, { settings: true }); break;
+    case "lnreq": setLnReq(t.dataset.key, t.dataset.kind, t.value); break;
     case "engstart": if (t.value) { cal().engineStart = t.value; commit(null, { settings: true }); } break;
     case "hol": cal().holidays[i][f] = t.value; commit(null, { settings: true }); break;
     case "free": cal().free[i][f] = t.value; commit(null, { settings: true }); break;
@@ -3293,7 +3341,7 @@ document.addEventListener("keydown", ev => {
 
 /* ---------------- boot ---------------- */
 let downloads = null;
-window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay, bxPlace, bxAdd, bxRemove, bxClear, bxStack, bxTrackOf, addOwnUnit, deleteOwnUnit };
+window.__mp = { mx, __lv: (g, d, id) => { touch(); const x = engineState(g, d).list.find(y => y.a.id === id); return x ? taskOf(x.a, levelOf(x)) : null; }, S, schedule, engineState, fsrsReview, lessonInfo, UI, cal, sachsenYear, switchYear, createYear, ttFromLegacy, applyDoc, setClassMode, obLbs, sortPinnedRows, dpMove, checkPos, atomPlan, shownTask, genSeq, atomsOf, hasGen, unitBlocks, moveAtom, touch, addHaDays, addLn, lnDates, unitOrderOf, setLnDate, setCheckDate, removeLn, dropOnWeek, firstMathDay, strandDlgOpen, strandDlgApply, strandHrs, moveInStrand, hrsPreview, setLnDur, lnDurOf, addShortTest, kaDates, migrateKa, defaultClass, adoptTemplate, syncTemplate, commit, seqOwn, tplNewer, tplDiff, atomsNewer, templateExport, LP, TPL, genQHtml, genAHtml, typesetMath, curG, todayIso, mathDay, bxPlace, bxAdd, bxRemove, bxClear, bxStack, bxTrackOf, addOwnUnit, deleteOwnUnit, lnReq, lnCount, setLnReq, reqKey };
 render.keepScroll = false;
 /* MathJax lädt asynchron; sobald es bereit ist, die schon gezeichneten Formeln setzen */
 window.__mpMathReady = () => { typesetMath(document.getElementById("main")); typesetMath(document.getElementById("overlay")); };
